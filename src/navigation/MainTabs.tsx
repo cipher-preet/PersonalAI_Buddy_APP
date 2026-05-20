@@ -19,6 +19,7 @@ import {
   ReminderIcon,
   ProfileIcon,
 } from '../../styles/icons';
+import Notes from '../screens/NotesScreen/Note';
 
 const Tab = createBottomTabNavigator();
 
@@ -216,7 +217,7 @@ const MainTabs = () => {
     >
       <Tab.Screen name="Home" component={Home} />
 
-      <Tab.Screen name="Notes" component={Home} />
+      <Tab.Screen name="Notes" component={Notes} />
 
       <Tab.Screen name="Reminders" component={Home} />
 

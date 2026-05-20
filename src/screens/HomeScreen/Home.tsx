@@ -13,6 +13,12 @@ import { HomeIcon } from '../../../styles/icons';
 const Home = () => {
   const quickActions = [
     {
+      id: 8,
+      title: 'AI Suggest',
+      icon: <HomeIcon width={18} height={18} color="#7B4DFF" />,
+      color: '#7B4DFF',
+    },
+    {
       id: 1,
       title: 'Notes',
       icon: <HomeIcon width={18} height={18} color="#7B4DFF" />,

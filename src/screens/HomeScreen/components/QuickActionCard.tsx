@@ -36,7 +36,7 @@ export default QuickActionCard;
 
 const styles = StyleSheet.create({
   card: {
-    width: 84,
+    width: 75,
 
     alignItems: 'center',
 
