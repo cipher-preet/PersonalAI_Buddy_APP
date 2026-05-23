@@ -27,7 +27,7 @@ const ProfileScreen = () => {
 
         <WeeklyGoalCard />
 
-        <QuickActions />
+        {/* <QuickActions />  i Think it add on later */}
 
         <ActivityCard />
 

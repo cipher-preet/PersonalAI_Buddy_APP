@@ -25,4 +25,6 @@ export { default as DoubleTick } from './DoubleTick';
 export { default as PriorityIcon } from './PriorityIcon'; 
 export { default as AiInsightIcon } from './AiSuggestion'; 
 export { default as BrainIcon } from './BrainIcon'; 
+export { default as PrivacyShieldIcon } from './ProvacyShieldIcon'; 
+export { default as SettingIcon } from './SettingIcons'; 
    

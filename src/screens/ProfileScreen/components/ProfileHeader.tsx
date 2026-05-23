@@ -6,7 +6,7 @@ import {
   StyleSheet,
 } from 'react-native';
 
-import { HomeIcon } from '../../../../styles/icons';
+import { SettingIcon } from '../../../../styles/icons';
 
 import { COLORS } from '../styles/colors';
 
@@ -16,7 +16,7 @@ const ProfileHeader = () => {
       <Text style={styles.title}>Profile</Text>
 
       <TouchableOpacity style={styles.iconButton}>
-        <HomeIcon
+        <SettingIcon
           color={COLORS.text}
         />
       </TouchableOpacity>

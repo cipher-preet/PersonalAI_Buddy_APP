@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
-import { HomeIcon } from '../../../../styles/icons';
+import { GreatorThan,Notification, PrivacyShieldIcon, ProfileIcon } from '../../../../styles/icons';
 
 import { COLORS } from '../styles/colors';
 
@@ -9,17 +9,17 @@ const settings = [
   {
     title: 'Account',
     sub: 'Personal info, email',
-    icon: 'person-outline',
+    icon: <ProfileIcon color={COLORS.primary} />,
   },
   {
     title: 'Privacy',
     sub: 'Security, data',
-    icon: 'lock-closed-outline',
+    icon: <PrivacyShieldIcon color={COLORS.primary} />,
   },
   {
     title: 'Notifications',
     sub: 'Push, email alerts',
-    icon: 'notifications-outline',
+    icon: <Notification color={COLORS.primary} />,
   },
 ];
 
@@ -32,7 +32,7 @@ const SettingsList = () => {
         <TouchableOpacity key={index} style={styles.card}>
           <View style={styles.left}>
             <View style={styles.iconBox}>
-              <HomeIcon color={COLORS.primary} />
+              {item.icon}
             </View>
 
             <View>
@@ -42,7 +42,7 @@ const SettingsList = () => {
             </View>
           </View>
 
-          <HomeIcon color="#C7C7CC" />
+          <GreatorThan color="#C7C7CC" />
         </TouchableOpacity>
       ))}
     </View>
