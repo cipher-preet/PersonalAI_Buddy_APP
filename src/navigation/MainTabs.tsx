@@ -18,8 +18,13 @@ import {
   NotesIcon,
   ReminderIcon,
   ProfileIcon,
+  TaskIcons,
+  AIChatIcons,
 } from '../../styles/icons';
 import Notes from '../screens/NotesScreen/Note';
+import TaskScreen from '../screens/TasksScreen/TaskScreen';
+import ProfileScreen from '../screens/ProfileScreen/ProfileScreen';
+import BuddyScreen from '../screens/BuddyScreen/BuddyScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -144,14 +149,14 @@ const TAB_CONFIG = [
     label: 'Notes',
   },
   {
-    name: 'Reminders',
-    Icon: ReminderIcon,
-    label: 'Reminders',
+    name: 'Tasks',
+    Icon: TaskIcons,
+    label: 'Tasks',
   },
   {
-    name: 'Projects',
-    Icon: HomeIcon,
-    label: 'Projects',
+    name: 'AI',
+    Icon: AIChatIcons,
+    label: 'Buddy',
   },
   {
     name: 'Profile',
@@ -216,12 +221,11 @@ const MainTabs = () => {
       }}
     >
       <Tab.Screen name="Home" component={Home} />
-
       <Tab.Screen name="Notes" component={Notes} />
+      <Tab.Screen name="AI" component={BuddyScreen} />
+      <Tab.Screen name="Tasks" component={TaskScreen} />
+      <Tab.Screen name="Profile" component={ProfileScreen} />
 
-      <Tab.Screen name="Reminders" component={Home} />
-
-      <Tab.Screen name="Profile" component={Home} />
     </Tab.Navigator>
   );
 };
