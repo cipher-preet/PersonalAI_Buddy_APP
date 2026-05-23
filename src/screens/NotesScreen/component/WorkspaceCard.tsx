@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
 
-import { HomeIcon } from '../../../../styles/icons';
+import { HomeIcon, LinkArrow, MySpcaes } from '../../../../styles/icons';
 
 const WorkspaceCard = () => {
   return (
@@ -16,11 +16,11 @@ const WorkspaceCard = () => {
       >
         <View style={styles.top}>
           <View style={styles.iconContainer}>
-            <HomeIcon width={18} height={18} color="#000000" />
+            <MySpcaes width={18} height={18} color="#000000" />
           </View>
 
           <TouchableOpacity activeOpacity={0.7} style={styles.menuButton}>
-            <HomeIcon width={18} height={18} color="#000000" />
+            <LinkArrow width={18} height={18} color="#000000" />
           </TouchableOpacity>
         </View>
 
@@ -35,14 +35,6 @@ const WorkspaceCard = () => {
         <View style={styles.footer}>
           <View style={styles.noteBadge}>
             <Text style={styles.noteText}>24 Notes</Text>
-          </View>
-
-          <View style={styles.members}>
-            <View style={styles.avatar} />
-
-            <View style={[styles.avatar, styles.avatarSecond]} />
-
-            <View style={[styles.avatar, styles.avatarThird]} />
           </View>
         </View>
       </LinearGradient>

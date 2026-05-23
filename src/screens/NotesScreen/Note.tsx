@@ -10,7 +10,7 @@ import SectionHeader from './component/SectionHeader';
 import WorkspaceCard from './component/WorkspaceCard';
 import AIActionCard from './component/AIActionCard';
 import NoteCard from './component/NoteCard';
-import { HomeIcon } from '../../../styles/icons';
+import { MindMapIcon, SummaryIcon, TaskIcons } from '../../../styles/icons';
 
 const categories = ['All Notes', 'Recent', 'Favorites', 'Shared', 'Important'];
 
@@ -18,17 +18,17 @@ const aiCards = [
   {
     id: 1,
     title: 'Generate Summary',
-    icon: <HomeIcon width={18} height={18} color="#6E7B87" />,
+    icon: <SummaryIcon width={18} height={18} color="#6E7B87" />,
   },
   {
     id: 2,
     title: 'Convert to Tasks',
-    icon: <HomeIcon width={18} height={18} color="#6E7B87" />,
+    icon: <TaskIcons width={18} height={18} color="#6E7B87" />,
   },
   {
     id: 3,
     title: 'Create Mind Map',
-    icon: <HomeIcon width={18} height={18} color="#6E7B87" />,
+    icon: <MindMapIcon width={18} height={18} color="#6E7B87" />,
   },
 ];
 

@@ -7,7 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 
-import { HomeIcon } from '../../../../styles/icons';
+import { HomeIcon, LinkArrow } from '../../../../styles/icons';
 
 type CardItem = {
   id: number;
@@ -31,7 +31,7 @@ const Card = ({ title, icon }: CardProps) => {
         <View style={styles.iconContainer}>{icon}</View>
 
         <TouchableOpacity activeOpacity={0.8} style={styles.linkButton}>
-          <HomeIcon width={14} height={14} color="#94A3B8" />
+          <LinkArrow width={14} height={14} color="#94A3B8" />
         </TouchableOpacity>
       </View>
 

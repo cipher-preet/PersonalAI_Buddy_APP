@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-import { HomeIcon } from '../../../../styles/icons';
+import { AiInsightIcon, BrainIcon, HomeIcon } from '../../../../styles/icons';
 import { COLORS } from '../component/styles/color';
 
 const AIInsightCard = () => {
@@ -10,7 +10,7 @@ const AIInsightCard = () => {
       <View style={styles.header}>
         <View style={styles.left}>
           <View style={styles.iconBox}>
-            <HomeIcon />
+            <AiInsightIcon width={18} height={18}/>
           </View>
 
           <Text style={styles.heading}>AI Insights</Text>
@@ -24,7 +24,7 @@ const AIInsightCard = () => {
       <View style={styles.card}>
         <View style={styles.top}>
           <View style={styles.aiCircle}>
-            <HomeIcon />
+            <BrainIcon width={18} height={18} />
           </View>
 
           <View style={styles.content}>

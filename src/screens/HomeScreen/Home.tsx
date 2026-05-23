@@ -8,38 +8,32 @@ import Header from './components/Header';
 import TopCard from './components/TopCard';
 import QuickActionCard from './components/QuickActionCard';
 import SpaceCard from './components/SpaceCard';
-import { HomeIcon } from '../../../styles/icons';
+import { AddSpace, AiSuggest, HabbitTracker, HomeIcon, MicIcon, MySpcaes, ReminderIcon, VoiceNote } from '../../../styles/icons';
 
 const Home = () => {
   const quickActions = [
     {
       id: 8,
       title: 'AI Suggest',
-      icon: <HomeIcon width={18} height={18} color="#7B4DFF" />,
-      color: '#7B4DFF',
-    },
-    {
-      id: 1,
-      title: 'Notes',
-      icon: <HomeIcon width={18} height={18} color="#7B4DFF" />,
+      icon: <AiSuggest width={18} height={18} color="#7B4DFF" />,
       color: '#7B4DFF',
     },
     {
       id: 2,
-      title: 'Reminder',
-      icon: <HomeIcon width={18} height={18} color="#FF9800" />,
+      title: 'Reminders',
+      icon: <ReminderIcon width={18} height={18} color="#FF9800" />,
       color: '#FF9800',
     },
     {
       id: 3,
       title: 'Voice Note',
-      icon: <HomeIcon width={18} height={18} color="#13B5D1" />,
+      icon: <VoiceNote width={18} height={18} color="#13B5D1" />,
       color: '#13B5D1',
     },
     {
       id: 4,
-      title: 'Summary',
-      icon: <HomeIcon width={18} height={18} color="#E83E8C" />,
+      title: 'Habbit Tracker',
+      icon: <HabbitTracker width={18} height={18} color="#E83E8C" />,
       color: '#E83E8C',
     },
   ];
@@ -51,7 +45,7 @@ const Home = () => {
       description:
         'Draft outreach to 5 candidates for the staff engineer role...',
       time: 'Last active 5m ago',
-      icon: <HomeIcon width={18} height={18} color="#000000" />,
+      icon: <MySpcaes width={18} height={18} color="#000000" />,
       conversations: '24 conversations',
       tags: ['AI Memory', 'Voice'],
       color: '#7c4dff65',
@@ -62,7 +56,7 @@ const Home = () => {
       description:
         'Compare market size for vertical tools in legal vs finance...',
       time: 'Last active 1h ago',
-      icon: <HomeIcon width={18} height={18} color="#000000" />,
+      icon: <MySpcaes width={18} height={18} color="#000000" />,
       conversations: '12 conversations',
       tags: ['Research', 'Brainstorm'],
       color: '#13d11981',
@@ -73,7 +67,7 @@ const Home = () => {
       description:
         'Compare market size for vertical tools in legal vs finance...',
       time: 'Last active 1h ago',
-      icon: <HomeIcon width={18} height={18} color="#000000" />,
+      icon: <MySpcaes width={18} height={18} color="#000000" />,
       conversations: '12 conversations',
       tags: ['Research', 'Brainstorm'],
       color: '#9dc3c989',
@@ -84,7 +78,7 @@ const Home = () => {
       description:
         'Compare market size for vertical tools in legal vs finance...',
       time: 'Last active 1h ago',
-      icon: <HomeIcon width={18} height={18} color="#000000" />,
+      icon: <MySpcaes width={18} height={18} color="#000000" />,
       conversations: '12 conversations',
       tags: ['Research', 'Brainstorm'],
       color: '#a5d11364',
@@ -95,7 +89,7 @@ const Home = () => {
       description:
         'Compare market size for vertical tools in legal vs finance...',
       time: 'Last active 1h ago',
-      icon: <HomeIcon width={18} height={18} color="#000000" />,
+      icon: <MySpcaes width={18} height={18} color="#000000" />,
       conversations: '12 conversations',
       tags: ['Research', 'Brainstorm'],
       color: '#d113c458',
@@ -106,7 +100,7 @@ const Home = () => {
       description:
         'Compare market size for vertical tools in legal vs finance...',
       time: 'Last active 1h ago',
-      icon: <HomeIcon width={18} height={18} color="#000000" />,
+      icon: <MySpcaes width={18} height={18} color="#000000" />,
       conversations: '12 conversations',
       tags: ['Research', 'Brainstorm'],
       color: '#be33175e',
@@ -117,7 +111,7 @@ const Home = () => {
       description:
         'Compare market size for vertical tools in legal vs finance...',
       time: 'Last active 1h ago',
-      icon: <HomeIcon width={18} height={18} color="#000000" />,
+      icon: <MySpcaes width={18} height={18} color="#000000" />,
       conversations: '12 conversations',
       tags: ['Research', 'Brainstorm'],
       color: '#1a37bb50',
@@ -149,14 +143,14 @@ const Home = () => {
               title="Create Space"
               subtitle="New AI memory workspace"
               color="#8B5CF6"
-              icon={<HomeIcon width={18} height={18} color="#FFFFFF" />}
+              icon={<AddSpace width={18} height={18} color="#FFFFFF" />}
             />
 
             <TopCard
               title="Start Listening"
               subtitle="Talk with your assistant"
               color="#15C7E8"
-              icon={<HomeIcon width={18} height={18} color="#FFFFFF" />}
+              icon={<MicIcon width={18} height={18} color="#FFFFFF" />}
             />
           </View>
 

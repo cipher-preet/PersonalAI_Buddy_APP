@@ -1,10 +1,7 @@
 import React from 'react';
-import {
-  ScrollView,
-  StatusBar,
-} from 'react-native';
+import { ScrollView, StatusBar } from 'react-native';
 
-import { SafeAreaView } from "react-native-safe-area-context"
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Header from './components/Header';
 import Greeting from './components/Greeting';
@@ -25,8 +22,8 @@ const BuddyScreen = () => {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}>
-        
+        contentContainerStyle={styles.scrollContent}
+      >
         <Greeting />
 
         <QuickActions />
@@ -39,7 +36,6 @@ const BuddyScreen = () => {
       </ScrollView>
 
       <BottomInput />
-      
     </SafeAreaView>
   );
 };

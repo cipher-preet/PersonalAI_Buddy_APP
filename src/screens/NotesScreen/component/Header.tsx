@@ -7,7 +7,7 @@ import {
   StatusBar,
 } from 'react-native';
 
-import { HomeIcon } from '../../../../styles/icons';
+import { SearchIcon,FilterIcon } from '../../../../styles/icons';
 
 const Header = () => {
   return (
@@ -26,10 +26,10 @@ const Header = () => {
         </View>
         <View style={styles.rightContainer}>
           <TouchableOpacity activeOpacity={0.8} style={styles.iconButton}>
-            <HomeIcon width={18} height={18} color="#000000" />
+            <SearchIcon width={18} height={18} color="#000000" />
           </TouchableOpacity>
           <TouchableOpacity activeOpacity={0.8} style={styles.iconButton}>
-            <HomeIcon width={18} height={18} color="#000000" />
+            <FilterIcon width={18} height={18} color="#000000" />
           </TouchableOpacity>
         </View>
       </View>

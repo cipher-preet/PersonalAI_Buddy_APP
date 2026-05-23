@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 
-import { HomeIcon } from '../../../../styles/icons';
+import { Notification } from '../../../../styles/icons';
 
 const Header = () => {
   return (
@@ -24,12 +24,12 @@ const Header = () => {
           activeOpacity={0.85}
           style={styles.notificationButton}
         >
-          <HomeIcon width={19} height={19} />
+          <Notification width={19} height={19} />
         </TouchableOpacity>
 
-        <TouchableOpacity activeOpacity={0.85} style={styles.settingsButton}>
-          <HomeIcon width={18} height={18} />
-        </TouchableOpacity>
+        {/* <TouchableOpacity activeOpacity={0.85} style={styles.settingsButton}>
+          <Notification width={18} height={18} />
+        </TouchableOpacity> */}
       </View>
     </View>
   );

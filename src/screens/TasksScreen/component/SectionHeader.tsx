@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-import { HomeIcon } from '../../../../styles/icons';
+import { CalenderIcon, HomeIcon } from '../../../../styles/icons';
 
 import { COLORS } from '../component/styles/color';
 
@@ -11,7 +11,7 @@ const SectionHeader = () => {
       <Text style={styles.title}>Tasks</Text>
 
       <TouchableOpacity style={styles.button}>
-        <HomeIcon />
+        <CalenderIcon width={18} height={18} />
 
         <Text style={styles.month}>December</Text>
       </TouchableOpacity>

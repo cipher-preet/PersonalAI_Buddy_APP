@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
 import { COLORS } from '../component/styles/color';
 
-import { HomeIcon } from '../../../../styles/icons';
+import { CalenderIcon, DoubleTick, HomeIcon, PriorityIcon } from '../../../../styles/icons';
 
 type Props = {
   item: {
@@ -17,16 +17,16 @@ const StatCard = ({ item }: Props) => {
   const renderIcon = () => {
     switch (item.icon) {
       case 'calendar':
-        return <HomeIcon />;
+        return <CalenderIcon width={18} height={18} />;
 
       case 'flash':
-        return <HomeIcon />;
+        return <PriorityIcon width={18} height={18} />;
 
       case 'check':
-        return <HomeIcon />;
+        return <DoubleTick />;
 
       default:
-        return <HomeIcon />;
+        return <DoubleTick />;
     }
   };
 

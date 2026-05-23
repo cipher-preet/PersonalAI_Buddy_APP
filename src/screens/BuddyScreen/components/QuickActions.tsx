@@ -6,14 +6,14 @@ import {
   Text,
 } from 'react-native';
 
-import { HomeIcon } from '../../../../styles/icons';
+import { HomeIcon, SchedulerIcon, SummaryIcon, TaskIcons } from '../../../../styles/icons';
 
 const QuickActions = () => {
   return (
     <View style={styles.container}>
       <View style={styles.chipsWrapper}>
         <Pressable style={styles.chip}>
-          <HomeIcon width={14} height={14} />
+          <SummaryIcon width={14} height={14} />
 
           <Text
             numberOfLines={1}
@@ -33,12 +33,12 @@ const QuickActions = () => {
         </Pressable>
 
         <Pressable style={styles.chip}>
-          <HomeIcon width={14} height={14} />
+          <TaskIcons width={14} height={14} />
 
           <Text
             numberOfLines={1}
             style={styles.chipText}>
-            Draft Email
+            Plan a Task
           </Text>
         </Pressable>
 
@@ -49,7 +49,7 @@ const QuickActions = () => {
         <Pressable style={styles.card}>
 
           <View style={styles.iconBox}>
-            <HomeIcon width={20} height={20} />
+            <SchedulerIcon width={20} height={20} />
           </View>
 
           <Text style={styles.cardTitle}>
@@ -61,7 +61,7 @@ const QuickActions = () => {
         <Pressable style={styles.card}>
 
           <View style={styles.iconBox}>
-            <HomeIcon width={20} height={20} />
+            <TaskIcons width={20} height={20} />
           </View>
 
           <Text style={styles.cardTitle}>

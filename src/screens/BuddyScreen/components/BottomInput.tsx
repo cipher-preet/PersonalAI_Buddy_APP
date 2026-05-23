@@ -7,13 +7,14 @@ import {
 } from 'react-native';
 
 
-import { HomeIcon } from '../../../../styles/icons';
+import { AddSpace, HomeIcon, MicIcon, UpArrowIcon } from '../../../../styles/icons';
 
 const BottomInput = () => {
   return (
     <View style={styles.container}>
       <TouchableOpacity>
-        <HomeIcon width={20} height={20} />
+        <AddSpace width={20} height={20} color="#000000"
+ />
       </TouchableOpacity>
 
       <TextInput
@@ -23,11 +24,11 @@ const BottomInput = () => {
       />
 
       <TouchableOpacity style={styles.micButton}>
-        <HomeIcon width={18} height={18} />
+        <MicIcon width={18} height={18} color="#000000" />
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.sendButton}>
-        <HomeIcon width={18} height={18} />
+        <UpArrowIcon width={18} height={18} color="#ffffff" />
       </TouchableOpacity>
     </View>
   );

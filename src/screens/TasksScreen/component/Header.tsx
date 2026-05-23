@@ -1,12 +1,7 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
-import { HomeIcon } from '../../../../styles/icons';
+import { FilterIcon, HomeIcon, SearchIcon } from '../../../../styles/icons';
 import { COLORS } from '../component/styles/color';
 
 const Header = () => {
@@ -18,11 +13,11 @@ const Header = () => {
 
       <View style={styles.actions}>
         <TouchableOpacity style={styles.iconButton}>
-          <HomeIcon />
+          <SearchIcon width={18} height={18} />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.iconButton}>
-          <HomeIcon />
+          <FilterIcon width={18} height={18} />
         </TouchableOpacity>
       </View>
     </View>

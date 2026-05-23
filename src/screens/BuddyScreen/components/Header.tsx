@@ -1,23 +1,14 @@
 import React from 'react';
-import {
-  View,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 
-import { HomeIcon } from '../../../../styles/icons';
+import { HistoryIcon } from '../../../../styles/icons';
 
 const Header = () => {
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.iconButton}>
-        <HomeIcon width={18} height={18} />
-      </TouchableOpacity>
-
       <View style={styles.glowCircle} />
-
       <TouchableOpacity style={styles.iconButton}>
-        <HomeIcon width={18} height={18} />
+        <HistoryIcon width={18} height={18} />
       </TouchableOpacity>
     </View>
   );

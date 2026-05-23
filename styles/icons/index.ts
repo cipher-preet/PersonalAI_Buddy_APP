@@ -2,5 +2,27 @@ export { default as HomeIcon } from './HomeIcon';
 export { default as NotesIcon } from './NotesIcon';
 export { default as ReminderIcon } from './ReminderIcon';
 export { default as ProfileIcon } from './ProfileIcon';
-export { default as TaskIcons } from './TaskIcons'
-export { default as AIChatIcons } from './AIChatIcon'
+export { default as TaskIcons } from './TaskIcons';
+export { default as AIChatIcons } from './AIChatIcon';
+export { default as AddSpace } from './AddSpace';
+export { default as MicIcon } from './MicIcon';
+export { default as AiSuggest } from './AiSuggest';
+export { default as VoiceNote} from './VoiceNote';
+export { default as HabbitTracker} from './HabbitTracker'; 
+export { default as MySpcaes} from './Myspaces'; 
+export { default as Notification} from './Notification'; 
+export { default as SearchIcon} from './SearchIcon'; 
+export { default as FilterIcon} from './FilterIcon'; 
+export { default as LinkArrow} from './LinkArrow'; 
+export { default as GreatorThan} from './GreatorThan'; 
+export { default as SummaryIcon} from './Summary'; 
+export { default as MindMapIcon } from './MindMap'; 
+export { default as HistoryIcon } from './HistoryIcon'; 
+export { default as UpArrowIcon } from './UpArrowIcon'; 
+export { default as SchedulerIcon } from './ScheduledIcon'; 
+export { default as CalenderIcon } from './CalendarIcon'; 
+export { default as DoubleTick } from './DoubleTick'; 
+export { default as PriorityIcon } from './PriorityIcon'; 
+export { default as AiInsightIcon } from './AiSuggestion'; 
+export { default as BrainIcon } from './BrainIcon'; 
+   

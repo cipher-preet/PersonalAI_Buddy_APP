@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
 
     alignItems: 'center',
 
-    marginRight: 4,
+    marginRight: 8,
   },
 
   iconContainer: {

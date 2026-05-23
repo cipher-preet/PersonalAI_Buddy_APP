@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import { HomeIcon } from '../../../../styles/icons';
+import { GreatorThan, HomeIcon } from '../../../../styles/icons';
 
 type Props = {
   title: string;
@@ -22,7 +22,7 @@ const SectionHeader = ({ title, action }: Props) => {
         <TouchableOpacity activeOpacity={0.8} style={styles.actionButton}>
           <Text style={styles.actionText}>{action}</Text>
 
-          <HomeIcon width={18} height={18} color="#000000" />
+          <GreatorThan width={18} height={18} color="#000000" />
         </TouchableOpacity>
       ) : null}
     </View>

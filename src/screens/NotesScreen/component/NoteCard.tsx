@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
-import { HomeIcon } from '../../../../styles/icons';
+import { HomeIcon, LinkArrow } from '../../../../styles/icons';
 
 type Props = {
   item: {
@@ -23,7 +23,7 @@ const NoteCard = ({ item }: Props) => {
         <View style={styles.rightTop}>
           <Text style={styles.time}>{item.time}</Text>
           <TouchableOpacity activeOpacity={0.8} style={styles.linkButton}>
-            <HomeIcon width={13} height={13} color="#94A3B8" />
+            <LinkArrow width={13} height={13} color="#94A3B8" />
           </TouchableOpacity>
         </View>
       </View>
@@ -47,9 +47,9 @@ const NoteCard = ({ item }: Props) => {
 
         <View style={styles.spacer} />
 
-        <View style={styles.bottomIcon}>
+        {/* <View style={styles.bottomIcon}>
           <HomeIcon width={14} height={14} color="#7B8794" />
-        </View>
+        </View> */}
       </View>
     </TouchableOpacity>
   );

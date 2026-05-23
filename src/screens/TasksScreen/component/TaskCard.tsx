@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   View,
@@ -8,7 +7,7 @@ import {
   Animated,
 } from 'react-native';
 
-import { HomeIcon } from '../../../../styles/icons';
+import {LinkArrow } from '../../../../styles/icons';
 
 import { COLORS } from '../component/styles/color';
 
@@ -75,7 +74,7 @@ const TaskCard = ({ item }: Props) => {
           </View>
 
           <TouchableOpacity activeOpacity={0.7}>
-            <HomeIcon />
+            <LinkArrow width={18} height={18} />
           </TouchableOpacity>
         </View>
       </View>
