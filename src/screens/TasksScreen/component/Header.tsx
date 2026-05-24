@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
-import { FilterIcon, HomeIcon, SearchIcon } from '../../../../styles/icons';
+import { FilterIcon, SearchIcon } from '../../../../styles/icons';
 import { COLORS } from '../component/styles/color';
 
 const Header = () => {

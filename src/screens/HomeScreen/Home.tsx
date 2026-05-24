@@ -8,7 +8,16 @@ import Header from './components/Header';
 import TopCard from './components/TopCard';
 import QuickActionCard from './components/QuickActionCard';
 import SpaceCard from './components/SpaceCard';
-import { AddSpace, AiSuggest, HabbitTracker, HomeIcon, MicIcon, MySpcaes, ReminderIcon, VoiceNote } from '../../../styles/icons';
+import {
+  AddSpace,
+  AiSuggest,
+  HabbitTracker,
+  HomeIcon,
+  MicIcon,
+  MySpcaes,
+  ReminderIcon,
+  VoiceNote,
+} from '../../../styles/icons';
 
 const Home = () => {
   const quickActions = [
@@ -209,7 +218,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F7F5FF',
-    marginTop: 12,
+    marginTop: 24,
   },
 
   scrollContainer: {

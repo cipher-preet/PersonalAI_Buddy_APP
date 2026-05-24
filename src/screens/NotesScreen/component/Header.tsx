@@ -82,8 +82,8 @@ const styles = StyleSheet.create({
   },
 
   iconButton: {
-    width: 52,
-    height: 52,
+    width: 38,
+    height: 38,
     borderRadius: 20,
 
     backgroundColor: 'rgba(255,255,255,0.75)',
