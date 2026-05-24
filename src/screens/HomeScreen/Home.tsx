@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View, Text } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -18,8 +18,18 @@ import {
   ReminderIcon,
   VoiceNote,
 } from '../../../styles/icons';
+import VoiceAssistantSheet from './components/voice-sheet/VoiceAssistantSheet';
+
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import CreateSpaceBottomSheet from './components/addspcesheet/CreateSpaceBottomSheet';
 
 const Home = () => {
+  // const bottomSheetRef = useRef<any>(null);
+  const bottomSheetRef = useRef<BottomSheetModal>(null);
+  const spaceSheetRef = useRef<BottomSheetModal>(null);
+
+  const [isListening, setIsListening] = useState(false);
+
   const quickActions = [
     {
       id: 8,
@@ -127,6 +137,58 @@ const Home = () => {
     },
   ];
 
+  const handleStartListening = async (data: any) => {
+    try {
+      console.log('SELECTED SPACE:', data.space);
+
+      console.log('SELECTED MODE:', data.mode);
+
+     
+      // bottomSheetRef.current?.close();
+    
+
+      // await startBackgroundListening();
+
+      /**
+       * START MICROPHONE
+       */
+
+      // await startMicrophone();
+
+      /**
+       * START STREAMING
+       */
+
+      // startAudioStreaming({
+      //   spaceId: data.space.id,
+
+      //   mode: data.mode,
+      // });
+
+      /**
+       * UPDATE UI
+       */
+
+      setIsListening(true);
+    } catch (error) {
+      console.log('START ERROR:', error);
+    }
+  };
+
+  /**
+   * OPEN BOTTOM SHEET
+   */
+
+  const openVoiceSheet = () => {
+    bottomSheetRef.current?.present();
+  };
+
+  const openSpaceSheet = () => {
+    console.log("inside this sheet")
+    spaceSheetRef.current?.present();
+
+  }
+
   return (
     <LinearGradient
       colors={['#F7F5FF', '#F1EEFF', '#EDF5FF', '#F2FAFF', '#FAFAFD']}
@@ -153,15 +215,38 @@ const Home = () => {
               subtitle="New AI memory workspace"
               color="#8B5CF6"
               icon={<AddSpace width={18} height={18} color="#FFFFFF" />}
+               onPress={() => {
+                openSpaceSheet();
+              }}
             />
 
             <TopCard
               title="Start Listening"
-              subtitle="Talk with your assistant"
+              subtitle="Buddy is Ready to Listing."
               color="#15C7E8"
               icon={<MicIcon width={18} height={18} color="#FFFFFF" />}
+              onPress={() => {
+                if (isListening) {
+                  // stopListening();
+                  return;
+                }
+
+                openVoiceSheet();
+              }}
             />
+
           </View>
+
+          <CreateSpaceBottomSheet ref={spaceSheetRef}/>
+
+
+          <VoiceAssistantSheet
+            ref={bottomSheetRef}
+            onStart={handleStartListening}
+          />
+
+
+
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>

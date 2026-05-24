@@ -9,11 +9,12 @@ type Props = {
   rightIcon?: React.ReactNode;
 
   color: string;
+  onPress?: () => void;
 };
 
-const TopCard = ({ title, subtitle, icon, rightIcon, color }: Props) => {
+const TopCard = ({ title, subtitle, icon, rightIcon, color, onPress }: Props) => {
   return (
-    <TouchableOpacity activeOpacity={0.9} style={styles.card}>
+    <TouchableOpacity activeOpacity={0.9} style={styles.card} onPress={onPress}>
       <View style={styles.topSection}>
         <View
           style={[
