@@ -36,37 +36,27 @@ export default QuickActionCard;
 
 const styles = StyleSheet.create({
   card: {
-    width: 75,
-
+    width: 82,
     alignItems: 'center',
-
-    marginRight: 8,
+    marginRight: 10,
   },
 
   iconContainer: {
-    width: 58,
-    height: 58,
-
-    borderRadius: 18,
-
+    width: 60,
+    height: 60,
+    borderRadius: 20,
     backgroundColor: '#FFFFFF',
-
     justifyContent: 'center',
     alignItems: 'center',
-
     borderWidth: 1,
-    borderColor: '#EEF2F6',
-
-    shadowColor: '#B7C1D1',
-
+    borderColor: '#F1F4FB',
+    shadowColor: '#64748B',
     shadowOffset: {
       width: 0,
       height: 6,
     },
-
-    shadowOpacity: 0.07,
-    shadowRadius: 12,
-
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
     elevation: 4,
   },
 
@@ -81,14 +71,10 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    marginTop: 10,
-
+    marginTop: 12,
     fontSize: 11,
-
-    fontWeight: '500',
-
-    color: '#667085',
-
-    letterSpacing: 0.1,
+    fontWeight: '600',
+    color: '#475569',
+    letterSpacing: 0.2,
   },
 });

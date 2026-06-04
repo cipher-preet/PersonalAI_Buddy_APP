@@ -118,29 +118,30 @@ const styles = StyleSheet.create({
 
   sheetBackground: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
   },
 
   indicator: {
-    backgroundColor: '#D1D5DB',
-    width: 55,
-    height: 5,
+    backgroundColor: '#CBD5E1',
+    width: 70,
+    height: 6,
     borderRadius: 999,
   },
 
   header: { marginBottom: 28 },
 
   heading: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#111827',
   },
 
   subHeading: {
     marginTop: 8,
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 20,
   },
 
   inputRow: {
@@ -152,11 +153,11 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: 54,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F7F8FD',
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 16,
-    paddingHorizontal: 16,
+    borderColor: '#E2E8F0',
+    borderRadius: 18,
+    paddingHorizontal: 18,
     color: '#111827',
     fontSize: 14,
   },
@@ -165,10 +166,18 @@ const styles = StyleSheet.create({
     height: 54,
     marginLeft: 12,
     paddingHorizontal: 18,
-    borderRadius: 16,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#3563FF',
+    backgroundColor: '#5B5BFF',
+    shadowColor: '#4F46E5',
+    shadowOffset: {
+      width: 0,
+      height: 8,
+    },
+    shadowOpacity: 0.16,
+    shadowRadius: 16,
+    elevation: 4,
   },
 
   createBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
@@ -185,8 +194,8 @@ const styles = StyleSheet.create({
   countText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#6B7280',
-    backgroundColor: '#F3F4F6',
+    color: '#475569',
+    backgroundColor: '#EEF2FF',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 999,
@@ -200,7 +209,7 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? 34 : 20,
     backgroundColor: '#FFFFFF',
     borderTopWidth: 1,
-    borderTopColor: '#EEF2F7',
+    borderTopColor: '#E5E7EB',
   },
 
   startButton: {
@@ -208,7 +217,15 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#3563FF',
+    backgroundColor: '#4338CA',
+    shadowColor: '#4338CA',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    elevation: 5,
   },
 
   startButtonText: {

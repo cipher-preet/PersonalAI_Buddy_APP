@@ -55,11 +55,8 @@ const styles = StyleSheet.create({
 
   greetingText: {
     fontSize: 13,
-
-    color: '#7F8A9F',
-
-    fontWeight: '400',
-
+    color: '#6B7280',
+    fontWeight: '500',
     letterSpacing: 0.3,
   },
 
@@ -82,14 +79,10 @@ const styles = StyleSheet.create({
 
   userName: {
     marginTop: 7,
-
-    fontSize: 16,
-
-    fontWeight: '600',
-
-    color: '#111827',
-
-    letterSpacing: -0.8,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#0F172A',
+    letterSpacing: -0.6,
   },
 
   actionContainer: {
@@ -100,28 +93,20 @@ const styles = StyleSheet.create({
   notificationButton: {
     width: 48,
     height: 48,
-
     borderRadius: 24,
-
-    backgroundColor: '#FFFFFF',
-
+    backgroundColor: '#FBFBFF',
     justifyContent: 'center',
     alignItems: 'center',
-
     marginRight: 12,
-
     borderWidth: 1,
-    borderColor: '#EEF2F7',
-
-    shadowColor: '#AEB8C5',
+    borderColor: '#E8EDF9',
+    shadowColor: '#64748B',
     shadowOffset: {
       width: 0,
-      height: 5,
+      height: 4,
     },
-
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
     elevation: 5,
   },
 

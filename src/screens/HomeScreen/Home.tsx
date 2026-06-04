@@ -143,9 +143,7 @@ const Home = () => {
 
       console.log('SELECTED MODE:', data.mode);
 
-     
       // bottomSheetRef.current?.close();
-    
 
       // await startBackgroundListening();
 
@@ -184,15 +182,14 @@ const Home = () => {
   };
 
   const openSpaceSheet = () => {
-    console.log("inside this sheet")
+    console.log('inside this sheet');
     spaceSheetRef.current?.present();
-
-  }
+  };
 
   return (
     <LinearGradient
-      colors={['#F7F5FF', '#F1EEFF', '#EDF5FF', '#F2FAFF', '#FAFAFD']}
-      locations={[0, 0.25, 0.55, 0.82, 1]}
+      colors={['#F9F7FF', '#EFF3FF', '#F7FAFF', '#FFFFFF']}
+      locations={[0, 0.2, 0.65, 1]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.container}
@@ -215,7 +212,7 @@ const Home = () => {
               subtitle="New AI memory workspace"
               color="#8B5CF6"
               icon={<AddSpace width={18} height={18} color="#FFFFFF" />}
-               onPress={() => {
+              onPress={() => {
                 openSpaceSheet();
               }}
             />
@@ -234,19 +231,14 @@ const Home = () => {
                 openVoiceSheet();
               }}
             />
-
           </View>
 
-          <CreateSpaceBottomSheet ref={spaceSheetRef}/>
-
+          <CreateSpaceBottomSheet ref={spaceSheetRef} />
 
           <VoiceAssistantSheet
             ref={bottomSheetRef}
             onStart={handleStartListening}
           />
-
-
-
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -302,11 +294,12 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    backgroundColor: '#F7F5FF',
-    marginTop: 24,
+    backgroundColor: '#F9F7FF',
+    paddingTop: 4,
   },
 
   scrollContainer: {
+    paddingTop: 18,
     paddingHorizontal: 20,
     paddingBottom: 100,
   },

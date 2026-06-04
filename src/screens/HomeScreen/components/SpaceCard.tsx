@@ -69,36 +69,25 @@ export default SpaceCard;
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-
     minHeight: 84,
-
     backgroundColor: '#FFFFFF',
-
-    borderRadius: 22,
-
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-
+    borderRadius: 26,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
     marginTop: 12,
-
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-
     borderWidth: 1,
-    borderColor: '#EEF2F7',
-
-    shadowColor: '#B8C2D1',
-
+    borderColor: '#EFF2F8',
+    shadowColor: '#64748B',
     shadowOffset: {
       width: 0,
-      height: 6,
+      height: 7,
     },
-
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-
-    elevation: 3,
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
   },
 
   leftSection: {
@@ -111,14 +100,10 @@ const styles = StyleSheet.create({
   iconWrapper: {
     width: 52,
     height: 52,
-
     borderRadius: 999,
-
     justifyContent: 'center',
     alignItems: 'center',
-
     marginRight: 14,
-
     backgroundColor: '#F3F6FF',
   },
 
@@ -148,13 +133,13 @@ const styles = StyleSheet.create({
   },
 
   badge: {
-    height: 20,
-    paddingHorizontal: 8,
-    borderRadius: 10,
+    height: 22,
+    paddingHorizontal: 10,
+    borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
-    backgroundColor: '#EEF4FF',
+    marginLeft: 10,
+    backgroundColor: '#EFF4FF',
   },
 
   badgeText: {
@@ -169,35 +154,25 @@ const styles = StyleSheet.create({
 
   description: {
     marginTop: 4,
-
     fontSize: 12,
-
-    color: '#7B8496',
-
+    color: '#64748B',
     fontWeight: '500',
-
-    lineHeight: 16,
+    lineHeight: 18,
   },
 
   arrowButton: {
-    width: 28,
-    height: 28,
-
-    borderRadius: 14,
-
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-
     backgroundColor: '#F8FAFC',
-
-    marginLeft: 8,
+    marginLeft: 10,
   },
 
   arrow: {
     fontSize: 20,
-
-    color: '#98A2B3',
-
+    color: '#5B6D98',
     marginTop: -2,
   },
 });

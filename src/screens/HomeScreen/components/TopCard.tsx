@@ -50,29 +50,21 @@ export default TopCard;
 const styles = StyleSheet.create({
   card: {
     width: '48%',
-
     backgroundColor: '#FFFFFF',
-
-    borderRadius: 24,
-
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 18,
-
+    borderRadius: 26,
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    paddingBottom: 20,
     borderWidth: 1,
-    borderColor: '#EEF2F6',
-
-    shadowColor: '#B8C2D1',
-
+    borderColor: '#F1F4FB',
+    shadowColor: '#64748B',
     shadowOffset: {
       width: 0,
       height: 8,
     },
-
     shadowOpacity: 0.08,
-    shadowRadius: 14,
-
-    elevation: 5,
+    shadowRadius: 18,
+    elevation: 6,
   },
 
   topSection: {
@@ -98,30 +90,22 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    marginTop: 32,
+    marginTop: 28,
   },
 
   title: {
     fontSize: 15,
-
     color: '#111827',
-
     fontWeight: '700',
-
     letterSpacing: -0.3,
   },
 
   subtitle: {
     marginTop: 6,
-
     fontSize: 12,
-
-    color: '#8A94A6',
-
+    color: '#64748B',
     fontWeight: '500',
-
     lineHeight: 18,
-
     paddingRight: 8,
   },
 });

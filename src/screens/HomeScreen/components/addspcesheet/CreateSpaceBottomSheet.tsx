@@ -73,13 +73,15 @@ export default CreateSpaceBottomSheet;
 const styles = StyleSheet.create({
   sheetBackground: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
   },
 
   indicator: {
-    backgroundColor: '#D1D5DB',
-    width: 60,
+    backgroundColor: '#CBD5E1',
+    width: 70,
+    height: 6,
+    borderRadius: 999,
   },
 
   container: {
@@ -96,7 +98,7 @@ const styles = StyleSheet.create({
 
   subtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#475569',
     marginBottom: 24,
   },
 
@@ -106,9 +108,9 @@ const styles = StyleSheet.create({
 
   input: {
     height: 56,
-    borderRadius: 16,
+    borderRadius: 18,
     paddingHorizontal: 16,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F7F8FD',
     borderWidth: 1,
     borderColor: '#E5E7EB',
     color: '#111827',
@@ -118,11 +120,19 @@ const styles = StyleSheet.create({
   button: {
     height: 56,
     borderRadius: 18,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#4338CA',
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 'auto',
     marginBottom: Platform.OS === 'ios' ? 10 : 20,
+    shadowColor: '#4338CA',
+    shadowOffset: {
+      width: 0,
+      height: 10,
+    },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 5,
   },
 
   buttonText: {
