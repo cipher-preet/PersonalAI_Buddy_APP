@@ -12,11 +12,12 @@ interface CreateSpaceResponse {
 }
 
 interface StartLIstningResponse {
-  sucess: boolean;
+  success: boolean;
   data: any;
 }
 interface StartLIstningPayload {
   spaceId: string;
+  isListning: boolean
 }
 
 export interface Space {
@@ -45,11 +46,18 @@ interface GetUserSpacesResponse {
   success: boolean;
   data: GetUserSpacesPayload;
 }
+interface GetUserActiveSpacesResponse {
+  success: boolean;
+  data: any;
+}
 
 interface GetUserSpacesArgs {
   userId: string;
   limit?: number;
   cursor?: string;
+}
+interface GetActiveSpacesArgs {
+  userId: string;
 }
 
 export const homeApi = baseApi.injectEndpoints({
@@ -87,7 +95,26 @@ export const homeApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Spaces'],
     }),
+
+    getUserActiveSpace: builder.query<
+      GetUserActiveSpacesResponse,
+      GetActiveSpacesArgs
+    >({
+      query: ({ userId }) => ({
+        url: 'home/getUserActiveSpace',
+        method: 'GET',
+        params: {
+          userId,
+        },
+      }),
+      providesTags: ['Spaces'],
+    }),
   }),
 });
 
-export const { useCreateSpaceMutation, useGetUserSpacesQuery } = homeApi;
+export const {
+  useCreateSpaceMutation,
+  useGetUserSpacesQuery,
+  useStartListningMutation,
+  useGetUserActiveSpaceQuery,
+} = homeApi;

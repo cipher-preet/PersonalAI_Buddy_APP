@@ -54,6 +54,12 @@ const SpaceCard = ({
           <Text numberOfLines={1} style={styles.description}>
             {description}
           </Text>
+
+          {time ? (
+            <Text numberOfLines={1} style={styles.time}>
+              {time}
+            </Text>
+          ) : null}
         </View>
       </View>
 
@@ -158,6 +164,13 @@ const styles = StyleSheet.create({
     color: '#64748B',
     fontWeight: '500',
     lineHeight: 18,
+  },
+
+  time: {
+    marginTop: 2,
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '600',
   },
 
   arrowButton: {

@@ -23,6 +23,7 @@ import {
   Space,
   useCreateSpaceMutation,
   useGetUserSpacesQuery,
+  useStartListningMutation,
 } from '../../../../store/api/home';
 import SpaceCard from './SpaceCard';
 
@@ -39,6 +40,7 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const { showToast } = useToast();
   const [createSpace, { isLoading: isCreating }] = useCreateSpaceMutation();
+  const [startListning, { isLoading: isStarting }] = useStartListningMutation();
   const {
     data: spacesData,
     isFetching: isFetchingSpaces,
@@ -60,7 +62,11 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
         setSelectedSpace(fetchedSpaces[0]);
       }
     } else {
-      setSpaces(prev => [...prev, ...fetchedSpaces]);
+      setSpaces(prev => {
+        const existingIds = new Set(prev.map(p => p._id));
+        const newItems = fetchedSpaces.filter(s => !existingIds.has(s._id));
+        return newItems.length > 0 ? [...prev, ...newItems] : prev;
+      });
     }
   }, [spacesData, cursor]);
 
@@ -102,20 +108,52 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
   };
 
   const renderFooter = useCallback(
-    (props: any) => (
-      <BottomSheetFooter {...props} bottomInset={0}>
-        <View style={styles.footer}>
-          <TouchableOpacity
-            activeOpacity={0.9}
-            style={styles.startButton}
-            onPress={() => onStart?.(selectedSpace)}
-          >
-            <Text style={styles.startButtonText}>Start Session</Text>
-          </TouchableOpacity>
-        </View>
-      </BottomSheetFooter>
-    ),
-    [selectedSpace, onStart],
+    (props: any) => {
+      const handleStartSession = async () => {
+        if (!selectedSpace) {
+          showToast({ message: 'Please select a space.', type: 'error' });
+          return;
+        }
+
+        try {
+          const res = await startListning({
+            spaceId: selectedSpace._id,
+            isListning: true,
+          }).unwrap();
+          if (res?.success) {
+            showToast({ message: 'Started listening.', type: 'success' });
+            ref?.current?.dismiss();
+            onStart?.({ space: selectedSpace, mode: 'voice', response: res });
+          } else {
+            showToast({
+              message: res?.data?.message || 'Unable to start.',
+              type: 'error',
+            });
+          }
+        } catch (err) {
+          showToast({ message: 'Start failed. Try again.', type: 'error' });
+          console.log('startListning error:', err);
+        }
+      };
+
+      return (
+        <BottomSheetFooter {...props} bottomInset={0}>
+          <View style={styles.footer}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              style={styles.startButton}
+              onPress={handleStartSession}
+              disabled={isStarting}
+            >
+              <Text style={styles.startButtonText}>
+                {isStarting ? 'Starting...' : 'Start Session'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </BottomSheetFooter>
+      );
+    },
+    [selectedSpace, onStart, isStarting, startListning, showToast, ref],
   );
 
   return (

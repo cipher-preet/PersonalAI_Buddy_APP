@@ -1,5 +1,12 @@
-import React, { useRef, useState } from 'react';
-import { ScrollView, StyleSheet, View, Text } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import { StatusBar } from 'react-native';
@@ -12,7 +19,6 @@ import {
   AddSpace,
   AiSuggest,
   HabbitTracker,
-  HomeIcon,
   MicIcon,
   MySpcaes,
   ReminderIcon,
@@ -20,15 +26,116 @@ import {
 } from '../../../styles/icons';
 import VoiceAssistantSheet from './components/voice-sheet/VoiceAssistantSheet';
 
+import { useToast } from '../../store/context/ToastContext';
+
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import CreateSpaceBottomSheet from './components/addspcesheet/CreateSpaceBottomSheet';
+import {
+  Space,
+  useStartListningMutation,
+  useGetUserActiveSpaceQuery,
+  useGetUserSpacesQuery,
+} from '../../store/api/home';
+import {
+  startVoiceRecordingWithSilenceDetection,
+  stopVoiceRecording,
+  uploadVoiceMessage,
+} from '../../services/voiceRecorderService';
+
+const STATIC_USER_ID = '6a21be267be2c45e7960c4ab';
+const SPACE_PAGE_LIMIT = 10;
+const SPACE_COLORS = [
+  '#7C4DFF65',
+  '#13D11981',
+  '#9DC3C989',
+  '#A5D11364',
+  '#D113C458',
+  '#BE33175E',
+  '#1A37BB50',
+  '#FF980066',
+];
+
+const getSpaceColor = (id: string) => {
+  const hash = id.split('').reduce((total, char) => {
+    return total + char.charCodeAt(0);
+  }, 0);
+
+  return SPACE_COLORS[hash % SPACE_COLORS.length];
+};
+
+const formatCreatedAt = (createdAt: string) => {
+  const date = new Date(createdAt);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return `Created ${date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })}`;
+};
+
+type VoiceStartData = {
+  space?: Space;
+  mode?: string;
+};
+
+type RecordingContext = {
+  spaceId: string;
+  mode: string;
+};
 
 const Home = () => {
   // const bottomSheetRef = useRef<any>(null);
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const spaceSheetRef = useRef<BottomSheetModal>(null);
 
+  const recordingContextRef = useRef<RecordingContext | null>(null);
+  const uploadQueueRef = useRef<Promise<void>>(Promise.resolve());
+  const pendingVoiceUploadsRef = useRef(0);
+
   const [isListening, setIsListening] = useState(false);
+  const [isUploadingVoice, setIsUploadingVoice] = useState(false);
+  const [spaces, setSpaces] = useState<Space[]>([]);
+  const [cursor, setCursor] = useState('');
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const { showToast } = useToast();
+  const [startListning] = useStartListningMutation();
+  const { data: activeSpaceData, isFetching: isFetchingActiveSpace } =
+    useGetUserActiveSpaceQuery({ userId: STATIC_USER_ID });
+  const { data: spacesData, isFetching: isFetchingSpaces } =
+    useGetUserSpacesQuery({
+      userId: STATIC_USER_ID,
+      limit: SPACE_PAGE_LIMIT,
+      cursor,
+    });
+  const isInitialSpacesLoading = isFetchingSpaces && spaces.length === 0;
+
+  useEffect(() => {
+    const response = spacesData?.data?.data;
+    if (!response) {
+      return;
+    }
+
+    const fetchedSpaces = response.spaces || [];
+    setNextCursor(response.nextCursor || null);
+
+    if (cursor === '') {
+      setSpaces(fetchedSpaces);
+      return;
+    }
+
+    setSpaces(prev => {
+      const existingIds = new Set(prev.map(space => space._id));
+      const newItems = fetchedSpaces.filter(
+        space => !existingIds.has(space._id),
+      );
+
+      return newItems.length > 0 ? [...prev, ...newItems] : prev;
+    });
+  }, [spacesData, cursor]);
 
   const quickActions = [
     {
@@ -57,121 +164,105 @@ const Home = () => {
     },
   ];
 
-  const spaces = [
-    {
-      id: 1,
-      title: 'AI Hiring SaaS',
-      description:
-        'Draft outreach to 5 candidates for the staff engineer role...',
-      time: 'Last active 5m ago',
-      icon: <MySpcaes width={18} height={18} color="#000000" />,
-      conversations: '24 conversations',
-      tags: ['AI Memory', 'Voice'],
-      color: '#7c4dff65',
-    },
-    {
-      id: 2,
-      title: 'Startup Ideas',
-      description:
-        'Compare market size for vertical tools in legal vs finance...',
-      time: 'Last active 1h ago',
-      icon: <MySpcaes width={18} height={18} color="#000000" />,
-      conversations: '12 conversations',
-      tags: ['Research', 'Brainstorm'],
-      color: '#13d11981',
-    },
-    {
-      id: 2,
-      title: 'Startup Ideas',
-      description:
-        'Compare market size for vertical tools in legal vs finance...',
-      time: 'Last active 1h ago',
-      icon: <MySpcaes width={18} height={18} color="#000000" />,
-      conversations: '12 conversations',
-      tags: ['Research', 'Brainstorm'],
-      color: '#9dc3c989',
-    },
-    {
-      id: 2,
-      title: 'Startup Ideas',
-      description:
-        'Compare market size for vertical tools in legal vs finance...',
-      time: 'Last active 1h ago',
-      icon: <MySpcaes width={18} height={18} color="#000000" />,
-      conversations: '12 conversations',
-      tags: ['Research', 'Brainstorm'],
-      color: '#a5d11364',
-    },
-    {
-      id: 2,
-      title: 'Startup Ideas',
-      description:
-        'Compare market size for vertical tools in legal vs finance...',
-      time: 'Last active 1h ago',
-      icon: <MySpcaes width={18} height={18} color="#000000" />,
-      conversations: '12 conversations',
-      tags: ['Research', 'Brainstorm'],
-      color: '#d113c458',
-    },
-    {
-      id: 2,
-      title: 'Startup Ideas',
-      description:
-        'Compare market size for vertical tools in legal vs finance...',
-      time: 'Last active 1h ago',
-      icon: <MySpcaes width={18} height={18} color="#000000" />,
-      conversations: '12 conversations',
-      tags: ['Research', 'Brainstorm'],
-      color: '#be33175e',
-    },
-    {
-      id: 2,
-      title: 'Startup Ideas',
-      description:
-        'Compare market size for vertical tools in legal vs finance...',
-      time: 'Last active 1h ago',
-      icon: <MySpcaes width={18} height={18} color="#000000" />,
-      conversations: '12 conversations',
-      tags: ['Research', 'Brainstorm'],
-      color: '#1a37bb50',
-    },
-  ];
+  const updateUploadingState = (delta: number) => {
+    pendingVoiceUploadsRef.current = Math.max(
+      0,
+      pendingVoiceUploadsRef.current + delta,
+    );
+    setIsUploadingVoice(pendingVoiceUploadsRef.current > 0);
+  };
 
-  const handleStartListening = async (data: any) => {
+  const enqueueRecordedVoiceUpload = (filePath: string) => {
+    const recordingContext = recordingContextRef.current;
+
+    if (!recordingContext) {
+      return Promise.resolve();
+    }
+
+    updateUploadingState(1);
+
+    const uploadTask = uploadQueueRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        try {
+          await uploadVoiceMessage({
+            userId: STATIC_USER_ID,
+            spaceId: recordingContext.spaceId,
+            mode: recordingContext.mode,
+            filePath,
+          });
+
+          showToast({ message: 'Voice message uploaded.', type: 'success' });
+        } catch (error) {
+          showToast({
+            message: 'Voice upload failed. Try again.',
+            type: 'error',
+          });
+          console.log('Voice upload failed:', error);
+        } finally {
+          updateUploadingState(-1);
+        }
+      });
+
+    uploadQueueRef.current = uploadTask;
+
+    return uploadTask;
+  };
+
+  const handleStartListening = async (data: VoiceStartData) => {
+    const selectedSpace = data?.space;
+    const mode = data?.mode || 'voice';
+
+    if (!selectedSpace?._id) {
+      showToast({ message: 'Please select a space.', type: 'error' });
+      return;
+    }
+
     try {
-      console.log('SELECTED SPACE:', data.space);
+      recordingContextRef.current = {
+        spaceId: selectedSpace._id,
+        mode,
+      };
 
-      console.log('SELECTED MODE:', data.mode);
-
-      // bottomSheetRef.current?.close();
-
-      // await startBackgroundListening();
-
-      /**
-       * START MICROPHONE
-       */
-
-      // await startMicrophone();
-
-      /**
-       * START STREAMING
-       */
-
-      // startAudioStreaming({
-      //   spaceId: data.space.id,
-
-      //   mode: data.mode,
-      // });
-
-      /**
-       * UPDATE UI
-       */
+      await startVoiceRecordingWithSilenceDetection({
+        onSilenceDetected: async recording => {
+          showToast({
+            message: 'Silence detected. Sending voice...',
+            type: 'success',
+          });
+          enqueueRecordedVoiceUpload(recording.path);
+        },
+      });
 
       setIsListening(true);
+      showToast({ message: 'Recording started. Speak now.', type: 'success' });
     } catch (error) {
       console.log('START ERROR:', error);
+      recordingContextRef.current = null;
+      setIsListening(false);
+      try {
+        await startListning({
+          spaceId: selectedSpace._id,
+          isListning: false,
+        }).unwrap();
+      } catch (statusError) {
+        console.log('Unable to reset listening status:', statusError);
+      }
+      showToast({
+        message: 'Unable to start microphone recording.',
+        type: 'error',
+      });
     }
   };
+
+  // Get active space from query response (array with first item or empty)
+  const activeSpace =
+    activeSpaceData?.data && Array.isArray(activeSpaceData.data)
+      ? activeSpaceData.data[0]
+      : null;
+
+  const isUserListening = activeSpace?.isListining === true;
+  const isVoiceActive = isListening || isUserListening;
 
   /**
    * OPEN BOTTOM SHEET
@@ -179,6 +270,59 @@ const Home = () => {
 
   const openVoiceSheet = () => {
     bottomSheetRef.current?.present();
+  };
+
+  const handleStopListening = async () => {
+    const recordingContext = recordingContextRef.current;
+
+    try {
+      if (recordingContext) {
+        const recording = await stopVoiceRecording();
+        showToast({
+          message: 'Recording stopped. Sending final voice...',
+          type: 'success',
+        });
+
+        await enqueueRecordedVoiceUpload(recording.path);
+
+        const res = await startListning({
+          spaceId: recordingContext.spaceId,
+          isListning: false,
+        }).unwrap();
+
+        if (res?.success) {
+          showToast({ message: 'Stopped listening.', type: 'success' });
+        } else {
+          showToast({
+            message: res?.data?.message || 'Unable to stop.',
+            type: 'error',
+          });
+        }
+
+        recordingContextRef.current = null;
+        setIsListening(false);
+        return;
+      }
+
+      if (activeSpace?._id) {
+        const res = await startListning({
+          spaceId: activeSpace._id,
+          isListning: false,
+        }).unwrap();
+        if (res?.success) {
+          showToast({ message: 'Stopped listening.', type: 'success' });
+          setIsListening(false);
+        } else {
+          showToast({
+            message: res?.data?.message || 'Unable to stop.',
+            type: 'error',
+          });
+        }
+      }
+    } catch (err) {
+      showToast({ message: 'Stop failed. Try again.', type: 'error' });
+      console.log('stopListening error:', err);
+    }
   };
 
   const openSpaceSheet = () => {
@@ -217,16 +361,23 @@ const Home = () => {
             />
 
             <TopCard
-              title="Start Listening"
-              subtitle="Buddy is Ready to Listing."
+              title={isVoiceActive ? 'Stop Listening' : 'Start Listening'}
+              subtitle={
+                isUploadingVoice
+                  ? 'Uploading voice message...'
+                  : isFetchingActiveSpace
+                  ? 'Checking active space...'
+                  : isVoiceActive
+                  ? `In: ${activeSpace?.spacename || 'Space'}`
+                  : 'Buddy is Ready to Listen.'
+              }
               color="#15C7E8"
               icon={<MicIcon width={18} height={18} color="#FFFFFF" />}
               onPress={() => {
-                if (isListening) {
-                  // stopListening();
+                if (isVoiceActive) {
+                  handleStopListening();
                   return;
                 }
-
                 openVoiceSheet();
               }}
             />
@@ -266,18 +417,51 @@ const Home = () => {
             <Text style={styles.viewAllText}>View all</Text>
           </View>
 
-          {spaces.map(item => (
-            <SpaceCard
-              key={item.id}
-              title={item.title}
-              description={item.description}
-              time={item.time}
-              icon={item.icon}
-              conversations={item.conversations}
-              tags={item.tags}
-              color={item.color}
-            />
-          ))}
+          {isInitialSpacesLoading ? (
+            <View style={styles.spacesLoader}>
+              <ActivityIndicator size="large" color="#4338CA" />
+              <Text style={styles.spacesLoaderText}>Loading spaces...</Text>
+            </View>
+          ) : (
+            spaces.map(item => (
+              <SpaceCard
+                key={item._id}
+                title={item.spacename}
+                description={
+                  item.description || formatCreatedAt(item.createdAt)
+                }
+                time={formatCreatedAt(item.createdAt)}
+                icon={<MySpcaes width={18} height={18} color="#000000" />}
+                color={getSpaceColor(item._id)}
+              />
+            ))
+          )}
+
+          {nextCursor ? (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              disabled={isFetchingSpaces}
+              style={[
+                styles.loadMoreButton,
+                isFetchingSpaces && styles.loadMoreButtonDisabled,
+              ]}
+              onPress={() => setCursor(nextCursor)}
+            >
+              {isFetchingSpaces ? (
+                <ActivityIndicator size="small" color="#4338CA" />
+              ) : null}
+              <View style={styles.loadMoreTextGroup}>
+                <Text style={styles.loadMoreText}>
+                  {isFetchingSpaces
+                    ? 'Loading more spaces'
+                    : 'Load More Spaces'}
+                </Text>
+                <Text style={styles.loadMoreSubText}>
+                  Continue browsing your workspaces
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ) : null}
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
@@ -331,5 +515,65 @@ const styles = StyleSheet.create({
   quickContainer: {
     paddingTop: 18,
     paddingBottom: 6,
+  },
+
+  spacesLoader: {
+    minHeight: 150,
+    marginTop: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EEF2FF',
+  },
+
+  spacesLoaderText: {
+    marginTop: 12,
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+
+  loadMoreButton: {
+    minHeight: 64,
+    borderRadius: 22,
+    marginTop: 18,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    flexDirection: 'row',
+    paddingHorizontal: 18,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#DDE5FF',
+    shadowColor: '#64748B',
+    shadowOffset: {
+      width: 0,
+      height: 7,
+    },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 3,
+  },
+
+  loadMoreButtonDisabled: {
+    opacity: 0.7,
+  },
+
+  loadMoreTextGroup: {
+    marginLeft: 12,
+  },
+
+  loadMoreText: {
+    color: '#4338CA',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
+  loadMoreSubText: {
+    marginTop: 3,
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '600',
   },
 });
