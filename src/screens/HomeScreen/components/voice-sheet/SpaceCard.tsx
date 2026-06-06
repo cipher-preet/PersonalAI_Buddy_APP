@@ -9,13 +9,11 @@ const SpaceCard = ({ item, selected, onPress }: any) => {
       onPress={onPress}
       style={[styles.card, selected && styles.selectedCard]}
     >
-      {/* Selection Indicator */}
       <View style={[styles.circle, selected && styles.selectedCircle]} />
 
-      {/* Content */}
       <View style={styles.content}>
         <Text numberOfLines={1} style={styles.title}>
-          {item.title}
+          {item.spacename}
         </Text>
 
         <Text numberOfLines={2} style={styles.description}>
@@ -46,7 +44,6 @@ const styles = StyleSheet.create({
 
     borderWidth: 1,
     borderColor: '#ECEFF3',
-
   },
 
   selectedCard: {

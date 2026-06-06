@@ -182,7 +182,6 @@ const Home = () => {
   };
 
   const openSpaceSheet = () => {
-    console.log('inside this sheet');
     spaceSheetRef.current?.present();
   };
 

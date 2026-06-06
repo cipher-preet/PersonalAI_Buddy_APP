@@ -15,15 +15,54 @@ import {
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
 
+import { useToast } from '../../../../store/context/ToastContext';
+import { useCreateSpaceMutation } from '../../../../store/api/home';
+
+const STATIC_USER_ID = '6a21be267be2c45e7960c4ab';
+
 const CreateSpaceBottomSheet = forwardRef((_props: any, ref: any) => {
   const snapPoints = useMemo(() => ['35%'], []);
+  const { showToast } = useToast();
 
   const [spaceName, setSpaceName] = useState('');
+  const [createSpace, { isLoading }] = useCreateSpaceMutation();
 
-  const handleCreate = () => {
-    console.log(spaceName);
+  const handleCreate = async () => {
+    const trimmedName = spaceName.trim();
+    if (!trimmedName) {
+      showToast({
+        message: 'Space name is required',
+        type: 'error',
+      });
+      return;
+    }
 
-    ref?.current?.dismiss();
+    try {
+      const response = await createSpace({
+        spacename: trimmedName,
+        userId: STATIC_USER_ID,
+      }).unwrap();
+
+      if (response?.success) {
+        showToast({
+          message: response.data || 'Space created successfully',
+          type: 'success',
+        });
+        setSpaceName('');
+        ref?.current?.dismiss();
+      } else {
+        showToast({
+          message: 'Unable to create space',
+          type: 'error',
+        });
+      }
+    } catch (error) {
+      showToast({
+        message: 'Create space failed. Please try again.',
+        type: 'error',
+      });
+      console.log('Create space failed:', error);
+    }
   };
 
   return (
@@ -60,8 +99,14 @@ const CreateSpaceBottomSheet = forwardRef((_props: any, ref: any) => {
           />
         </View>
 
-        <TouchableOpacity style={styles.button} onPress={handleCreate}>
-          <Text style={styles.buttonText}>Create Space</Text>
+        <TouchableOpacity
+          style={[styles.button, isLoading && styles.buttonDisabled]}
+          onPress={handleCreate}
+          disabled={isLoading}
+        >
+          <Text style={styles.buttonText}>
+            {isLoading ? 'Creating...' : 'Create Space'}
+          </Text>
         </TouchableOpacity>
       </BottomSheetView>
     </BottomSheetModal>
@@ -133,6 +178,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 16,
     elevation: 5,
+  },
+
+  buttonDisabled: {
+    opacity: 0.6,
   },
 
   buttonText: {
