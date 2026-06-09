@@ -176,10 +176,16 @@ const Home = () => {
     const recordingContext = recordingContextRef.current;
 
     if (!recordingContext) {
+      console.log('Voice upload skipped: missing recording context.');
       return Promise.resolve();
     }
 
     updateUploadingState(1);
+    console.log('Voice upload queued:', {
+      filePath,
+      spaceId: recordingContext.spaceId,
+      mode: recordingContext.mode,
+    });
 
     const uploadTask = uploadQueueRef.current
       .catch(() => undefined)
@@ -225,13 +231,33 @@ const Home = () => {
       };
 
       await startVoiceRecordingWithSilenceDetection({
+        onSegmentReady: async recording => {
+          showToast({
+            message: 'Sending voice chunk...',
+            type: 'success',
+          });
+          await enqueueRecordedVoiceUpload(recording.path);
+        },
         onSilenceDetected: async recording => {
           showToast({
             message: 'Silence detected. Sending voice...',
             type: 'success',
           });
-          enqueueRecordedVoiceUpload(recording.path);
+          await enqueueRecordedVoiceUpload(recording.path);
+
+          try {
+            await startListning({
+              spaceId: selectedSpace._id,
+              isListning: false,
+            }).unwrap();
+          } catch (statusError) {
+            console.log('Unable to reset listening status:', statusError);
+          }
+
+          recordingContextRef.current = null;
+          setIsListening(false);
         },
+        stopOnSilence: true,
       });
 
       setIsListening(true);
