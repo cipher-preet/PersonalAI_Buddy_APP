@@ -37,6 +37,8 @@ import {
   useGetUserSpacesQuery,
 } from '../../store/api/home';
 import {
+  endListeningSession,
+  startListeningSession,
   startVoiceRecordingWithSilenceDetection,
   stopVoiceRecording,
   uploadVoiceMessage,
@@ -229,6 +231,10 @@ const Home = () => {
         spaceId: selectedSpace._id,
         mode,
       };
+      await startListeningSession({
+        userId: STATIC_USER_ID,
+        spaceId: selectedSpace._id,
+      });
 
       await startVoiceRecordingWithSilenceDetection({
         onSegmentReady: async recording => {
@@ -246,6 +252,11 @@ const Home = () => {
           await enqueueRecordedVoiceUpload(recording.path);
 
           try {
+            await uploadQueueRef.current.catch(() => undefined);
+            await endListeningSession({
+              userId: STATIC_USER_ID,
+              spaceId: selectedSpace._id,
+            });
             await startListning({
               spaceId: selectedSpace._id,
               isListning: false,
@@ -267,6 +278,10 @@ const Home = () => {
       recordingContextRef.current = null;
       setIsListening(false);
       try {
+        await endListeningSession({
+          userId: STATIC_USER_ID,
+          spaceId: selectedSpace._id,
+        });
         await startListning({
           spaceId: selectedSpace._id,
           isListning: false,
@@ -310,7 +325,12 @@ const Home = () => {
         });
 
         await enqueueRecordedVoiceUpload(recording.path);
+        await uploadQueueRef.current.catch(() => undefined);
 
+        await endListeningSession({
+          userId: STATIC_USER_ID,
+          spaceId: recordingContext.spaceId,
+        });
         const res = await startListning({
           spaceId: recordingContext.spaceId,
           isListning: false,
@@ -331,6 +351,10 @@ const Home = () => {
       }
 
       if (activeSpace?._id) {
+        await endListeningSession({
+          userId: STATIC_USER_ID,
+          spaceId: activeSpace._id,
+        });
         const res = await startListning({
           spaceId: activeSpace._id,
           isListning: false,

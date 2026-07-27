@@ -24,7 +24,10 @@ const MAX_RECORDING_SEGMENT_MS = 20000;
 const AUDIO_FILE_EXTENSION = 'm4a';
 const AUDIO_MIME_TYPE = 'audio/mp4';
 // const API_ORIGIN = API_BASE_URL.replace(/\/api\/v1$/, '');
-const VOICE_MESSAGE_URL = `http://192.168.1.118:8000/api/v1/speech/transcripting`;
+const SPEECH_API_URL = 'http://192.168.1.75:8000/api/v1/speech';
+const VOICE_MESSAGE_URL = `${SPEECH_API_URL}/transcripting`;
+const START_LISTENING_SESSION_URL = `${SPEECH_API_URL}/listening/start`;
+const END_LISTENING_SESSION_URL = `${SPEECH_API_URL}/listening/end`;
 
 let currentRecordingPath: string | null = null;
 let silenceStartedAt: number | null = null;
@@ -59,6 +62,11 @@ export interface UploadVoiceMessageResponse {
   success?: boolean;
   message?: string;
   data?: unknown;
+}
+
+export interface ListeningSessionParams {
+  userId: string;
+  spaceId: string;
 }
 
 const androidRecordPermission: Permission =
@@ -375,6 +383,30 @@ export const uploadVoiceMessage = async ({
     }
   }
   console.log('Voice upload response:', response.data);
+
+  return response.data;
+};
+
+export const startListeningSession = async ({
+  userId,
+  spaceId,
+}: ListeningSessionParams) => {
+  const response = await axios.post(START_LISTENING_SESSION_URL, {
+    user_id: userId,
+    space_id: spaceId,
+  });
+
+  return response.data;
+};
+
+export const endListeningSession = async ({
+  userId,
+  spaceId,
+}: ListeningSessionParams) => {
+  const response = await axios.post(END_LISTENING_SESSION_URL, {
+    user_id: userId,
+    space_id: spaceId,
+  });
 
   return response.data;
 };
