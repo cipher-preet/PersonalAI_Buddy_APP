@@ -20,11 +20,11 @@ declare const require: (moduleName: string) => RNFSType;
 const audioRecorderPlayer = AudioRecorderPlayer;
 const SILENCE_THRESHOLD_DB = -30;
 const SILENCE_DURATION_MS = 2000;
-const MAX_RECORDING_SEGMENT_MS = 20000;
+const MAX_RECORDING_SEGMENT_MS = 30000;
 const AUDIO_FILE_EXTENSION = 'm4a';
 const AUDIO_MIME_TYPE = 'audio/mp4';
 // const API_ORIGIN = API_BASE_URL.replace(/\/api\/v1$/, '');
-const SPEECH_API_URL = 'http://192.168.1.75:8000/api/v1/speech';
+const SPEECH_API_URL = 'http://192.168.1.38:8000/api/v1/speech';
 const VOICE_MESSAGE_URL = `${SPEECH_API_URL}/transcripting`;
 const START_LISTENING_SESSION_URL = `${SPEECH_API_URL}/listening/start`;
 const END_LISTENING_SESSION_URL = `${SPEECH_API_URL}/listening/end`;
@@ -282,6 +282,10 @@ export const startVoiceRecordingWithSilenceDetection = async ({
       isRotatingSegment ||
       !isContinuousRecordingActive
     ) {
+      return;
+    }
+
+    if (!stopOnSilence) {
       return;
     }
 

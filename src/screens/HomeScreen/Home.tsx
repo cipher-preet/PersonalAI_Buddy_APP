@@ -246,29 +246,12 @@ const Home = () => {
         },
         onSilenceDetected: async recording => {
           showToast({
-            message: 'Silence detected. Sending voice...',
+            message: 'Sending voice chunk...',
             type: 'success',
           });
           await enqueueRecordedVoiceUpload(recording.path);
-
-          try {
-            await uploadQueueRef.current.catch(() => undefined);
-            await endListeningSession({
-              userId: STATIC_USER_ID,
-              spaceId: selectedSpace._id,
-            });
-            await startListning({
-              spaceId: selectedSpace._id,
-              isListning: false,
-            }).unwrap();
-          } catch (statusError) {
-            console.log('Unable to reset listening status:', statusError);
-          }
-
-          recordingContextRef.current = null;
-          setIsListening(false);
         },
-        stopOnSilence: true,
+        stopOnSilence: false,
       });
 
       setIsListening(true);
