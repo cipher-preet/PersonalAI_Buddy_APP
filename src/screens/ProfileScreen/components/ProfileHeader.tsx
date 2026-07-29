@@ -1,24 +1,19 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 import { SettingIcon } from '../../../../styles/icons';
-
 import { COLORS } from '../styles/colors';
 
 const ProfileHeader = () => {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Profile</Text>
+      <View>
+        <Text style={styles.title}>Profile</Text>
+        <Text style={styles.subtitle}>Manage your account</Text>
+      </View>
 
-      <TouchableOpacity style={styles.iconButton}>
-        <SettingIcon
-          color={COLORS.text}
-        />
+      <TouchableOpacity style={styles.iconButton} activeOpacity={0.75}>
+        <SettingIcon color={COLORS.text} />
       </TouchableOpacity>
     </View>
   );
@@ -31,34 +26,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-
-    marginBottom: 18,
+    marginBottom: 20,
+    marginTop: 4,
   },
 
   title: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '800',
     color: COLORS.text,
   },
 
+  subtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.subText,
+  },
+
   iconButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-
+    width: 40,
+    height: 40,
+    borderRadius: 14,
     backgroundColor: COLORS.white,
-
     justifyContent: 'center',
     alignItems: 'center',
-
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 });

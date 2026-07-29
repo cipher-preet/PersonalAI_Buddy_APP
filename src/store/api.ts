@@ -1,3 +1,10 @@
 export { baseApi } from './api/baseApi';
-export { authApi, useLoginMutation } from './api/auth';
+export {
+  authApi,
+  useLoginMutation,
+  useSendOtpMutation,
+  useVerifyOtpMutation,
+  useGoogleLoginMutation,
+  useCompleteOnboardingMutation,
+} from './api/auth';
 export { homeApi  } from './api/home';

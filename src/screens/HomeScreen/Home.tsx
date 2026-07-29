@@ -9,29 +9,30 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
-import { StatusBar } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 
 import Header from './components/Header';
 import TopCard from './components/TopCard';
-import QuickActionCard from './components/QuickActionCard';
 import SpaceCard from './components/SpaceCard';
+import SpacesEmptyState from './components/SpacesEmptyState';
 import {
   AddSpace,
-  AiSuggest,
-  HabbitTracker,
   MicIcon,
   MySpcaes,
-  ReminderIcon,
-  VoiceNote,
 } from '../../../styles/icons';
 import VoiceAssistantSheet from './components/voice-sheet/VoiceAssistantSheet';
 
 import { useToast } from '../../store/context/ToastContext';
+import { useAppSelector } from '../../store/hooks';
 
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import CreateSpaceBottomSheet from './components/addspcesheet/CreateSpaceBottomSheet';
+import SpaceDetailBottomSheet from './components/spacedetail/SpaceDetailBottomSheet';
 import {
   Space,
+  SpaceStats,
+  useGetSpaceStatsQuery,
   useStartListningMutation,
   useGetUserActiveSpaceQuery,
   useGetUserSpacesQuery,
@@ -44,7 +45,6 @@ import {
   uploadVoiceMessage,
 } from '../../services/voiceRecorderService';
 
-const STATIC_USER_ID = '6a21be267be2c45e7960c4ab';
 const SPACE_PAGE_LIMIT = 10;
 const SPACE_COLORS = [
   '#7C4DFF65',
@@ -89,10 +89,19 @@ type RecordingContext = {
   mode: string;
 };
 
+type TabParamList = {
+  Home: undefined;
+  Notes: undefined;
+  Tasks: undefined;
+  AI: undefined;
+  Profile: undefined;
+};
+
 const Home = () => {
-  // const bottomSheetRef = useRef<any>(null);
+  const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const spaceSheetRef = useRef<BottomSheetModal>(null);
+  const spaceDetailSheetRef = useRef<BottomSheetModal>(null);
 
   const recordingContextRef = useRef<RecordingContext | null>(null);
   const uploadQueueRef = useRef<Promise<void>>(Promise.resolve());
@@ -101,18 +110,36 @@ const Home = () => {
   const [isListening, setIsListening] = useState(false);
   const [isUploadingVoice, setIsUploadingVoice] = useState(false);
   const [spaces, setSpaces] = useState<Space[]>([]);
+  const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
+  const [selectedSpaceColor, setSelectedSpaceColor] = useState('#8B5CF6');
   const [cursor, setCursor] = useState('');
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const userId = useAppSelector(state => state.auth.userId) ?? '';
   const { showToast } = useToast();
   const [startListning] = useStartListningMutation();
   const { data: activeSpaceData, isFetching: isFetchingActiveSpace } =
-    useGetUserActiveSpaceQuery({ userId: STATIC_USER_ID });
+    useGetUserActiveSpaceQuery({ userId }, { skip: !userId });
   const { data: spacesData, isFetching: isFetchingSpaces } =
-    useGetUserSpacesQuery({
-      userId: STATIC_USER_ID,
-      limit: SPACE_PAGE_LIMIT,
-      cursor,
-    });
+    useGetUserSpacesQuery(
+      {
+        userId,
+        limit: SPACE_PAGE_LIMIT,
+        cursor,
+      },
+      { skip: !userId },
+    );
+  const {
+    data: selectedSpaceStatsData,
+    isFetching: isFetchingSelectedSpaceStats,
+    isError: isSelectedSpaceStatsError,
+    refetch: refetchSelectedSpaceStats,
+  } = useGetSpaceStatsQuery(
+    {
+      userId,
+      spaceId: selectedSpace?._id || '',
+    },
+    { skip: !userId || !selectedSpace?._id },
+  );
   const isInitialSpacesLoading = isFetchingSpaces && spaces.length === 0;
 
   useEffect(() => {
@@ -138,33 +165,6 @@ const Home = () => {
       return newItems.length > 0 ? [...prev, ...newItems] : prev;
     });
   }, [spacesData, cursor]);
-
-  const quickActions = [
-    {
-      id: 8,
-      title: 'AI Suggest',
-      icon: <AiSuggest width={18} height={18} color="#7B4DFF" />,
-      color: '#7B4DFF',
-    },
-    {
-      id: 2,
-      title: 'Reminders',
-      icon: <ReminderIcon width={18} height={18} color="#FF9800" />,
-      color: '#FF9800',
-    },
-    {
-      id: 3,
-      title: 'Voice Note',
-      icon: <VoiceNote width={18} height={18} color="#13B5D1" />,
-      color: '#13B5D1',
-    },
-    {
-      id: 4,
-      title: 'Habbit Tracker',
-      icon: <HabbitTracker width={18} height={18} color="#E83E8C" />,
-      color: '#E83E8C',
-    },
-  ];
 
   const updateUploadingState = (delta: number) => {
     pendingVoiceUploadsRef.current = Math.max(
@@ -194,7 +194,7 @@ const Home = () => {
       .then(async () => {
         try {
           await uploadVoiceMessage({
-            userId: STATIC_USER_ID,
+            userId: userId,
             spaceId: recordingContext.spaceId,
             mode: recordingContext.mode,
             filePath,
@@ -218,22 +218,22 @@ const Home = () => {
   };
 
   const handleStartListening = async (data: VoiceStartData) => {
-    const selectedSpace = data?.space;
+    const voiceSpace = data?.space;
     const mode = data?.mode || 'voice';
 
-    if (!selectedSpace?._id) {
+    if (!voiceSpace?._id) {
       showToast({ message: 'Please select a space.', type: 'error' });
       return;
     }
 
     try {
       recordingContextRef.current = {
-        spaceId: selectedSpace._id,
+        spaceId: voiceSpace._id,
         mode,
       };
       await startListeningSession({
-        userId: STATIC_USER_ID,
-        spaceId: selectedSpace._id,
+        userId: userId,
+        spaceId: voiceSpace._id,
       });
 
       await startVoiceRecordingWithSilenceDetection({
@@ -262,11 +262,11 @@ const Home = () => {
       setIsListening(false);
       try {
         await endListeningSession({
-          userId: STATIC_USER_ID,
-          spaceId: selectedSpace._id,
+          userId: userId,
+          spaceId: voiceSpace._id,
         });
         await startListning({
-          spaceId: selectedSpace._id,
+          spaceId: voiceSpace._id,
           isListning: false,
         }).unwrap();
       } catch (statusError) {
@@ -311,7 +311,7 @@ const Home = () => {
         await uploadQueueRef.current.catch(() => undefined);
 
         await endListeningSession({
-          userId: STATIC_USER_ID,
+          userId: userId,
           spaceId: recordingContext.spaceId,
         });
         const res = await startListning({
@@ -335,7 +335,7 @@ const Home = () => {
 
       if (activeSpace?._id) {
         await endListeningSession({
-          userId: STATIC_USER_ID,
+          userId: userId,
           spaceId: activeSpace._id,
         });
         const res = await startListning({
@@ -362,6 +362,26 @@ const Home = () => {
     spaceSheetRef.current?.present();
   };
 
+  const openSpaceDetail = (space: Space) => {
+    setSelectedSpace(space);
+    setSelectedSpaceColor(getSpaceColor(space._id));
+    requestAnimationFrame(() => {
+      spaceDetailSheetRef.current?.present();
+    });
+  };
+
+  const handleNavigateNotes = () => {
+    navigation.navigate('Notes');
+  };
+
+  const handleNavigateTasks = () => {
+    navigation.navigate('Tasks');
+  };
+
+  const handleAskBuddy = () => {
+    navigation.navigate('AI');
+  };
+
   return (
     <LinearGradient
       colors={['#F9F7FF', '#EFF3FF', '#F7FAFF', '#FFFFFF']}
@@ -370,13 +390,7 @@ const Home = () => {
       end={{ x: 1, y: 1 }}
       style={styles.container}
     >
-      <StatusBar
-        translucent
-        backgroundColor="transparent"
-        barStyle="dark-content"
-      />
-
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContainer}
@@ -405,6 +419,8 @@ const Home = () => {
                   : 'Buddy is Ready to Listen.'
               }
               color="#15C7E8"
+              active={isVoiceActive}
+              activeColor="#15C7E8"
               icon={<MicIcon width={18} height={18} color="#FFFFFF" />}
               onPress={() => {
                 if (isVoiceActive) {
@@ -418,36 +434,30 @@ const Home = () => {
 
           <CreateSpaceBottomSheet ref={spaceSheetRef} />
 
+          <SpaceDetailBottomSheet
+            ref={spaceDetailSheetRef}
+            space={selectedSpace}
+            accentColor={selectedSpaceColor}
+            stats={selectedSpaceStatsData?.data as SpaceStats | undefined}
+            isStatsLoading={isFetchingSelectedSpaceStats}
+            isStatsError={isSelectedSpaceStatsError}
+            onRetryStats={refetchSelectedSpaceStats}
+            onNavigateNotes={handleNavigateNotes}
+            onNavigateTasks={handleNavigateTasks}
+            onAskBuddy={handleAskBuddy}
+          />
+
           <VoiceAssistantSheet
             ref={bottomSheetRef}
             onStart={handleStartListening}
           />
 
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
-
-            <Text style={styles.viewAllText}>See all</Text>
-          </View>
-
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.quickContainer}
-          >
-            {quickActions.map(item => (
-              <QuickActionCard
-                key={item.id}
-                title={item.title}
-                icon={item.icon}
-                color={item.color}
-              />
-            ))}
-          </ScrollView>
-
-          <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>My Spaces</Text>
 
-            <Text style={styles.viewAllText}>View all</Text>
+            {spaces.length > 0 ? (
+              <Text style={styles.viewAllText}>View all</Text>
+            ) : null}
           </View>
 
           {isInitialSpacesLoading ? (
@@ -455,6 +465,8 @@ const Home = () => {
               <ActivityIndicator size="large" color="#4338CA" />
               <Text style={styles.spacesLoaderText}>Loading spaces...</Text>
             </View>
+          ) : spaces.length === 0 ? (
+            <SpacesEmptyState onCreatePress={openSpaceSheet} />
           ) : (
             spaces.map(item => (
               <SpaceCard
@@ -466,11 +478,12 @@ const Home = () => {
                 time={formatCreatedAt(item.createdAt)}
                 icon={<MySpcaes width={18} height={18} color="#000000" />}
                 color={getSpaceColor(item._id)}
+                onPress={() => openSpaceDetail(item)}
               />
             ))
           )}
 
-          {nextCursor ? (
+          {spaces.length > 0 && nextCursor ? (
             <TouchableOpacity
               activeOpacity={0.8}
               disabled={isFetchingSpaces}
@@ -543,11 +556,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#7B4DFF',
     fontWeight: '600',
-  },
-
-  quickContainer: {
-    paddingTop: 18,
-    paddingBottom: 6,
   },
 
   spacesLoader: {

@@ -1,38 +1,32 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
 import { COLORS } from '../styles/colors';
 
 const activities = [
-  'Completed UI Design',
-  'New Workspace created',
-  'Invited Sarah to team',
+  { title: 'Completed UI Design', time: '2 hours ago' },
+  { title: 'New workspace created', time: '5 hours ago' },
+  { title: 'Invited Sarah to team', time: 'Yesterday' },
 ];
 
 const ActivityCard = () => {
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.heading}>
-        Recent Activity
-      </Text>
+      <Text style={styles.heading}>Recent Activity</Text>
 
       <View style={styles.card}>
         {activities.map((item, index) => (
-          <View key={index} style={styles.row}>
+          <View
+            key={index}
+            style={[
+              styles.row,
+              index < activities.length - 1 && styles.rowBorder,
+            ]}
+          >
             <View style={styles.dot} />
-
-            <View>
-              <Text style={styles.text}>
-                {item}
-              </Text>
-
-              <Text style={styles.time}>
-                2 hours ago
-              </Text>
+            <View style={styles.rowContent}>
+              <Text style={styles.text}>{item.title}</Text>
+              <Text style={styles.time}>{item.time}</Text>
             </View>
           </View>
         ))}
@@ -45,52 +39,59 @@ export default ActivityCard;
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 24,
+    marginBottom: 18,
   },
 
   heading: {
     fontSize: 16,
     fontWeight: '700',
     color: COLORS.text,
-
-    marginBottom: 14,
+    marginBottom: 12,
   },
 
   card: {
     backgroundColor: COLORS.white,
-
-    borderRadius: 22,
-
-    padding: 18,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 
   row: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 14,
+  },
 
-    marginBottom: 18,
+  rowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
   },
 
   dot: {
-    width: 10,
-    height: 10,
-
-    borderRadius: 5,
-
-    backgroundColor: COLORS.primary,
-
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primaryPurple,
     marginTop: 6,
     marginRight: 12,
   },
 
+  rowContent: {
+    flex: 1,
+  },
+
   text: {
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.text,
   },
 
   time: {
-    marginTop: 4,
-
+    marginTop: 3,
     color: COLORS.subText,
     fontSize: 12,
+    fontWeight: '500',
   },
 });

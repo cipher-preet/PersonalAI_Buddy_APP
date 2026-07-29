@@ -6,19 +6,23 @@ import React, {
   useState,
 } from 'react';
 import {
+  BackHandler,
+  Dimensions,
   Platform,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import {
+  BottomSheetBackdrop,
   BottomSheetFooter,
   BottomSheetModal,
   BottomSheetScrollView,
+  BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
 import { useToast } from '../../../../store/context/ToastContext';
+import { useAppSelector } from '../../../../store/hooks';
 import {
   Space,
   useCreateSpaceMutation,
@@ -27,17 +31,18 @@ import {
 } from '../../../../store/api/home';
 import SpaceCard from './SpaceCard';
 
-const STATIC_USER_ID = '6a21be267be2c45e7960c4ab';
-
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const FOOTER_HEIGHT = Platform.OS === 'ios' ? 110 : 90;
+const MAX_SHEET_HEIGHT = SCREEN_HEIGHT * 0.82;
 
 const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
-  const snapPoints = useMemo(() => ['80%'], []);
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
   const [spaceName, setSpaceName] = useState('');
   const [cursor, setCursor] = useState('');
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const userId = useAppSelector(state => state.auth.userId) ?? '';
   const { showToast } = useToast();
   const [createSpace, { isLoading: isCreating }] = useCreateSpaceMutation();
   const [startListning, { isLoading: isStarting }] = useStartListningMutation();
@@ -45,7 +50,41 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
     data: spacesData,
     isFetching: isFetchingSpaces,
     refetch: refetchSpaces,
-  } = useGetUserSpacesQuery({ userId: STATIC_USER_ID, limit: 10, cursor });
+  } = useGetUserSpacesQuery(
+    { userId, limit: 10, cursor },
+    { skip: !userId },
+  );
+
+  const snapPoints = useMemo(() => [MAX_SHEET_HEIGHT], []);
+
+  const handleClose = useCallback(() => {
+    ref?.current?.dismiss();
+  }, [ref]);
+
+  const renderBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior="close"
+      />
+    ),
+    [],
+  );
+
+  useEffect(() => {
+    if (!isSheetOpen) {
+      return;
+    }
+
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      handleClose();
+      return true;
+    });
+
+    return () => subscription.remove();
+  }, [isSheetOpen, handleClose]);
 
   useEffect(() => {
     const response = spacesData?.data?.data;
@@ -80,7 +119,7 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
     try {
       const response = await createSpace({
         spacename: trimmedName,
-        userId: STATIC_USER_ID,
+        userId,
       }).unwrap();
 
       if (response?.success) {
@@ -162,25 +201,47 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
       index={0}
       snapPoints={snapPoints}
       enablePanDownToClose
+      enableOverDrag={false}
+      enableDynamicSizing={false}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
+      android_keyboardInputMode="adjustResize"
+      backdropComponent={renderBackdrop}
       backgroundStyle={styles.sheetBackground}
       handleIndicatorStyle={styles.indicator}
       footerComponent={renderFooter}
+      onChange={index => setIsSheetOpen(index >= 0)}
+      onDismiss={() => {
+        setIsSheetOpen(false);
+        setSpaceName('');
+        setCursor('');
+        refetchSpaces();
+      }}
     >
       <BottomSheetScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.header}>
-          <Text style={styles.heading}>Start Voice Session</Text>
+          <View style={styles.headerTop}>
+            <Text style={styles.heading}>Start Voice Session</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={handleClose}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Text style={styles.closeIcon}>×</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={styles.subHeading}>
             Choose your workspace and continue.
           </Text>
         </View>
 
         <View style={styles.inputRow}>
-          <TextInput
+          <BottomSheetTextInput
             placeholder="Create new space..."
             placeholderTextColor="#9CA3AF"
             value={spaceName}
@@ -226,9 +287,7 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
             activeOpacity={0.7}
           >
             {isFetchingSpaces ? (
-              <>
-                <Text style={styles.loadMoreText}>Loading more spaces...</Text>
-              </>
+              <Text style={styles.loadMoreText}>Loading more spaces...</Text>
             ) : (
               <>
                 <Text style={styles.loadMoreText}>Load More Spaces</Text>
@@ -268,12 +327,39 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
 
-  header: { marginBottom: 28 },
+  header: {
+    marginBottom: 20,
+  },
+
+  headerTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  closeButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F3F4F6',
+  },
+
+  closeIcon: {
+    fontSize: 22,
+    lineHeight: 24,
+    color: '#6B7280',
+    fontWeight: '500',
+    marginTop: -1,
+  },
 
   heading: {
+    flex: 1,
     fontSize: 20,
     fontWeight: '700',
     color: '#111827',
+    paddingRight: 12,
   },
 
   subHeading: {
@@ -286,7 +372,7 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 24,
   },
 
   input: {
@@ -319,7 +405,11 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 
-  createBtnText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
+  createBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 14,
+  },
 
   sectionHeader: {
     flexDirection: 'row',
@@ -328,7 +418,11 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
 
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+  },
 
   countText: {
     fontSize: 13,
@@ -340,7 +434,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
 
-  spaceContainer: { gap: 4 },
+  spaceContainer: {
+    gap: 4,
+  },
 
   footer: {
     paddingHorizontal: 20,
@@ -374,7 +470,7 @@ const styles = StyleSheet.create({
   },
 
   loadMoreButton: {
-    marginTop: 24,
+    marginTop: 12,
     marginBottom: 8,
     height: 60,
     borderRadius: 18,

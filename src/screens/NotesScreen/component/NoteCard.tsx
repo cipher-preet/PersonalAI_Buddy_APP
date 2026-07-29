@@ -1,84 +1,75 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
-import { HomeIcon, LinkArrow } from '../../../../styles/icons';
+import { LinkArrow } from '../../../../styles/icons';
+import { COLORS } from './styles/color';
+import { NoteItem } from '../types/note';
 
 type Props = {
-  item: {
-    tag: string;
-    title: string;
-    desc: string;
-    time: string;
-  };
+  item: NoteItem;
+  onPress: () => void;
 };
 
-const NoteCard = ({ item }: Props) => {
+const NoteCard = ({ item, onPress }: Props) => {
   return (
-    <TouchableOpacity activeOpacity={0.9} style={styles.container}>
-      <View style={styles.top}>
-        <View style={styles.tag}>
-          <Text style={styles.tagText}>{item.tag}</Text>
+    <View style={styles.shadowWrap}>
+      <TouchableOpacity activeOpacity={0.9} style={styles.container} onPress={onPress}>
+        <View style={styles.top}>
+          <View style={styles.tag}>
+            <Text style={styles.tagText}>{item.tag}</Text>
+          </View>
+
+          <View style={styles.rightTop}>
+            <Text style={styles.time}>{item.time}</Text>
+            <View style={styles.linkButton}>
+              <LinkArrow width={12} height={12} color={COLORS.icon} />
+            </View>
+          </View>
         </View>
 
-        <View style={styles.rightTop}>
-          <Text style={styles.time}>{item.time}</Text>
-          <TouchableOpacity activeOpacity={0.8} style={styles.linkButton}>
-            <LinkArrow width={13} height={13} color="#94A3B8" />
-          </TouchableOpacity>
+        <Text numberOfLines={1} style={styles.title}>
+          {item.title}
+        </Text>
+
+        <Text numberOfLines={1} style={styles.desc}>
+          {item.desc}
+        </Text>
+
+        <View style={styles.footer}>
+          {item.tags.slice(0, 2).map(tag => (
+            <View key={tag} style={styles.pill}>
+              <Text style={styles.pillText}>{tag}</Text>
+            </View>
+          ))}
         </View>
-      </View>
-
-      <Text numberOfLines={2} style={styles.title}>
-        {item.title}
-      </Text>
-
-      <Text numberOfLines={2} style={styles.desc}>
-        {item.desc}
-      </Text>
-
-      <View style={styles.footer}>
-        <View style={styles.pill}>
-          <Text style={styles.pillText}>#AI</Text>
-        </View>
-
-        <View style={styles.pill}>
-          <Text style={styles.pillText}>#Interview</Text>
-        </View>
-
-        <View style={styles.spacer} />
-
-        {/* <View style={styles.bottomIcon}>
-          <HomeIcon width={14} height={14} color="#7B8794" />
-        </View> */}
-      </View>
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
   );
 };
 
 export default NoteCard;
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#FFFFFF',
-
-    borderRadius: 24,
-
-    padding: 18,
-
-    marginBottom: 16,
-
-    borderWidth: 1,
-    borderColor: '#EEF2F6',
-
-    shadowColor: '#CBD5E1',
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
+  shadowWrap: {
+    marginBottom: 12,
+    borderRadius: 20,
+    backgroundColor: COLORS.white,
+    shadowColor: '#64748B',
     shadowOffset: {
       width: 0,
       height: 4,
     },
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 2,
+  },
 
-    elevation: 3,
+  container: {
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    overflow: 'hidden',
   },
 
   top: {
@@ -88,21 +79,16 @@ const styles = StyleSheet.create({
   },
 
   tag: {
-    backgroundColor: '#EEF7F3',
-
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-
-    borderRadius: 10,
+    backgroundColor: COLORS.purpleLight,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
 
   tagText: {
-    color: '#5E8B7E',
-
-    fontSize: 11,
-
+    color: COLORS.primaryDark,
+    fontSize: 10,
     fontWeight: '700',
-
     letterSpacing: 0.3,
   },
 
@@ -112,95 +98,55 @@ const styles = StyleSheet.create({
   },
 
   time: {
-    color: '#94A3B8',
-
-    fontSize: 12,
-
+    color: COLORS.gray,
+    fontSize: 11,
     fontWeight: '500',
-
-    marginRight: 10,
+    marginRight: 8,
   },
 
   linkButton: {
-    width: 28,
-    height: 28,
-
-    borderRadius: 10,
-
+    width: 24,
+    height: 24,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-
-    backgroundColor: '#F8FAFC',
-
-    borderWidth: 1,
-    borderColor: '#EEF2F6',
+    backgroundColor: COLORS.lightGray,
   },
 
   title: {
-    marginTop: 16,
-
-    color: '#1E293B',
-
-    fontSize: 17,
-
+    marginTop: 10,
+    color: COLORS.black,
+    fontSize: 15,
     fontWeight: '700',
-
-    lineHeight: 24,
-
+    lineHeight: 20,
     letterSpacing: -0.2,
   },
 
   desc: {
-    marginTop: 10,
-
-    color: '#7B8794',
-
-    fontSize: 13.5,
-
-    lineHeight: 22,
-
+    marginTop: 4,
+    color: COLORS.gray,
+    fontSize: 12,
+    lineHeight: 17,
     fontWeight: '500',
   },
 
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
-
-    marginTop: 18,
+    marginTop: 10,
+    gap: 6,
   },
 
   pill: {
-    backgroundColor: '#F7F9FB',
-
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-
-    borderRadius: 12,
-
-    marginRight: 10,
+    backgroundColor: COLORS.lightGray,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
   },
 
   pillText: {
-    color: '#6B7280',
-
-    fontSize: 12,
-
+    color: COLORS.gray,
+    fontSize: 11,
     fontWeight: '600',
-  },
-
-  spacer: {
-    flex: 1,
-  },
-
-  bottomIcon: {
-    width: 30,
-    height: 30,
-
-    borderRadius: 10,
-
-    justifyContent: 'center',
-    alignItems: 'center',
-
-    backgroundColor: '#F8FAFC',
   },
 });

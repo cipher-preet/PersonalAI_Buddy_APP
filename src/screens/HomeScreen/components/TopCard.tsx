@@ -9,35 +9,71 @@ type Props = {
   rightIcon?: React.ReactNode;
 
   color: string;
+  active?: boolean;
+  activeColor?: string;
   onPress?: () => void;
 };
 
-const TopCard = ({ title, subtitle, icon, rightIcon, color, onPress }: Props) => {
+const TopCard = ({
+  title,
+  subtitle,
+  icon,
+  rightIcon,
+  color,
+  active = false,
+  activeColor = '#15C7E8',
+  onPress,
+}: Props) => {
   return (
-    <TouchableOpacity activeOpacity={0.9} style={styles.card} onPress={onPress}>
+    <TouchableOpacity
+      activeOpacity={0.9}
+      style={[
+        styles.card,
+        active && {
+          backgroundColor: '#ECFEFF',
+          borderColor: activeColor,
+          shadowColor: activeColor,
+          shadowOpacity: 0.14,
+        },
+      ]}
+      onPress={onPress}
+    >
       <View style={styles.topSection}>
         <View
           style={[
             styles.iconWrapper,
             {
-              backgroundColor: color,
+              backgroundColor: active ? activeColor : color,
             },
           ]}
         >
           {icon}
         </View>
 
-        {rightIcon && (
+        {active ? (
+          <View style={styles.livePill}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>Live</Text>
+          </View>
+        ) : null}
+
+        {rightIcon && !active ? (
           <View style={styles.rightIconContainer}>{rightIcon}</View>
-        )}
+        ) : null}
       </View>
 
       <View style={styles.content}>
-        <Text numberOfLines={1} style={styles.title}>
+        <Text
+          numberOfLines={1}
+          style={[styles.title, active && styles.titleActive]}
+        >
           {title}
         </Text>
 
-        <Text numberOfLines={2} style={styles.subtitle}>
+        <Text
+          numberOfLines={2}
+          style={[styles.subtitle, active && styles.subtitleActive]}
+        >
           {subtitle}
         </Text>
       </View>
@@ -89,6 +125,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
+  livePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#A5F3FC',
+  },
+
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
+
+  liveText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: '#0E7490',
+    letterSpacing: 0.3,
+  },
+
   content: {
     marginTop: 28,
   },
@@ -100,6 +162,10 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
 
+  titleActive: {
+    color: '#0E7490',
+  },
+
   subtitle: {
     marginTop: 6,
     fontSize: 12,
@@ -107,5 +173,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     lineHeight: 18,
     paddingRight: 8,
+  },
+
+  subtitleActive: {
+    color: '#0891B2',
   },
 });

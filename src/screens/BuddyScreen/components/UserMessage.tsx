@@ -1,17 +1,25 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
+import { COLORS } from '../styles';
 
-const UserMessage = () => {
+type Props = {
+  text: string;
+  time?: string;
+};
+
+const UserMessage = ({ text, time }: Props) => {
   return (
-    <View style={styles.container}>
-      <Text style={styles.text}>
-        I need to prepare for the marketing meeting tomorrow.
-        What are the key points?
-      </Text>
+    <View style={styles.row}>
+      <LinearGradient
+        colors={['#6366F1', '#4338CA']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.bubble}
+      >
+        <Text style={styles.text}>{text}</Text>
+        {time ? <Text style={styles.time}>{time}</Text> : null}
+      </LinearGradient>
     </View>
   );
 };
@@ -19,18 +27,36 @@ const UserMessage = () => {
 export default UserMessage;
 
 const styles = StyleSheet.create({
-  container: {
-    marginTop: 28,
-    alignSelf: 'flex-end',
-    backgroundColor: '#FFFFFF',
-    padding: 18,
-    borderRadius: 24,
-    maxWidth: '82%',
+  row: {
+    marginTop: 8,
+    alignItems: 'flex-end',
+  },
+
+  bubble: {
+    maxWidth: '84%',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderBottomRightRadius: 6,
+    shadowColor: '#4338CA',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
+    elevation: 3,
   },
 
   text: {
-    fontSize: 14,
-    lineHeight: 24,
-    color: '#111827',
+    fontSize: 15,
+    lineHeight: 22,
+    color: COLORS.white,
+    fontWeight: '500',
+  },
+
+  time: {
+    marginTop: 6,
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.78)',
+    fontWeight: '600',
+    alignSelf: 'flex-end',
   },
 });

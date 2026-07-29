@@ -1,24 +1,27 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
-import BulletPoint from '../components/BulletPoint';
+import BulletPoint from './BulletPoint';
+import { COLORS } from '../styles';
 
-const AIMessage = () => {
+type Props = {
+  text?: string;
+  bullets?: string[];
+  time?: string;
+};
+
+const AIMessage = ({ text, bullets, time }: Props) => {
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>
-        Here's a quick summary for tomorrow's marketing meeting:
-      </Text>
+    <View style={styles.row}>
+      <View style={styles.bubble}>
+        {text ? <Text style={styles.text}>{text}</Text> : null}
 
-      <BulletPoint text="Q3 Campaign Review: Analyzing the ROI of the recent social push." />
+        {bullets?.map((item, index) => (
+          <BulletPoint key={index} text={item} />
+        ))}
 
-      <BulletPoint text="Budget Allocation: Discussing the shift towards influencer partnerships." />
-
-      <BulletPoint text="New Product Launch: Finalizing the messaging framework." />
+        {time ? <Text style={styles.time}>{time}</Text> : null}
+      </View>
     </View>
   );
 };
@@ -26,17 +29,39 @@ const AIMessage = () => {
 export default AIMessage;
 
 const styles = StyleSheet.create({
-  container: {
-    marginTop: 18,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 20,
+  row: {
+    marginTop: 8,
+    alignItems: 'flex-start',
   },
 
-  heading: {
-    fontSize: 14,
+  bubble: {
+    maxWidth: '88%',
+    backgroundColor: COLORS.aiBubble,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    borderRadius: 20,
+    borderBottomLeftRadius: 6,
+    borderWidth: 1,
+    borderColor: '#EEF2FF',
+    shadowColor: '#64748B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+
+  text: {
+    fontSize: 15,
     lineHeight: 22,
-    color: '#6B7280',
-    marginBottom: 18,
+    color: COLORS.text,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+
+  time: {
+    marginTop: 8,
+    fontSize: 10,
+    color: COLORS.muted,
+    fontWeight: '600',
   },
 });

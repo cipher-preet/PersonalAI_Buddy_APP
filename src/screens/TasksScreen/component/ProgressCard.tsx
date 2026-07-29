@@ -2,94 +2,223 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
-import { COLORS } from '../component/styles/color';
+import { COLORS } from './styles/color';
+
+const COMPLETION = {
+  percent: 94,
+  weeklyGrowth: 12,
+  today: 12,
+  priority: 5,
+  done: 123,
+};
 
 const ProgressCard = () => {
   return (
-    <LinearGradient
-      colors={[COLORS.primary, COLORS.primaryDark]}
-      style={styles.container}
-    >
-      <View>
-        <Text style={styles.label}>COMPLETION</Text>
+    <View style={styles.wrapper}>
+      <LinearGradient
+        colors={['#8B5CF6', '#7C3AED', '#6D28D9']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.container}
+      >
+        <View style={styles.glowTop} />
+        <View style={styles.glowBottom} />
 
-        <Text style={styles.percent}>94%</Text>
-
-        <Text style={styles.text}>Productivity is up!</Text>
-
-        <Text style={styles.subText}>+12% from last week</Text>
-      </View>
-
-      <View style={styles.circle}>
-        <View style={styles.innerCircle}>
-          <Text style={styles.taskCount}>146</Text>
-
-          <Text style={styles.taskLabel}>TASKS</Text>
+        <View style={styles.cardHeader}>
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>My progress</Text>
+          </View>
+          <View style={styles.livePill}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveText}>On track</Text>
+          </View>
         </View>
-      </View>
-    </LinearGradient>
+
+        <View style={styles.mainRow}>
+          <View style={styles.primaryStat}>
+            <Text style={styles.totalValue}>{COMPLETION.percent}%</Text>
+            <Text style={styles.totalLabel}>Completion rate</Text>
+            <View style={styles.growthRow}>
+              <Text style={styles.growthText}>
+                +{COMPLETION.weeklyGrowth}% this week
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.metricsColumn}>
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{COMPLETION.today}</Text>
+              <Text style={styles.metricLabel}>Today</Text>
+            </View>
+            <View style={styles.metricDivider} />
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{COMPLETION.priority}</Text>
+              <Text style={styles.metricLabel}>Priority</Text>
+            </View>
+            <View style={styles.metricDivider} />
+            <View style={styles.metricItem}>
+              <Text style={styles.metricValue}>{COMPLETION.done}</Text>
+              <Text style={styles.metricLabel}>Done</Text>
+            </View>
+          </View>
+        </View>
+      </LinearGradient>
+    </View>
   );
 };
 
 export default ProgressCard;
 
 const styles = StyleSheet.create({
-  container: {
+  wrapper: {
     marginTop: 18,
-    borderRadius: 24,
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
   },
 
-  label: {
-    color: '#E9D5FF',
-    fontSize: 10,
-    fontWeight: '700',
+  container: {
+    borderRadius: 20,
+    padding: 18,
+    overflow: 'hidden',
   },
 
-  percent: {
-    color: COLORS.white,
-    fontSize: 42,
-    fontWeight: '900',
+  glowTop: {
+    position: 'absolute',
+    top: -30,
+    right: -20,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
 
-  text: {
-    color: COLORS.white,
-    fontWeight: '700',
-  },
-
-  subText: {
-    color: '#E9D5FF',
-    fontSize: 11,
-    marginTop: 4,
-  },
-
-  circle: {
-    width: 95,
-    height: 95,
+  glowBottom: {
+    position: 'absolute',
+    bottom: -40,
+    left: -20,
+    width: 100,
+    height: 100,
     borderRadius: 50,
-    borderWidth: 6,
-    borderColor: '#E9D5FF',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
 
-  innerCircle: {
-    justifyContent: 'center',
+  cardHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
   },
 
-  taskCount: {
+  badge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+
+  badgeText: {
     color: COLORS.white,
-    fontWeight: '900',
-    fontSize: 26,
+    fontSize: 11,
+    fontWeight: '700',
   },
 
-  taskLabel: {
-    color: '#E9D5FF',
+  livePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+  },
+
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#4ADE80',
+  },
+
+  liveText: {
+    color: 'rgba(255, 255, 255, 0.9)',
     fontSize: 10,
     fontWeight: '700',
+  },
+
+  mainRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  primaryStat: {
+    flex: 1,
+    paddingRight: 12,
+  },
+
+  totalValue: {
+    color: COLORS.white,
+    fontSize: 40,
+    fontWeight: '900',
+    lineHeight: 44,
+    letterSpacing: -1,
+  },
+
+  totalLabel: {
+    marginTop: 2,
+    color: 'rgba(255, 255, 255, 0.92)',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  growthRow: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255, 255, 255, 0.14)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+
+  growthText: {
+    color: '#DCFCE7',
+    fontSize: 11,
+    fontWeight: '700',
+  },
+
+  metricsColumn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+
+  metricItem: {
+    minWidth: 52,
+    alignItems: 'center',
+  },
+
+  metricDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    marginHorizontal: 4,
+  },
+
+  metricValue: {
+    color: COLORS.white,
+    fontSize: 16,
+    fontWeight: '800',
+    lineHeight: 20,
+  },
+
+  metricLabel: {
+    marginTop: 2,
+    color: 'rgba(255, 255, 255, 0.75)',
+    fontSize: 10,
+    fontWeight: '600',
   },
 });

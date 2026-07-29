@@ -1,18 +1,15 @@
 export const COLORS = {
-  background: '#F5F6FA',
-
+  background: '#F7F7FB',
+  gradientStart: '#F9F7FF',
+  gradientMid: '#EFF3FF',
+  gradientEnd: '#FFFFFF',
   white: '#FFFFFF',
-
-  primary: '#7B4DFF',
-  secondary: '#A855F7',
-  lightPurple: '#EFE7FF',
-
-  text: '#1C1C1E',
-  subText: '#8E8E93',
-
-  border: '#ECECEC',
-
-  success: '#7B4DFF',
-
-  cardShadow: 'rgba(0,0,0,0.06)',
+  primary: '#4338CA',
+  primaryPurple: '#8B5CF6',
+  primaryDark: '#6D28D9',
+  lightPurple: '#EEF2FF',
+  text: '#111827',
+  subText: '#64748B',
+  muted: '#94A3B8',
+  border: '#E5E7EB',
 };

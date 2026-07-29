@@ -1,14 +1,38 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 
 import { HistoryIcon } from '../../../../styles/icons';
+import ChevronRightIcon from '../../../../styles/icons/GreatorThan';
+import { COLORS } from '../styles';
 
 const Header = () => {
+  const navigation = useNavigation();
+
+  const handleBack = () => {
+    navigation.navigate('Home' as never);
+  };
+
   return (
     <View style={styles.container}>
-      <View style={styles.glowCircle} />
-      <TouchableOpacity style={styles.iconButton}>
-        <HistoryIcon width={18} height={18} />
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={handleBack}
+        activeOpacity={0.75}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <View style={styles.backIcon}>
+          <ChevronRightIcon width={18} height={18} color="#111827" />
+        </View>
+      </TouchableOpacity>
+
+      <View style={styles.center}>
+        <Text style={styles.title}>Buddy AI</Text>
+        <Text style={styles.subtitle}>Your personal assistant</Text>
+      </View>
+
+      <TouchableOpacity style={styles.iconButton} activeOpacity={0.75}>
+        <HistoryIcon width={18} height={18} color="#111827" />
       </TouchableOpacity>
     </View>
   );
@@ -18,35 +42,65 @@ export default Header;
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 18,
-    paddingHorizontal: 18,
+    width: '100%',
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+    paddingTop: 8,
+    paddingBottom: 14,
+    backgroundColor: 'transparent',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(229, 231, 235, 0.9)',
+  },
+
+  backButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  backIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: COLORS.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ rotate: '180deg' }],
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  center: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+
+  title: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+
+  subtitle: {
+    marginTop: 2,
+    fontSize: 11,
+    fontWeight: '500',
+    color: COLORS.subText,
   },
 
   iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-
-  glowCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#7B4DFF',
-
-    shadowColor: '#7B4DFF',
-    shadowOffset: {
-      width: 0,
-      height: 0,
-    },
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    elevation: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
 });

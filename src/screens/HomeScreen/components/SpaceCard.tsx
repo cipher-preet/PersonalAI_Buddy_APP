@@ -14,6 +14,7 @@ type Props = {
   tags?: string[];
 
   color?: string;
+  onPress?: () => void;
 };
 
 const SpaceCard = ({
@@ -23,9 +24,14 @@ const SpaceCard = ({
   badgeText,
   color,
   time,
+  onPress,
 }: Props) => {
   return (
-    <TouchableOpacity activeOpacity={0.9} style={styles.card}>
+    <TouchableOpacity
+      activeOpacity={0.88}
+      style={styles.card}
+      onPress={onPress}
+    >
       <View style={styles.leftSection}>
         <View
           style={[
@@ -63,9 +69,9 @@ const SpaceCard = ({
         </View>
       </View>
 
-      <TouchableOpacity activeOpacity={0.7} style={styles.arrowButton}>
+      <View style={styles.arrowButton}>
         <Text style={styles.arrow}>›</Text>
-      </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 };

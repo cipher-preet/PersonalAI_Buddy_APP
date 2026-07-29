@@ -166,6 +166,12 @@ const TAB_CONFIG = [
 ];
 
 const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
+  const currentRoute = state.routes[state.index];
+
+  if (currentRoute.name === 'AI') {
+    return null;
+  }
+
   return (
     <View style={styles.tabBar}>
       {state.routes.map((route, index) => {
