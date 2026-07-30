@@ -13,6 +13,7 @@ export type TaskItem = {
   dueDate: string;
   updatedAt: string;
   createdAt: string;
+  createdTime?: string;
   project: string;
   assignee: string;
   summary: string;

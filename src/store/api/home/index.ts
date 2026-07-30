@@ -74,6 +74,25 @@ export interface StagedNoteCard {
   updatedAt: string | null;
 }
 
+export interface StagedNoteDetail {
+  id: string;
+  title: string;
+  body: string;
+  evidence: unknown;
+}
+
+export interface StagedTaskCard {
+  id: string;
+  title: string;
+  descriptionPreview: string;
+  operation: string | null;
+  priority: string | null;
+  dueDate: string | null;
+  confidence: number | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
 interface GetSpaceStatsResponse {
   success: boolean;
   data: SpaceStats;
@@ -94,6 +113,19 @@ interface GetStagedNotesBySpaceResponse {
   };
 }
 
+interface GetStagedNoteByIdResponse {
+  success: boolean;
+  data: StagedNoteDetail;
+}
+
+interface GetStagedTasksBySpaceResponse {
+  success: boolean;
+  data: {
+    tasks: StagedTaskCard[];
+    nextCursor: string | null;
+  };
+}
+
 interface GetUserSpacesArgs {
   userId: string;
   limit?: number;
@@ -110,6 +142,15 @@ interface GetNoteWorkspacesArgs {
   userId: string;
 }
 interface GetStagedNotesBySpaceArgs {
+  userId: string;
+  spaceId: string;
+  limit?: number;
+  cursor?: string;
+}
+interface GetStagedNoteByIdArgs {
+  noteId: string;
+}
+interface GetStagedTasksBySpaceArgs {
   userId: string;
   spaceId: string;
   limit?: number;
@@ -208,6 +249,37 @@ export const homeApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Spaces'],
     }),
+
+    getStagedNoteById: builder.query<
+      GetStagedNoteByIdResponse,
+      GetStagedNoteByIdArgs
+    >({
+      query: ({ noteId }) => ({
+        url: 'home/getStagedNoteById',
+        method: 'GET',
+        params: {
+          noteId,
+        },
+      }),
+      providesTags: ['Spaces'],
+    }),
+
+    getStagedTasksBySpace: builder.query<
+      GetStagedTasksBySpaceResponse,
+      GetStagedTasksBySpaceArgs
+    >({
+      query: ({ userId, spaceId, limit = 10, cursor = '' }) => ({
+        url: 'home/getStagedTasksBySpace',
+        method: 'GET',
+        params: {
+          userId,
+          spaceId,
+          limit,
+          cursor,
+        },
+      }),
+      providesTags: ['Spaces'],
+    }),
   }),
 });
 
@@ -219,4 +291,6 @@ export const {
   useGetSpaceStatsQuery,
   useGetNoteWorkspacesQuery,
   useGetStagedNotesBySpaceQuery,
+  useLazyGetStagedNoteByIdQuery,
+  useGetStagedTasksBySpaceQuery,
 } = homeApi;

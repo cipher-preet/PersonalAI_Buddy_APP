@@ -454,10 +454,6 @@ const Home = () => {
 
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>My Spaces</Text>
-
-            {spaces.length > 0 ? (
-              <Text style={styles.viewAllText}>View all</Text>
-            ) : null}
           </View>
 
           {isInitialSpacesLoading ? (
@@ -550,12 +546,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1E2432',
     fontWeight: '700',
-  },
-
-  viewAllText: {
-    fontSize: 12,
-    color: '#7B4DFF',
-    fontWeight: '600',
   },
 
   spacesLoader: {

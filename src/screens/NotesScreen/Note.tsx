@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import Header from './component/Header';
+import NotesFilterMenu from './component/NotesFilterMenu';
 import CategoryTabs from './component/CategoryTabs';
 import NotesProgressCard from './component/NotesProgressCard';
 import SectionHeader from './component/SectionHeader';
@@ -24,11 +25,14 @@ import NoteCard from './component/NoteCard';
 import NoteDetailBottomSheet from './component/NoteDetailBottomSheet';
 import { COLORS } from './component/styles/color';
 import { NoteItem } from './types/note';
+import type { NoteSortOrder } from './types/sort';
 import { useAppSelector } from '../../store/hooks';
+import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import {
   StagedNoteCard,
   useGetNoteWorkspacesQuery,
   useGetStagedNotesBySpaceQuery,
+  useLazyGetStagedNoteByIdQuery,
 } from '../../store/api/home';
 
 export const categories = [
@@ -38,6 +42,8 @@ export const categories = [
   { id: 'shared', label: 'Shared', count: 5 },
   { id: 'important', label: 'Important', count: 3 },
 ];
+
+const NOTES_PAGE_SIZE = 10;
 
 export const notes: NoteItem[] = [
   {
@@ -217,7 +223,23 @@ const Notes = () => {
   const [notesCursor, setNotesCursor] = useState('');
   const [loadedNotes, setLoadedNotes] = useState<StagedNoteCard[]>([]);
   const [nextNotesCursor, setNextNotesCursor] = useState<string | null>(null);
+  const [selectedNoteId, setSelectedNoteId] = useState('');
+  const [notePendingDelete, setNotePendingDelete] = useState<NoteItem | null>(
+    null,
+  );
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [sortOrder, setSortOrder] = useState<NoteSortOrder>('newest');
+  const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const userId = useAppSelector(state => state.auth.userId) ?? '';
+  const [
+    getStagedNoteById,
+    {
+      data: stagedNoteDetailData,
+      isFetching: isFetchingNoteDetail,
+      isError: isNoteDetailError,
+    },
+  ] = useLazyGetStagedNoteByIdQuery();
   const {
     data: noteWorkspacesData,
     isFetching,
@@ -239,7 +261,7 @@ const Notes = () => {
     {
       userId,
       spaceId: selectedSpaceId,
-      limit: 20,
+      limit: NOTES_PAGE_SIZE,
       cursor: notesCursor,
     },
     { skip: !userId || !selectedSpaceId },
@@ -247,6 +269,34 @@ const Notes = () => {
 
   const isInitialNotesLoading = isFetchingNotes && loadedNotes.length === 0;
   const isLoadingMoreNotes = isFetchingNotes && loadedNotes.length > 0;
+
+  const displayedNotes = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    let result = [...loadedNotes];
+
+    if (normalizedQuery) {
+      result = result.filter(note => {
+        const title = note.title?.toLowerCase() ?? '';
+        const preview = note.bodyPreview?.toLowerCase() ?? '';
+        return (
+          title.includes(normalizedQuery) || preview.includes(normalizedQuery)
+        );
+      });
+    }
+
+    result.sort((left, right) => {
+      const leftTime = new Date(
+        left.updatedAt || left.createdAt || 0,
+      ).getTime();
+      const rightTime = new Date(
+        right.updatedAt || right.createdAt || 0,
+      ).getTime();
+
+      return sortOrder === 'newest' ? rightTime - leftTime : leftTime - rightTime;
+    });
+
+    return result;
+  }, [loadedNotes, searchQuery, sortOrder]);
 
   useEffect(() => {
     if (spaces.length === 0) {
@@ -289,12 +339,53 @@ const Notes = () => {
     });
   }, [notesCursor, stagedNotesData]);
 
-  const handleOpenNote = useCallback((note: NoteItem) => {
-    setSelectedNote(note);
-    requestAnimationFrame(() => {
-      noteSheetRef.current?.present();
-    });
-  }, []);
+  const handleOpenNote = useCallback(
+    (note: NoteItem) => {
+      setSelectedNote(note);
+      setSelectedNoteId(note.id);
+
+      requestAnimationFrame(() => {
+        noteSheetRef.current?.present();
+      });
+
+      getStagedNoteById({ noteId: note.id });
+    },
+    [getStagedNoteById],
+  );
+
+  const handleRetryNoteDetail = useCallback(() => {
+    if (!selectedNoteId) {
+      return;
+    }
+
+    getStagedNoteById({ noteId: selectedNoteId });
+  }, [getStagedNoteById, selectedNoteId]);
+
+  const handleConfirmDeleteNote = useCallback(() => {
+    if (!notePendingDelete) {
+      return;
+    }
+
+    setLoadedNotes(prev =>
+      prev.filter(note => note.id !== notePendingDelete.id),
+    );
+
+    if (selectedNoteId === notePendingDelete.id) {
+      noteSheetRef.current?.dismiss();
+      setSelectedNote(null);
+      setSelectedNoteId('');
+    }
+
+    setNotePendingDelete(null);
+  }, [notePendingDelete, selectedNoteId]);
+
+  const handleLoadMoreNotes = useCallback(() => {
+    if (!nextNotesCursor || isLoadingMoreNotes) {
+      return;
+    }
+
+    setNotesCursor(nextNotesCursor);
+  }, [isLoadingMoreNotes, nextNotesCursor]);
 
   const formatDate = (value: string | null) => {
     if (!value) {
@@ -409,9 +500,20 @@ const Notes = () => {
       );
     }
 
+    if (displayedNotes.length === 0) {
+      return (
+        <View style={styles.stateBox}>
+          <Text style={styles.emptyTitle}>No matching notes</Text>
+          <Text style={styles.stateText}>
+            Try a different search term or clear your filters.
+          </Text>
+        </View>
+      );
+    }
+
     return (
       <>
-        {loadedNotes.map(note => {
+        {displayedNotes.map(note => {
           const item = toNoteItem(note);
 
           return (
@@ -419,27 +521,43 @@ const Notes = () => {
               key={item.id}
               item={item}
               onPress={() => handleOpenNote(item)}
+              onDelete={() => setNotePendingDelete(item)}
             />
           );
         })}
 
         {nextNotesCursor ? (
-          <TouchableOpacity
-            activeOpacity={0.78}
-            disabled={isLoadingMoreNotes}
-            style={[
-              styles.loadMoreButton,
-              isLoadingMoreNotes && styles.loadMoreButtonDisabled,
-            ]}
-            onPress={() => setNotesCursor(nextNotesCursor)}
-          >
-            {isLoadingMoreNotes ? (
-              <ActivityIndicator size="small" color={COLORS.primaryDark} />
-            ) : null}
-            <Text style={styles.loadMoreText}>
-              {isLoadingMoreNotes ? 'Loading more notes...' : 'Load more notes'}
+          <View style={styles.paginationFooter}>
+            <Text style={styles.paginationText}>
+              Showing {loadedNotes.length}
+              {selectedSpace?.notesCount ? ` of ${selectedSpace.notesCount}` : ''}{' '}
+              notes
             </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.78}
+              disabled={isLoadingMoreNotes}
+              style={[
+                styles.loadMoreButton,
+                isLoadingMoreNotes && styles.loadMoreButtonDisabled,
+              ]}
+              onPress={handleLoadMoreNotes}
+            >
+              {isLoadingMoreNotes ? (
+                <ActivityIndicator size="small" color={COLORS.primaryDark} />
+              ) : null}
+              <Text style={styles.loadMoreText}>
+                {isLoadingMoreNotes
+                  ? 'Loading more notes...'
+                  : 'Load more notes'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : loadedNotes.length >= NOTES_PAGE_SIZE ? (
+          <View style={styles.paginationFooter}>
+            <Text style={styles.paginationText}>
+              All {loadedNotes.length} notes loaded
+            </Text>
+          </View>
         ) : null}
       </>
     );
@@ -447,12 +565,27 @@ const Notes = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <View style={styles.headerWrap}>
+        <Header
+          searchQuery={searchQuery}
+          sortOrder={sortOrder}
+          isSearchActive={isSearchActive}
+          onSearchQueryChange={setSearchQuery}
+          onSearchOpen={() => setIsSearchActive(true)}
+          onSearchClose={() => {
+            setIsSearchActive(false);
+            setSearchQuery('');
+          }}
+          onFilterPress={() => setFilterMenuVisible(true)}
+        />
+      </View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
-        <Header />
-
         <CategoryTabs
           spaces={spaces}
           selectedSpaceId={selectedSpaceId}
@@ -462,14 +595,36 @@ const Notes = () => {
           onSelectSpace={setSelectedSpaceId}
         />
 
-        <NotesProgressCard />
+        <NotesProgressCard totalNotes={selectedSpace?.notesCount ?? 0} />
 
         <SectionHeader />
 
         {renderRecentNotes()}
       </ScrollView>
 
-      <NoteDetailBottomSheet ref={noteSheetRef} note={selectedNote} />
+      <NoteDetailBottomSheet
+        ref={noteSheetRef}
+        note={selectedNote}
+        detail={stagedNoteDetailData?.data ?? null}
+        isLoading={isFetchingNoteDetail}
+        isError={isNoteDetailError}
+        onRetry={handleRetryNoteDetail}
+      />
+
+      <DeleteConfirmationModal
+        visible={Boolean(notePendingDelete)}
+        itemType="note"
+        itemTitle={notePendingDelete?.title}
+        onCancel={() => setNotePendingDelete(null)}
+        onConfirm={handleConfirmDeleteNote}
+      />
+
+      <NotesFilterMenu
+        visible={filterMenuVisible}
+        sortOrder={sortOrder}
+        onClose={() => setFilterMenuVisible(false)}
+        onSelect={setSortOrder}
+      />
     </SafeAreaView>
   );
 };
@@ -480,13 +635,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingVertical: 16,
+    paddingTop: 16,
     paddingBottom: 40,
+  },
+
+  headerWrap: {
+    paddingHorizontal: 20,
+    marginBottom: 10,
   },
 
   scrollContent: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingBottom: 120,
   },
 
   stateBox: {
@@ -536,7 +696,6 @@ const styles = StyleSheet.create({
 
   loadMoreButton: {
     minHeight: 52,
-    marginBottom: 12,
     borderRadius: 16,
     backgroundColor: COLORS.white,
     borderWidth: 1,
@@ -555,5 +714,17 @@ const styles = StyleSheet.create({
     color: COLORS.primaryDark,
     fontSize: 13,
     fontWeight: '800',
+  },
+
+  paginationFooter: {
+    marginBottom: 36,
+  },
+
+  paginationText: {
+    marginBottom: 8,
+    color: COLORS.gray,
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });

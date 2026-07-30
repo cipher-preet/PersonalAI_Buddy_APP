@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Keyboard,
@@ -18,292 +18,28 @@ import Header from './components/Header';
 import UserMessage from './components/UserMessage';
 import AIMessage from './components/AIMessage';
 import BottomInput, { INPUT_BAR_HEIGHT } from './components/BottomInput';
+import ChatHistoryDrawer from './components/ChatHistoryDrawer';
+import TypingIndicator from './components/TypingIndicator';
+import ScrollToBottomButton from './components/ScrollToBottomButton';
 import { COLORS, styles } from './styles';
-
-type ChatMessage = {
-  id: string;
-  role: 'user' | 'assistant';
-  text?: string;
-  bullets?: string[];
-  time: string;
-};
+import type { ChatMessage, ChatSession } from './types';
+import {
+  useAskBuddyMutation,
+  useCreateChatSessionMutation,
+  useGetChatSessionsQuery,
+  useLazyGetChatSessionByIdQuery,
+  useLazyGetChatSessionsQuery,
+} from '../../store/api';
+import { useAppSelector } from '../../store/hooks';
+import type {
+  ChatMessageDto,
+  ChatSessionDto,
+} from '../../store/api/chat';
 
 const SUGGESTIONS = [
   'Summarize my day',
   'Plan my tasks for tomorrow',
   'Help me prepare for a meeting',
-];
-
-const INITIAL_MESSAGES: ChatMessage[] = [
-  {
-    id: '1',
-    role: 'user',
-    text: 'Good morning Buddy! Can you give me a quick overview of my day?',
-    time: '9:02 AM',
-  },
-  {
-    id: '2',
-    role: 'assistant',
-    text: 'Good morning! Here is what your day looks like:',
-    bullets: [
-      '10:00 AM — Team standup on Google Meet',
-      '12:30 PM — Lunch with the design team',
-      '3:00 PM — Product review with stakeholders',
-    ],
-    time: '9:02 AM',
-  },
-  {
-    id: '3',
-    role: 'user',
-    text: 'What tasks are still pending from yesterday?',
-    time: '9:15 AM',
-  },
-  {
-    id: '4',
-    role: 'assistant',
-    text: 'You have 3 open tasks from yesterday:',
-    bullets: [
-      'Finish the API integration for voice upload',
-      'Review pull request #42 from the backend team',
-      'Send weekly progress update to your manager',
-    ],
-    time: '9:15 AM',
-  },
-  {
-    id: '5',
-    role: 'user',
-    text: 'Can you draft a short progress update email for me?',
-    time: '9:28 AM',
-  },
-  {
-    id: '6',
-    role: 'assistant',
-    text: 'Sure! Here is a draft you can send:',
-    bullets: [
-      'Subject: Weekly Progress Update',
-      'Hi team, this week I completed the voice recording module and started on the chat UI. Next week I will focus on API integration and testing.',
-      'Let me know if you need any more details.',
-    ],
-    time: '9:28 AM',
-  },
-  {
-    id: '7',
-    role: 'user',
-    text: 'That looks great. Also remind me about the marketing meeting tomorrow.',
-    time: '10:05 AM',
-  },
-  {
-    id: '8',
-    role: 'assistant',
-    text: 'Your marketing meeting is tomorrow at 11:00 AM in Conference Room B.',
-    bullets: [
-      'Q3 Campaign Review: ROI analysis of the social push',
-      'Budget Allocation: Shift towards influencer partnerships',
-      'New Product Launch: Finalize messaging framework',
-    ],
-    time: '10:05 AM',
-  },
-  {
-    id: '9',
-    role: 'user',
-    text: 'What notes do I have about the product launch?',
-    time: '10:18 AM',
-  },
-  {
-    id: '10',
-    role: 'assistant',
-    text: 'I found 2 notes related to the product launch:',
-    bullets: [
-      'Messaging should focus on productivity and ease of use',
-      'Target launch window is early next quarter',
-      'Competitive analysis doc is pinned in your workspace',
-    ],
-    time: '10:18 AM',
-  },
-  {
-    id: '11',
-    role: 'user',
-    text: 'Create a task to prepare slides for the marketing meeting.',
-    time: '10:24 AM',
-  },
-  {
-    id: '12',
-    role: 'assistant',
-    text: 'Done! I created a task: "Prepare marketing meeting slides" due tomorrow at 9:00 AM. Would you like me to outline the slide structure?',
-    time: '10:24 AM',
-  },
-  {
-    id: '13',
-    role: 'user',
-    text: 'Yes please, outline the slides.',
-    time: '10:26 AM',
-  },
-  {
-    id: '14',
-    role: 'assistant',
-    text: 'Here is a suggested slide structure:',
-    bullets: [
-      'Slide 1: Q3 performance highlights and key metrics',
-      'Slide 2: Campaign ROI breakdown by channel',
-      'Slide 3: Proposed budget reallocation for Q4',
-      'Slide 4: Product launch timeline and messaging',
-      'Slide 5: Next steps and open discussion',
-    ],
-    time: '10:26 AM',
-  },
-  {
-    id: '15',
-    role: 'user',
-    text: 'Perfect. One last thing — any conflicts in my calendar this afternoon?',
-    time: '10:31 AM',
-  },
-  {
-    id: '16',
-    role: 'assistant',
-    text: 'No conflicts found. Your 3:00 PM product review has no overlapping events. You have a free block from 1:00 PM to 2:30 PM if you want to work on the slides.',
-    time: '10:31 AM',
-  },
-  {
-    id: '17',
-    role: 'user',
-    text: 'Great. Block 1:00 to 2:30 PM for slide prep on my calendar.',
-    time: '10:33 AM',
-  },
-  {
-    id: '18',
-    role: 'assistant',
-    text: 'Done! I added "Slide prep for marketing meeting" to your calendar from 1:00 PM to 2:30 PM.',
-    time: '10:33 AM',
-  },
-  {
-    id: '19',
-    role: 'user',
-    text: 'Summarize the voice notes I recorded this morning.',
-    time: '11:10 AM',
-  },
-  {
-    id: '20',
-    role: 'assistant',
-    text: 'From your morning voice notes, here are the key takeaways:',
-    bullets: [
-      'Follow up with the backend team on upload timeout issues',
-      'Prioritize chat screen UI before profile screen',
-      'Schedule a design review for the new home screen cards',
-    ],
-    time: '11:10 AM',
-  },
-  {
-    id: '21',
-    role: 'user',
-    text: 'Add those as tasks in my workspace.',
-    time: '11:12 AM',
-  },
-  {
-    id: '22',
-    role: 'assistant',
-    text: 'All three items have been added to your task list under the Mobile App workspace.',
-    time: '11:12 AM',
-  },
-  {
-    id: '23',
-    role: 'user',
-    text: 'What did we discuss in last week\'s product review?',
-    time: '11:45 AM',
-  },
-  {
-    id: '24',
-    role: 'assistant',
-    text: 'Last week\'s product review covered:',
-    bullets: [
-      'Voice assistant latency needs to be under 2 seconds',
-      'Space management UX needs simplification',
-      'Beta launch target moved to end of month',
-      'Security audit scheduled for the auth module',
-    ],
-    time: '11:45 AM',
-  },
-  {
-    id: '25',
-    role: 'user',
-    text: 'Who attended that meeting?',
-    time: '11:46 AM',
-  },
-  {
-    id: '26',
-    role: 'assistant',
-    text: 'Attendees were Sarah (PM), James (Engineering), Priya (Design), and you. Notes were shared in the team workspace.',
-    time: '11:46 AM',
-  },
-  {
-    id: '27',
-    role: 'user',
-    text: 'Remind me to call Sarah before the 3 PM review.',
-    time: '12:05 PM',
-  },
-  {
-    id: '28',
-    role: 'assistant',
-    text: 'Reminder set for 2:30 PM: "Call Sarah before product review." I will notify you 15 minutes before.',
-    time: '12:05 PM',
-  },
-  {
-    id: '29',
-    role: 'user',
-    text: 'How many spaces do I have active right now?',
-    time: '12:20 PM',
-  },
-  {
-    id: '30',
-    role: 'assistant',
-    text: 'You currently have 4 active spaces:',
-    bullets: [
-      'Personal — 12 notes, 8 tasks',
-      'Work Projects — 24 notes, 15 tasks',
-      'Mobile App — 6 notes, 9 tasks',
-      'Marketing — 3 notes, 4 tasks',
-    ],
-    time: '12:20 PM',
-  },
-  {
-    id: '31',
-    role: 'user',
-    text: 'Show me overdue tasks across all spaces.',
-    time: '12:35 PM',
-  },
-  {
-    id: '32',
-    role: 'assistant',
-    text: 'You have 2 overdue tasks:',
-    bullets: [
-      'Submit expense report — due yesterday',
-      'Update API documentation — due 2 days ago',
-    ],
-    time: '12:35 PM',
-  },
-  {
-    id: '33',
-    role: 'user',
-    text: 'Move the expense report to high priority.',
-    time: '12:36 PM',
-  },
-  {
-    id: '34',
-    role: 'assistant',
-    text: 'Updated "Submit expense report" to high priority. Want me to block 30 minutes on your calendar to complete it today?',
-    time: '12:36 PM',
-  },
-  {
-    id: '35',
-    role: 'user',
-    text: 'Yes, block 4:30 PM today for that.',
-    time: '12:37 PM',
-  },
-  {
-    id: '36',
-    role: 'assistant',
-    text: 'Calendar updated. "Submit expense report" is scheduled for 4:30 PM to 5:00 PM today.',
-    time: '12:37 PM',
-  },
 ];
 
 const formatTime = () =>
@@ -313,20 +49,188 @@ const formatTime = () =>
   });
 
 const KEYBOARD_INPUT_GAP = 20;
+const PAGE_SIZE = 20;
+
+const fallbackErrorMessage = 'Something went wrong. Please try again.';
+
+const getErrorMessage = (error: unknown): string => {
+  if (typeof error === 'object' && error && 'name' in error) {
+    const name = String((error as { name?: unknown }).name || '');
+    if (name === 'AbortError') {
+      return 'Could not reach the FastAPI chat server. Make sure it is running on --host 0.0.0.0 and your phone is on the same Wi-Fi.';
+    }
+  }
+  if (typeof error === 'object' && error && 'status' in error) {
+    const status = (error as { status?: unknown }).status;
+    if (status === 'TIMEOUT_ERROR' || status === 'FETCH_ERROR') {
+      return 'Could not reach the FastAPI chat server. Check the server IP, port 8000, firewall, and Wi-Fi connection.';
+    }
+    if ('error' in error && typeof (error as { error?: unknown }).error === 'string') {
+      const message = (error as { error: string }).error;
+      if (message.toLowerCase().includes('abort')) {
+        return 'Could not reach the FastAPI chat server before the request timed out.';
+      }
+      return `Request failed (${status}): ${message}`;
+    }
+  }
+  if (typeof error === 'object' && error && 'data' in error) {
+    const data = (error as { data?: unknown }).data;
+    if (typeof data === 'string') {
+      return data.slice(0, 180);
+    }
+    if (typeof data === 'object' && data && 'detail' in data) {
+      const status =
+        'status' in error ? ` (${String((error as { status?: unknown }).status)})` : '';
+      return `Request failed${status}: ${String(
+        (data as { detail?: unknown }).detail || fallbackErrorMessage,
+      )}`;
+    }
+    if (typeof data === 'object' && data && 'message' in data) {
+      const raw =
+        'raw' in data && typeof (data as { raw?: unknown }).raw === 'string'
+          ? ` ${String((data as { raw: string }).raw).slice(0, 120)}`
+          : '';
+      return `${String((data as { message?: unknown }).message || fallbackErrorMessage)}${raw}`;
+    }
+  }
+  return fallbackErrorMessage;
+};
+
+const mapSessionDto = (session: ChatSessionDto): ChatSession => ({
+  id: session.id,
+  title: session.title || 'New conversation',
+  preview:
+    session.messageCount > 0
+      ? `${session.messageCount} message${session.messageCount === 1 ? '' : 's'}`
+      : 'Start chatting with Buddy...',
+  updatedAt: new Date(session.updatedAt),
+  messageCount: session.messageCount,
+  messages: [],
+});
+
+const mapMessageDto = (message: ChatMessageDto, index: number): ChatMessage => ({
+  id: `${message.role}-${index}`,
+  role: message.role,
+  text: message.content,
+  time: '',
+});
+
+const createLocalPendingSession = (): ChatSession => ({
+  id: `pending-${Date.now()}`,
+  title: 'New conversation',
+  preview: 'Start chatting with Buddy...',
+  updatedAt: new Date(),
+  messageCount: 0,
+  messages: [],
+});
+
+const mergeSessions = (
+  current: ChatSession[],
+  incoming: ChatSession[],
+): ChatSession[] => {
+  const byId = new Map(current.map(session => [session.id, session]));
+  incoming.forEach(session => {
+    const existing = byId.get(session.id);
+    byId.set(session.id, {
+      ...session,
+      messages: existing?.messages?.length ? existing.messages : session.messages,
+      preview: existing?.messages?.length
+        ? existing.preview
+        : session.preview,
+    });
+  });
+  return Array.from(byId.values()).sort(
+    (left, right) => right.updatedAt.getTime() - left.updatedAt.getTime(),
+  );
+};
 
 const BuddyScreen = () => {
   const insets = useSafeAreaInsets();
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const inputRef = useRef<TextInput>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
+  const userId = useAppSelector(state => state.auth.userId);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [input, setInput] = useState('');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
+  const [historyVisible, setHistoryVisible] = useState(false);
+  const [sessionsCursor, setSessionsCursor] = useState<string | null>(null);
+  const [hasMoreSessions, setHasMoreSessions] = useState(false);
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
+  const [initialSessionsLoaded, setInitialSessionsLoaded] = useState(false);
+  const [sessionsTimedOut, setSessionsTimedOut] = useState(false);
+  const [activeChatLoading, setActiveChatLoading] = useState(false);
+  const [loadingMoreSessions, setLoadingMoreSessions] = useState(false);
+  const [showScrollToBottom, setShowScrollToBottom] = useState(false);
+  const isNearBottomRef = useRef(true);
 
-  const scrollToEnd = useCallback(() => {
+  const {
+    data: sessionsResponse,
+    isLoading: sessionsLoading,
+    isFetching: sessionsFetching,
+    isError: sessionsIsError,
+    error: sessionsQueryError,
+    refetch: refetchSessions,
+  } = useGetChatSessionsQuery(
+    { userId: userId || '', limit: PAGE_SIZE },
+    { skip: !userId },
+  );
+  const [fetchSessionsPage] = useLazyGetChatSessionsQuery();
+  const [createChatSession, { isLoading: creatingChat }] =
+    useCreateChatSessionMutation();
+  const [loadChatSession] = useLazyGetChatSessionByIdQuery();
+  const [askBuddy, { isLoading: sendingMessage }] = useAskBuddyMutation();
+
+  const messages = useMemo(
+    () =>
+      sessions.find(session => session.id === activeSessionId)?.messages ?? [],
+    [sessions, activeSessionId],
+  );
+
+  const scrollToEnd = useCallback((force = false) => {
+    if (!force && !isNearBottomRef.current) {
+      return;
+    }
     setTimeout(() => {
       listRef.current?.scrollToEnd({ animated: true });
+      isNearBottomRef.current = true;
+      setShowScrollToBottom(false);
     }, 100);
   }, []);
+
+  const handleScrollToBottomPress = useCallback(() => {
+    listRef.current?.scrollToEnd({ animated: true });
+    isNearBottomRef.current = true;
+    setShowScrollToBottom(false);
+  }, []);
+
+  const handleListScroll = useCallback(
+    (event: {
+      nativeEvent: {
+        contentOffset: { y: number };
+        layoutMeasurement: { height: number };
+        contentSize: { height: number };
+      };
+    }) => {
+      const { contentOffset, layoutMeasurement, contentSize } =
+        event.nativeEvent;
+      const distanceFromBottom =
+        contentSize.height - layoutMeasurement.height - contentOffset.y;
+      const nearBottom = distanceFromBottom < 96;
+
+      if (nearBottom !== isNearBottomRef.current) {
+        isNearBottomRef.current = nearBottom;
+        setShowScrollToBottom(!nearBottom && messages.length > 0);
+      }
+    },
+    [messages.length],
+  );
+
+  const handleContentSizeChange = useCallback(() => {
+    if (isNearBottomRef.current) {
+      scrollToEnd(true);
+    }
+  }, [scrollToEnd]);
 
   useEffect(() => {
     const showEvent =
@@ -336,7 +240,7 @@ const BuddyScreen = () => {
 
     const showSub = Keyboard.addListener(showEvent, event => {
       setKeyboardHeight(event.endCoordinates.height);
-      scrollToEnd();
+      scrollToEnd(true);
     });
 
     const hideSub = Keyboard.addListener(hideEvent, () => {
@@ -349,9 +253,145 @@ const BuddyScreen = () => {
     };
   }, [scrollToEnd]);
 
-  const handleSend = useCallback(() => {
+  useEffect(() => {
+    if (!sessionsResponse?.success || !sessionsResponse?.data?.chats) {
+      if (sessionsResponse && !sessionsResponse.success) {
+        const message =
+          'message' in sessionsResponse
+            ? String((sessionsResponse as unknown as { message?: string }).message)
+            : fallbackErrorMessage;
+        const raw =
+          'raw' in sessionsResponse
+            ? ` ${String((sessionsResponse as unknown as { raw?: string }).raw).slice(0, 120)}`
+            : '';
+        setSessionsError(`${message}${raw}`);
+        setInitialSessionsLoaded(true);
+        setSessionsTimedOut(false);
+      }
+      return;
+    }
+    const nextSessions = sessionsResponse.data.chats.map(mapSessionDto);
+    setSessions(prev => mergeSessions(prev, nextSessions));
+    setSessionsCursor(sessionsResponse.data.nextCursor);
+    setHasMoreSessions(sessionsResponse.data.hasMore);
+    setSessionsError(null);
+    setInitialSessionsLoaded(true);
+    setSessionsTimedOut(false);
+  }, [sessionsResponse]);
+
+  useEffect(() => {
+    if (sessionsIsError) {
+      setSessionsError(getErrorMessage(sessionsQueryError));
+      setInitialSessionsLoaded(true);
+      setSessionsTimedOut(false);
+    }
+  }, [sessionsIsError, sessionsQueryError]);
+
+  useEffect(() => {
+    if (userId && !sessionsLoading && !sessionsFetching && !sessionsResponse && !sessionsIsError) {
+      setInitialSessionsLoaded(true);
+    }
+  }, [sessionsFetching, sessionsIsError, sessionsLoading, sessionsResponse, userId]);
+
+  useEffect(() => {
+    if (!userId || initialSessionsLoaded || sessionsIsError || sessionsResponse) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      setSessionsTimedOut(true);
+      setInitialSessionsLoaded(true);
+      setSessionsError(
+        'Chat server is taking too long to respond. Check FastAPI is reachable from this phone.',
+      );
+    }, 13000);
+
+    return () => clearTimeout(timer);
+  }, [initialSessionsLoaded, sessionsIsError, sessionsResponse, userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      setInitialSessionsLoaded(true);
+      setSessionsError('Please log in again to load chats.');
+    } else {
+      setSessionsError(null);
+      if (!sessionsResponse) {
+        setInitialSessionsLoaded(false);
+      }
+    }
+  }, [userId, sessionsResponse]);
+
+  const updateSessionById = useCallback(
+    (sessionId: string, updater: (session: ChatSession) => ChatSession) => {
+      if (!sessionId) {
+        return;
+      }
+      setSessions(prev =>
+        prev.map(session =>
+          session.id === sessionId ? updater(session) : session,
+        ),
+      );
+    },
+    [],
+  );
+
+  const recoverLatestSession = useCallback(async () => {
+    if (!userId) {
+      return null;
+    }
+    const response = await fetchSessionsPage({
+      userId,
+      limit: PAGE_SIZE,
+    }).unwrap();
+    const latestSessions = response.data.chats.map(mapSessionDto);
+    setSessions(prev => mergeSessions(prev, latestSessions));
+    setSessionsCursor(response.data.nextCursor);
+    setHasMoreSessions(response.data.hasMore);
+    setSessionsError(null);
+    return latestSessions[0] || null;
+  }, [fetchSessionsPage, userId]);
+
+  const ensureActiveSession = useCallback(async () => {
+    if (!userId) {
+      throw new Error('Please log in again to continue.');
+    }
+    if (activeSessionId && !activeSessionId.startsWith('pending-')) {
+      return activeSessionId;
+    }
+    try {
+      const response = await createChatSession({ userId }).unwrap();
+      const session = mapSessionDto(response.data);
+      setSessions(prev =>
+        mergeSessions(
+          prev.filter(item => item.id !== activeSessionId),
+          [session],
+        ),
+      );
+      setActiveSessionId(session.id);
+      return session.id;
+    } catch (error) {
+      const recoveredSession = await recoverLatestSession();
+      if (recoveredSession) {
+        setSessions(prev =>
+          prev.filter(item => item.id !== activeSessionId),
+        );
+        setActiveSessionId(recoveredSession.id);
+        return recoveredSession.id;
+      }
+      throw error;
+    }
+  }, [activeSessionId, createChatSession, recoverLatestSession, userId]);
+
+  const handleSend = useCallback(async () => {
     const trimmed = input.trim();
-    if (!trimmed) {
+    if (!trimmed || sendingMessage) {
+      return;
+    }
+
+    let sessionId: string;
+    try {
+      sessionId = await ensureActiveSession();
+    } catch (error) {
+      setSessionsError(error instanceof Error ? error.message : fallbackErrorMessage);
       return;
     }
 
@@ -362,21 +402,64 @@ const BuddyScreen = () => {
       time: formatTime(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    scrollToEnd();
+    updateSessionById(sessionId, session => ({
+      ...session,
+      title:
+        session.messages.length === 0
+          ? trimmed.slice(0, 42) + (trimmed.length > 42 ? '...' : '')
+          : session.title,
+      preview: trimmed,
+      updatedAt: new Date(),
+      messageCount: session.messageCount + 1,
+      messages: [...session.messages, userMessage],
+    }));
 
-    setTimeout(() => {
+    setInput('');
+    scrollToEnd(true);
+
+    try {
+      const response = await askBuddy({
+        userId: userId || '',
+        chatId: sessionId,
+        question: trimmed,
+      }).unwrap();
       const assistantMessage: ChatMessage = {
         id: `${Date.now()}-assistant`,
         role: 'assistant',
-        text: "I'm on it. I'll break this down and share the most useful next steps in a moment.",
+        text: response.data.answer,
         time: formatTime(),
       };
-      setMessages(prev => [...prev, assistantMessage]);
-      scrollToEnd();
-    }, 700);
-  }, [input, scrollToEnd]);
+
+      updateSessionById(sessionId, session => ({
+        ...session,
+        updatedAt: new Date(),
+        preview: response.data.answer,
+        messageCount: session.messageCount + 1,
+        messages: [...session.messages, assistantMessage],
+      }));
+      scrollToEnd(true);
+    } catch (error) {
+      const assistantMessage: ChatMessage = {
+        id: `${Date.now()}-assistant-error`,
+        role: 'assistant',
+        text: getErrorMessage(error),
+        time: formatTime(),
+      };
+      updateSessionById(sessionId, session => ({
+        ...session,
+        messages: [...session.messages, assistantMessage],
+      }));
+      scrollToEnd(true);
+    }
+  }, [
+    askBuddy,
+    ensureActiveSession,
+    input,
+    scrollToEnd,
+    sendingMessage,
+    updateSessionById,
+    userId,
+  ]);
 
   const handleSuggestionPress = (suggestion: string) => {
     setInput(suggestion);
@@ -384,8 +467,131 @@ const BuddyScreen = () => {
   };
 
   const handleInputFocus = () => {
-    scrollToEnd();
+    scrollToEnd(true);
   };
+
+  const handleOpenHistory = () => {
+    Keyboard.dismiss();
+    setHistoryVisible(true);
+  };
+
+  const handleCloseHistory = () => {
+    setHistoryVisible(false);
+  };
+
+  const handleSelectSession = async (sessionId: string) => {
+    if (!userId) {
+      setSessionsError('Please log in again to continue.');
+      return;
+    }
+    setActiveSessionId(sessionId);
+    setHistoryVisible(false);
+    setInput('');
+    setActiveChatLoading(true);
+    try {
+      const response = await loadChatSession({ userId, sessionId }).unwrap();
+      const loadedSession = mapSessionDto(response.data.chat);
+      const loadedMessages = response.data.messages.map(mapMessageDto);
+      setSessions(prev =>
+        mergeSessions(prev, [
+          {
+            ...loadedSession,
+            messages: loadedMessages,
+            preview:
+              loadedMessages[loadedMessages.length - 1]?.text ||
+              loadedSession.preview,
+          },
+        ]),
+      );
+      scrollToEnd(true);
+    } catch (error) {
+      setSessionsError(getErrorMessage(error));
+    } finally {
+      setActiveChatLoading(false);
+    }
+  };
+
+  const handleNewChat = async () => {
+    if (!userId) {
+      setSessionsError('Please log in again to continue.');
+      return;
+    }
+    const pendingSession = createLocalPendingSession();
+    setSessions(prev => mergeSessions(prev, [pendingSession]));
+    setActiveSessionId(pendingSession.id);
+    setHistoryVisible(false);
+    setInput('');
+    setSessionsError(null);
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 320);
+
+    try {
+      const response = await createChatSession({ userId }).unwrap();
+      const newSession = mapSessionDto(response.data);
+      setSessions(prev =>
+        mergeSessions(
+          prev.filter(session => session.id !== pendingSession.id),
+          [newSession],
+        ),
+      );
+      setActiveSessionId(newSession.id);
+    } catch (error) {
+      try {
+        const recoveredSession = await recoverLatestSession();
+        if (recoveredSession) {
+          setSessions(prev =>
+            prev.filter(session => session.id !== pendingSession.id),
+          );
+          setActiveSessionId(recoveredSession.id);
+          return;
+        }
+      } catch {
+        // Fall through to the original create error.
+      }
+      setSessions(prev =>
+        prev.filter(session => session.id !== pendingSession.id),
+      );
+      setSessionsError(getErrorMessage(error));
+    }
+  };
+
+  const handleLoadMoreSessions = async () => {
+    if (!userId || !sessionsCursor || loadingMoreSessions) {
+      return;
+    }
+    setLoadingMoreSessions(true);
+    try {
+      const response = await fetchSessionsPage({
+        userId,
+        limit: PAGE_SIZE,
+        cursor: sessionsCursor,
+      }).unwrap();
+      setSessions(prev =>
+        mergeSessions(prev, response.data.chats.map(mapSessionDto)),
+      );
+      setSessionsCursor(response.data.nextCursor);
+      setHasMoreSessions(response.data.hasMore);
+      setSessionsError(null);
+    } catch (error) {
+      setSessionsError(getErrorMessage(error));
+    } finally {
+      setLoadingMoreSessions(false);
+    }
+  };
+
+  useEffect(() => {
+    if (sendingMessage) {
+      scrollToEnd(true);
+    }
+  }, [sendingMessage, scrollToEnd]);
+
+  useEffect(() => {
+    if (messages.length === 0) {
+      isNearBottomRef.current = true;
+      setShowScrollToBottom(false);
+    }
+  }, [messages.length, activeSessionId]);
 
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     if (item.role === 'user') {
@@ -414,8 +620,12 @@ const BuddyScreen = () => {
         {SUGGESTIONS.map(suggestion => (
           <Pressable
             key={suggestion}
-            style={styles.suggestionChip}
+            style={[
+              styles.suggestionChip,
+              sendingMessage && styles.suggestionChipDisabled,
+            ]}
             onPress={() => handleSuggestionPress(suggestion)}
+            disabled={sendingMessage}
           >
             <View style={styles.suggestionDot} />
             <Text style={styles.suggestionText}>{suggestion}</Text>
@@ -431,6 +641,7 @@ const BuddyScreen = () => {
       : Math.max(insets.bottom, 12);
 
   const listBottomPadding = INPUT_BAR_HEIGHT + inputBottomOffset + 16;
+  const scrollButtonBottom = inputBottomOffset + INPUT_BAR_HEIGHT + 12;
 
   return (
     <LinearGradient
@@ -446,7 +657,7 @@ const BuddyScreen = () => {
       style={styles.gradient}
     >
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <Header />
+        <Header onHistoryPress={handleOpenHistory} />
 
         <View style={styles.chatArea}>
           <FlatList
@@ -462,6 +673,13 @@ const BuddyScreen = () => {
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
             ListEmptyComponent={renderEmptyState}
+            ListFooterComponent={
+              activeChatLoading || sendingMessage ? (
+                <View style={styles.typingFooter}>
+                  <TypingIndicator />
+                </View>
+              ) : null
+            }
             ListHeaderComponent={
               messages.length > 0 ? (
                 <View style={styles.dateSeparator}>
@@ -469,7 +687,15 @@ const BuddyScreen = () => {
                 </View>
               ) : null
             }
-            onContentSizeChange={scrollToEnd}
+            onContentSizeChange={handleContentSizeChange}
+            onScroll={handleListScroll}
+            scrollEventThrottle={16}
+          />
+
+          <ScrollToBottomButton
+            visible={showScrollToBottom}
+            bottom={scrollButtonBottom}
+            onPress={handleScrollToBottomPress}
           />
 
           <View style={[styles.inputBar, { bottom: inputBottomOffset }]}>
@@ -479,10 +705,32 @@ const BuddyScreen = () => {
               onChangeText={setInput}
               onSend={handleSend}
               onFocus={handleInputFocus}
+              disabled={!userId || creatingChat || sendingMessage}
             />
           </View>
         </View>
       </SafeAreaView>
+
+      <ChatHistoryDrawer
+        visible={historyVisible}
+        sessions={sessions}
+        activeSessionId={activeSessionId || ''}
+        loading={
+          !!userId &&
+          !initialSessionsLoaded &&
+          !sessionsTimedOut &&
+          (sessionsLoading || sessionsFetching)
+        }
+        loadingMore={loadingMoreSessions}
+        creating={creatingChat}
+        error={sessionsError}
+        hasMore={hasMoreSessions}
+        onClose={handleCloseHistory}
+        onSelectSession={handleSelectSession}
+        onNewChat={handleNewChat}
+        onRetry={refetchSessions}
+        onLoadMore={handleLoadMoreSessions}
+      />
     </LinearGradient>
   );
 };

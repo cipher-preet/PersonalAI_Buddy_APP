@@ -18,11 +18,12 @@ type Props = {
   onChangeText: (text: string) => void;
   onSend: () => void;
   onFocus?: TextInputProps['onFocus'];
+  disabled?: boolean;
 };
 
 const BottomInput = forwardRef<TextInput, Props>(
-  ({ value, onChangeText, onSend, onFocus }, ref) => {
-    const canSend = value.trim().length > 0;
+  ({ value, onChangeText, onSend, onFocus, disabled = false }, ref) => {
+    const canSend = value.trim().length > 0 && !disabled;
 
     return (
       <View style={styles.wrapper}>
@@ -40,9 +41,14 @@ const BottomInput = forwardRef<TextInput, Props>(
             returnKeyType="default"
             blurOnSubmit={false}
             textAlignVertical="center"
+            editable={!disabled}
           />
 
-          <TouchableOpacity style={styles.micButton} activeOpacity={0.75}>
+          <TouchableOpacity
+            style={styles.micButton}
+            activeOpacity={0.75}
+            disabled={disabled}
+          >
             <MicIcon width={18} height={18} color="#64748B" />
           </TouchableOpacity>
 

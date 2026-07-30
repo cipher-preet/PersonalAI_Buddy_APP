@@ -1,18 +1,19 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, DimensionValue } from 'react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
 import { COLORS } from './styles/color';
 
-const COMPLETION = {
-  percent: 94,
-  weeklyGrowth: 12,
-  today: 12,
-  priority: 5,
-  done: 123,
+type Props = {
+  totalTasks: number;
+  doneTasks: number;
 };
 
-const ProgressCard = () => {
+const ProgressCard = ({ totalTasks, doneTasks }: Props) => {
+  const completionPercent =
+    totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
+  const progressWidth = `${completionPercent}%` as DimensionValue;
+
   return (
     <View style={styles.wrapper}>
       <LinearGradient
@@ -36,29 +37,17 @@ const ProgressCard = () => {
 
         <View style={styles.mainRow}>
           <View style={styles.primaryStat}>
-            <Text style={styles.totalValue}>{COMPLETION.percent}%</Text>
+            <Text style={styles.totalValue}>{completionPercent}%</Text>
             <Text style={styles.totalLabel}>Completion rate</Text>
-            <View style={styles.growthRow}>
-              <Text style={styles.growthText}>
-                +{COMPLETION.weeklyGrowth}% this week
-              </Text>
-            </View>
-          </View>
 
-          <View style={styles.metricsColumn}>
-            <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{COMPLETION.today}</Text>
-              <Text style={styles.metricLabel}>Today</Text>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: progressWidth }]} />
             </View>
-            <View style={styles.metricDivider} />
-            <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{COMPLETION.priority}</Text>
-              <Text style={styles.metricLabel}>Priority</Text>
-            </View>
-            <View style={styles.metricDivider} />
-            <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{COMPLETION.done}</Text>
-              <Text style={styles.metricLabel}>Done</Text>
+
+            <View style={styles.countRow}>
+              <Text style={styles.countText}>
+                {doneTasks} of {totalTasks} tasks done
+              </Text>
             </View>
           </View>
         </View>
@@ -148,11 +137,11 @@ const styles = StyleSheet.create({
   mainRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 96,
   },
 
   primaryStat: {
     flex: 1,
-    paddingRight: 12,
   },
 
   totalValue: {
@@ -170,55 +159,32 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  growthRow: {
-    marginTop: 8,
+  progressTrack: {
+    height: 8,
+    marginTop: 14,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
+    overflow: 'hidden',
+  },
+
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+  },
+
+  countRow: {
+    marginTop: 10,
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(255, 255, 255, 0.14)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 999,
   },
 
-  growthText: {
-    color: '#DCFCE7',
+  countText: {
+    color: 'rgba(255, 255, 255, 0.92)',
     fontSize: 11,
     fontWeight: '700',
-  },
-
-  metricsColumn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-  },
-
-  metricItem: {
-    minWidth: 52,
-    alignItems: 'center',
-  },
-
-  metricDivider: {
-    width: 1,
-    height: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginHorizontal: 4,
-  },
-
-  metricValue: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '800',
-    lineHeight: 20,
-  },
-
-  metricLabel: {
-    marginTop: 2,
-    color: 'rgba(255, 255, 255, 0.75)',
-    fontSize: 10,
-    fontWeight: '600',
   },
 });

@@ -13,6 +13,8 @@ import AudioRecorderPlayer, {
 } from 'react-native-audio-recorder-player';
 import axios, { AxiosError } from 'axios';
 
+import { BUDDY_ENDPOINTS } from '../config/apiConfig';
+
 type RNFSType = typeof import('react-native-fs');
 
 declare const require: (moduleName: string) => RNFSType;
@@ -23,8 +25,7 @@ const SILENCE_DURATION_MS = 2000;
 const MAX_RECORDING_SEGMENT_MS = 30000;
 const AUDIO_FILE_EXTENSION = 'm4a';
 const AUDIO_MIME_TYPE = 'audio/mp4';
-// const API_ORIGIN = API_BASE_URL.replace(/\/api\/v1$/, '');
-const SPEECH_API_URL = 'http://192.168.1.38:8000/api/v1/speech';
+const SPEECH_API_URL = BUDDY_ENDPOINTS.speechBase;
 const VOICE_MESSAGE_URL = `${SPEECH_API_URL}/transcripting`;
 const START_LISTENING_SESSION_URL = `${SPEECH_API_URL}/listening/start`;
 const END_LISTENING_SESSION_URL = `${SPEECH_API_URL}/listening/end`;

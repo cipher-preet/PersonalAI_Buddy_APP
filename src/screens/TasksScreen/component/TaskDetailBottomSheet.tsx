@@ -76,7 +76,9 @@ const TaskDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
           backgroundStyle={styles.sheetBackground}
           handleIndicatorStyle={styles.indicator}
           onChange={index => setIsSheetOpen(index >= 0)}
-        />
+        >
+          <View />
+        </BottomSheetModal>
       );
     }
 

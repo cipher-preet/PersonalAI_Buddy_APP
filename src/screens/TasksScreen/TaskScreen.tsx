@@ -1,219 +1,176 @@
-import React, { useCallback, useRef, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import Header from './component/Header';
+import TasksFilterMenu from './component/TasksFilterMenu';
 import CategoryTabs from './component/CategoryTabs';
 import ProgressCard from './component/ProgressCard';
 import SectionHeader from './component/SectionHeader';
 import TaskCard from './component/TaskCard';
 import TaskDetailBottomSheet from './component/TaskDetailBottomSheet';
-
 import { COLORS } from './component/styles/color';
 import { TaskItem } from './types/task';
-
-export const categories = [
-  { id: 'all', label: 'All Tasks', count: 146 },
-  { id: 'ai', label: 'AI Project', count: 42 },
-  { id: 'mobile', label: 'Mobile App', count: 38 },
-  { id: 'backend', label: 'Backend', count: 24 },
-];
-
-export const tasks: TaskItem[] = [
-  {
-    id: '1',
-    title: 'Code review of new functions',
-    subtitle: 'Quality of the code',
-    tags: ['Need Project', 'AI Priority'],
-    status: 'In Progress',
-    priority: 'High Priority',
-    dueDate: 'Today, 6:00 PM',
-    updatedAt: 'Today',
-    createdAt: 'Mar 16, 2026',
-    project: 'AI Project',
-    assignee: 'Preet Kumar',
-    summary:
-      'Review newly added utility functions in the voice upload module. Focus on error handling, type safety, and alignment with existing service patterns.',
-    subtasks: [
-      'Review voiceRecorderService.ts changes',
-      'Check API error mapping in baseApi',
-      'Validate silence detection edge cases',
-      'Confirm upload retry logic is covered',
-    ],
-    sections: [
-      {
-        title: 'Scope',
-        content:
-          'PR #48 introduces chunked upload support and refactors the recording lifecycle. Review should cover both happy path and failure recovery when network drops mid-upload.',
-      },
-      {
-        title: 'Review criteria',
-        content:
-          'Look for consistent naming, no leaked listeners, proper cleanup on unmount, and whether new constants belong in a shared config file.',
-      },
-      {
-        title: 'Dependencies',
-        content:
-          'Blocked until CI passes on Android emulator tests. Coordinate with backend team if upload endpoint contract changed.',
-      },
-    ],
-    description:
-      'The author added onSegmentReady callbacks and queue-based upload handling. Pay special attention to race conditions when user stops listening while a chunk is still uploading.\n\nApprove if tests pass and no P1 comments remain. Request changes if error toasts are too generic or if file paths are not sanitized.',
-    actionItems: [
-      'Leave inline comments on PR #48',
-      'Run manual test on physical Android device',
-      'Approve or request changes by EOD',
-    ],
-    relatedTasks: [
-      'Add unit tests for voice upload queue',
-      'Document voice recording API',
-    ],
-  },
-  {
-    id: '2',
-    title: 'Install new versions of software',
-    subtitle: 'Infrastructure upgrade',
-    tags: ['System Setup', 'Tomorrow'],
-    status: 'Pending',
-    priority: 'Medium',
-    dueDate: 'Tomorrow, 10:00 AM',
-    updatedAt: 'Yesterday',
-    createdAt: 'Mar 15, 2026',
-    project: 'Backend',
-    assignee: 'DevOps Squad',
-    summary:
-      'Upgrade Node.js runtime and key dependencies on staging before rolling to production. Includes React Native build tools and CI runner image updates.',
-    subtasks: [
-      'Backup staging environment snapshots',
-      'Update Node.js to v22 LTS on CI runners',
-      'Bump react-native and metro versions',
-      'Run full regression suite on staging',
-      'Schedule production window with on-call',
-    ],
-    sections: [
-      {
-        title: 'Upgrade plan',
-        content:
-          'Start with CI images, then staging app servers. Production rollout only after 24-hour soak test with no critical alerts.',
-      },
-      {
-        title: 'Rollback strategy',
-        content:
-          'Keep previous Docker image tags for 7 days. Rollback trigger: build failure rate > 10% or p95 API latency increase > 25%.',
-      },
-      {
-        title: 'Communication',
-        content:
-          'Notify #engineering 24 hours before production change. Post status updates every 30 minutes during the maintenance window.',
-      },
-    ],
-    description:
-      'This upgrade addresses security patches and improves Metro bundler performance. Breaking changes documented in the internal migration guide.\n\nMaintenance window: Tuesday 10:00–12:00 AM UTC. Customer-facing downtime not expected if staging validation succeeds.',
-    actionItems: [
-      'Confirm backup completion',
-      'Share migration checklist with team',
-      'Book production maintenance slot',
-    ],
-    relatedTasks: [
-      'Update CI pipeline config',
-      'Refresh dependency audit report',
-    ],
-  },
-  {
-    id: '3',
-    title: 'Design Buddy chat input states',
-    subtitle: 'Mobile App UI polish',
-    tags: ['Design', 'Mobile App'],
-    status: 'In Review',
-    priority: 'High Priority',
-    dueDate: 'Mar 20, 2026',
-    updatedAt: 'Today',
-    createdAt: 'Mar 14, 2026',
-    project: 'Mobile App',
-    assignee: 'Priya Sharma',
-    summary:
-      'Finalize keyboard, focus, and send-button states for the Buddy chat composer. Ensure consistency with Notes and Home bottom sheets.',
-    subtasks: [
-      'Empty, focused, and typing states for input',
-      'Keyboard open layout on iOS and Android',
-      'Send button active/inactive visuals',
-      'Mic button placeholder interaction',
-    ],
-    sections: [
-      {
-        title: 'Design goals',
-        content:
-          'Clean, minimal composer that stays above the keyboard without clipping. Match indigo accent (#4338CA) and soft shadows used across the app.',
-      },
-      {
-        title: 'Deliverables',
-        content:
-          'Figma frames for all states, redlines for spacing, and a short Loom walkthrough for engineering handoff.',
-      },
-    ],
-    description:
-      'Reference the Notes detail sheet and Home voice modal for interaction patterns. Prioritize readability and thumb reach on smaller devices.\n\nFeedback from last review: reduce vertical padding when keyboard is open and center placeholder text in single-line mode.',
-    actionItems: [
-      'Share updated Figma link in Slack',
-      'Schedule design review with engineering',
-      'Export assets for send/mic icons',
-    ],
-    relatedTasks: [
-      'Implement Buddy chat screen',
-      'Fix Android keyboard overlap',
-    ],
-  },
-  {
-    id: '4',
-    title: 'Prepare marketing meeting slides',
-    subtitle: 'Q4 campaign review deck',
-    tags: ['Meeting', 'Marketing'],
-    status: 'Not Started',
-    priority: 'Medium',
-    dueDate: 'Mar 21, 2026',
-    updatedAt: '2 days ago',
-    createdAt: 'Mar 12, 2026',
-    project: 'Marketing',
-    assignee: 'Preet Kumar',
-    summary:
-      'Build slide deck for tomorrow\'s marketing meeting covering Q3 ROI, budget reallocation, and product launch messaging framework.',
-    subtasks: [
-      'Slide 1: Q3 performance highlights',
-      'Slide 2: Channel ROI breakdown',
-      'Slide 3: Q4 budget proposal',
-      'Slide 4: Launch messaging draft',
-      'Slide 5: Next steps and discussion',
-    ],
-    sections: [
-      {
-        title: 'Audience',
-        content:
-          'Marketing leadership, product, and finance stakeholders. Keep slides visual with speaker notes for detail.',
-      },
-      {
-        title: 'Data sources',
-        content:
-          'Pull metrics from analytics dashboard and finance spreadsheet shared last week. Cite sources on each chart slide.',
-      },
-    ],
-    description:
-      'Target 12–15 slides max. Use brand template v2. Include one backup slide on competitor positioning.\n\nDry run scheduled for 4:30 PM today. Send draft to Sarah for feedback before 2:00 PM.',
-    actionItems: [
-      'Download latest brand template',
-      'Request ROI data from analytics',
-      'Send draft to Sarah for review',
-    ],
-    relatedTasks: [
-      'Interview Notes: Marketing meeting',
-      'Q4 OKR Dashboard update',
-    ],
-  },
-];
+import type { TaskFilter } from './types/filter';
+import { useAppSelector } from '../../store/hooks';
+import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
+import {
+  StagedTaskCard,
+  useGetStagedTasksBySpaceQuery,
+  useGetUserSpacesQuery,
+} from '../../store/api/home';
 
 const TaskScreen = () => {
   const taskSheetRef = useRef<BottomSheetModal>(null);
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
+  const [selectedSpaceId, setSelectedSpaceId] = useState('');
+  const [tasksCursor, setTasksCursor] = useState('');
+  const [loadedTasks, setLoadedTasks] = useState<StagedTaskCard[]>([]);
+  const [nextTasksCursor, setNextTasksCursor] = useState<string | null>(null);
+  const [taskCompletionOverrides, setTaskCompletionOverrides] = useState<
+    Record<string, boolean>
+  >({});
+  const [taskPendingDelete, setTaskPendingDelete] = useState<TaskItem | null>(
+    null,
+  );
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [taskFilter, setTaskFilter] = useState<TaskFilter>('newest');
+  const [filterMenuVisible, setFilterMenuVisible] = useState(false);
+  const userId = useAppSelector(state => state.auth.userId) ?? '';
+
+  const {
+    data: spacesData,
+    isFetching: isFetchingSpaces,
+    isError: isSpacesError,
+    refetch: refetchSpaces,
+  } = useGetUserSpacesQuery({ userId, limit: 50 }, { skip: !userId });
+
+  const spaces = useMemo(
+    () => spacesData?.data?.data?.spaces ?? [],
+    [spacesData],
+  );
+  const selectedSpace = spaces.find(space => space._id === selectedSpaceId);
+
+  const {
+    data: stagedTasksData,
+    isFetching: isFetchingTasks,
+    isError: isTasksError,
+    refetch: refetchTasks,
+  } = useGetStagedTasksBySpaceQuery(
+    {
+      userId,
+      spaceId: selectedSpaceId,
+      limit: 20,
+      cursor: tasksCursor,
+    },
+    { skip: !userId || !selectedSpaceId },
+  );
+
+  const isInitialTasksLoading = isFetchingTasks && loadedTasks.length === 0;
+  const isLoadingMoreTasks = isFetchingTasks && loadedTasks.length > 0;
+
+  const isTaskDoneFromApi = (task: StagedTaskCard) =>
+    String(task.operation ?? '').toUpperCase() === 'DONE';
+
+  const isTaskDone = useCallback(
+    (task: StagedTaskCard) =>
+      taskCompletionOverrides[task.id] ?? isTaskDoneFromApi(task),
+    [taskCompletionOverrides],
+  );
+
+  const displayedTasks = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    let result = [...loadedTasks];
+
+    if (normalizedQuery) {
+      result = result.filter(task => {
+        const title = task.title?.toLowerCase() ?? '';
+        const preview = task.descriptionPreview?.toLowerCase() ?? '';
+        return (
+          title.includes(normalizedQuery) || preview.includes(normalizedQuery)
+        );
+      });
+    }
+
+    if (taskFilter === 'done') {
+      result = result.filter(task => isTaskDone(task));
+    } else if (taskFilter === 'pending') {
+      result = result.filter(task => !isTaskDone(task));
+    }
+
+    result.sort((left, right) => {
+      const leftTime = new Date(
+        left.updatedAt || left.createdAt || 0,
+      ).getTime();
+      const rightTime = new Date(
+        right.updatedAt || right.createdAt || 0,
+      ).getTime();
+
+      return taskFilter === 'oldest'
+        ? leftTime - rightTime
+        : rightTime - leftTime;
+    });
+
+    return result;
+  }, [isTaskDone, loadedTasks, searchQuery, taskFilter]);
+
+  useEffect(() => {
+    if (spaces.length === 0) {
+      setSelectedSpaceId('');
+      return;
+    }
+
+    const selectedStillExists = spaces.some(
+      space => space._id === selectedSpaceId,
+    );
+
+    if (!selectedSpaceId || !selectedStillExists) {
+      setSelectedSpaceId(spaces[0]._id);
+    }
+  }, [selectedSpaceId, spaces]);
+
+  useEffect(() => {
+    setTasksCursor('');
+    setLoadedTasks([]);
+    setNextTasksCursor(null);
+  }, [selectedSpaceId]);
+
+  useEffect(() => {
+    const response = stagedTasksData?.data;
+
+    if (!response) {
+      return;
+    }
+
+    setNextTasksCursor(response.nextCursor);
+
+    if (tasksCursor === '') {
+      setLoadedTasks(response.tasks);
+      return;
+    }
+
+    setLoadedTasks(prev => {
+      const existingIds = new Set(prev.map(task => task.id));
+      const newTasks = response.tasks.filter(task => !existingIds.has(task.id));
+
+      return newTasks.length > 0 ? [...prev, ...newTasks] : prev;
+    });
+  }, [stagedTasksData, tasksCursor]);
 
   const handleOpenTask = useCallback((task: TaskItem) => {
     setSelectedTask(task);
@@ -222,30 +179,254 @@ const TaskScreen = () => {
     });
   }, []);
 
+  const handleToggleTaskComplete = useCallback(
+    (task: StagedTaskCard) => {
+      setTaskCompletionOverrides(prev => ({
+        ...prev,
+        [task.id]: !(prev[task.id] ?? isTaskDoneFromApi(task)),
+      }));
+    },
+    [],
+  );
+
+  const handleConfirmDeleteTask = useCallback(() => {
+    if (!taskPendingDelete) {
+      return;
+    }
+
+    setLoadedTasks(prev =>
+      prev.filter(task => task.id !== taskPendingDelete.id),
+    );
+
+    setTaskCompletionOverrides(prev => {
+      const next = { ...prev };
+      delete next[taskPendingDelete.id];
+      return next;
+    });
+
+    if (selectedTask?.id === taskPendingDelete.id) {
+      taskSheetRef.current?.dismiss();
+      setSelectedTask(null);
+    }
+
+    setTaskPendingDelete(null);
+  }, [selectedTask, taskPendingDelete]);
+
+  const doneTasksCount = loadedTasks.filter(task => isTaskDone(task)).length;
+
+  const formatDate = (value: string | null) => {
+    if (!value) {
+      return 'Recently';
+    }
+
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const toTaskItem = (task: StagedTaskCard): TaskItem => {
+    const done = isTaskDone(task);
+    const status = done ? 'Done' : 'Not Done';
+    const preview = task.descriptionPreview || 'No task description available.';
+    const workspaceName = selectedSpace?.spacename || 'Space';
+    const confidencePercent =
+      typeof task.confidence === 'number'
+        ? Math.round(task.confidence * 100)
+        : null;
+
+    return {
+      id: task.id,
+      title: task.title || 'Untitled task',
+      subtitle: preview,
+      tags: [
+        status,
+        task.priority || 'Normal Priority',
+        confidencePercent ? `CONF ${confidencePercent}%` : '',
+      ].filter(Boolean),
+      status,
+      priority: task.priority || 'Normal Priority',
+      dueDate: task.dueDate ? formatDate(task.dueDate) : 'No due date',
+      updatedAt: formatDate(task.updatedAt || task.createdAt),
+      createdAt: formatDate(task.createdAt),
+      project: workspaceName,
+      assignee: 'You',
+      summary: preview,
+      subtasks: [],
+      sections: [
+        {
+          title: 'Captured task',
+          content: preview,
+        },
+      ],
+      description: preview,
+      actionItems: [],
+      relatedTasks: [],
+    };
+  };
+
+  const renderTaskList = () => {
+    if (isInitialTasksLoading) {
+      return (
+        <View style={styles.stateBox}>
+          <ActivityIndicator size="small" color={COLORS.primaryDark} />
+          <Text style={styles.stateText}>Loading tasks...</Text>
+        </View>
+      );
+    }
+
+    if (isTasksError) {
+      return (
+        <View style={styles.stateBox}>
+          <Text style={styles.errorText}>Unable to load tasks.</Text>
+          <TouchableOpacity
+            activeOpacity={0.75}
+            style={styles.retryButton}
+            onPress={refetchTasks}
+          >
+            <Text style={styles.retryText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    if (!selectedSpaceId) {
+      return (
+        <View style={styles.stateBox}>
+          <Text style={styles.emptyTitle}>Select a space</Text>
+          <Text style={styles.stateText}>Space tasks will appear here.</Text>
+        </View>
+      );
+    }
+
+    if (loadedTasks.length === 0) {
+      return (
+        <View style={styles.stateBox}>
+          <Text style={styles.emptyTitle}>No tasks yet</Text>
+          <Text style={styles.stateText}>This space has no staged tasks.</Text>
+        </View>
+      );
+    }
+
+    if (displayedTasks.length === 0) {
+      return (
+        <View style={styles.stateBox}>
+          <Text style={styles.emptyTitle}>No matching tasks</Text>
+          <Text style={styles.stateText}>
+            Try a different search term or clear your filters.
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <>
+        {displayedTasks.map(task => {
+          const item = toTaskItem(task);
+          const completed = isTaskDone(task);
+
+          return (
+            <TaskCard
+              key={item.id}
+              item={item}
+              completed={completed}
+              onPress={() => handleOpenTask(item)}
+              onToggleComplete={() => handleToggleTaskComplete(task)}
+              onDelete={() => setTaskPendingDelete(item)}
+            />
+          );
+        })}
+
+        {nextTasksCursor ? (
+          <TouchableOpacity
+            activeOpacity={0.78}
+            disabled={isLoadingMoreTasks}
+            style={[
+              styles.loadMoreButton,
+              isLoadingMoreTasks && styles.loadMoreButtonDisabled,
+            ]}
+            onPress={() => setTasksCursor(nextTasksCursor)}
+          >
+            {isLoadingMoreTasks ? (
+              <ActivityIndicator size="small" color={COLORS.primaryDark} />
+            ) : null}
+            <Text style={styles.loadMoreText}>
+              {isLoadingMoreTasks ? 'Loading more tasks...' : 'Load more tasks'}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
+      </>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <View style={styles.headerWrap}>
+        <Header
+          searchQuery={searchQuery}
+          taskFilter={taskFilter}
+          isSearchActive={isSearchActive}
+          onSearchQueryChange={setSearchQuery}
+          onSearchOpen={() => setIsSearchActive(true)}
+          onSearchClose={() => {
+            setIsSearchActive(false);
+            setSearchQuery('');
+          }}
+          onFilterPress={() => setFilterMenuVisible(true)}
+        />
+      </View>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
       >
-        <Header />
+        <CategoryTabs
+          spaces={spaces}
+          selectedSpaceId={selectedSpaceId}
+          isLoading={isFetchingSpaces}
+          isError={isSpacesError}
+          getTaskCount={spaceId =>
+            spaceId === selectedSpaceId ? loadedTasks.length : 0
+          }
+          onRetry={refetchSpaces}
+          onSelectSpace={setSelectedSpaceId}
+        />
 
-        <CategoryTabs />
-
-        <ProgressCard />
+        <ProgressCard
+          totalTasks={loadedTasks.length}
+          doneTasks={doneTasksCount}
+        />
 
         <SectionHeader />
 
-        {tasks.map(item => (
-          <TaskCard
-            key={item.id}
-            item={item}
-            onPress={() => handleOpenTask(item)}
-          />
-        ))}
+        {renderTaskList()}
       </ScrollView>
 
       <TaskDetailBottomSheet ref={taskSheetRef} task={selectedTask} />
+
+      <DeleteConfirmationModal
+        visible={Boolean(taskPendingDelete)}
+        itemType="task"
+        itemTitle={taskPendingDelete?.title}
+        onCancel={() => setTaskPendingDelete(null)}
+        onConfirm={handleConfirmDeleteTask}
+      />
+
+      <TasksFilterMenu
+        visible={filterMenuVisible}
+        taskFilter={taskFilter}
+        onClose={() => setFilterMenuVisible(false)}
+        onSelect={setTaskFilter}
+      />
     </SafeAreaView>
   );
 };
@@ -256,12 +437,85 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingVertical: 16,
+    paddingTop: 16,
     paddingBottom: 40,
+  },
+
+  headerWrap: {
+    paddingHorizontal: 20,
+    marginBottom: 10,
   },
 
   content: {
     paddingHorizontal: 20,
-    paddingBottom: 40,
+    paddingBottom: 120,
+  },
+
+  stateBox: {
+    minHeight: 120,
+    marginBottom: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+
+  stateText: {
+    marginTop: 8,
+    color: COLORS.gray,
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+
+  emptyTitle: {
+    color: COLORS.black,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+
+  errorText: {
+    color: '#B91C1C',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  retryButton: {
+    marginTop: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: COLORS.purpleLight,
+  },
+
+  retryText: {
+    color: COLORS.primaryDark,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  loadMoreButton: {
+    minHeight: 52,
+    marginBottom: 12,
+    borderRadius: 16,
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+
+  loadMoreButtonDisabled: {
+    opacity: 0.7,
+  },
+
+  loadMoreText: {
+    color: COLORS.primaryDark,
+    fontSize: 13,
+    fontWeight: '800',
   },
 });

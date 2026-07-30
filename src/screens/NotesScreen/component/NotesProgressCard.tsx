@@ -4,15 +4,11 @@ import { View, Text, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { COLORS } from './styles/color';
 
-const COLLECTION = {
-  totalNotes: 86,
-  weeklyGrowth: 8,
-  recent: 12,
-  pinned: 8,
-  shared: 5,
+type Props = {
+  totalNotes: number;
 };
 
-const NotesProgressCard = () => {
+const NotesProgressCard = ({ totalNotes }: Props) => {
   return (
     <View style={styles.wrapper}>
       <LinearGradient
@@ -36,30 +32,8 @@ const NotesProgressCard = () => {
 
         <View style={styles.mainRow}>
           <View style={styles.primaryStat}>
-            <Text style={styles.totalValue}>{COLLECTION.totalNotes}</Text>
+            <Text style={styles.totalValue}>{totalNotes}</Text>
             <Text style={styles.totalLabel}>Notes saved</Text>
-            <View style={styles.growthRow}>
-              <Text style={styles.growthText}>
-                +{COLLECTION.weeklyGrowth} this week
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.metricsColumn}>
-            <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{COLLECTION.recent}</Text>
-              <Text style={styles.metricLabel}>Recent</Text>
-            </View>
-            <View style={styles.metricDivider} />
-            <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{COLLECTION.pinned}</Text>
-              <Text style={styles.metricLabel}>Pinned</Text>
-            </View>
-            <View style={styles.metricDivider} />
-            <View style={styles.metricItem}>
-              <Text style={styles.metricValue}>{COLLECTION.shared}</Text>
-              <Text style={styles.metricLabel}>Shared</Text>
-            </View>
           </View>
         </View>
       </LinearGradient>
@@ -148,11 +122,11 @@ const styles = StyleSheet.create({
   mainRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    minHeight: 76,
   },
 
   primaryStat: {
     flex: 1,
-    paddingRight: 12,
   },
 
   totalValue: {
@@ -167,58 +141,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
     color: 'rgba(255, 255, 255, 0.92)',
     fontSize: 14,
-    fontWeight: '600',
-  },
-
-  growthRow: {
-    marginTop: 8,
-    alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255, 255, 255, 0.14)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-
-  growthText: {
-    color: '#DCFCE7',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-
-  metricsColumn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
-  },
-
-  metricItem: {
-    minWidth: 52,
-    alignItems: 'center',
-  },
-
-  metricDivider: {
-    width: 1,
-    height: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    marginHorizontal: 4,
-  },
-
-  metricValue: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: '800',
-    lineHeight: 20,
-  },
-
-  metricLabel: {
-    marginTop: 2,
-    color: 'rgba(255, 255, 255, 0.75)',
-    fontSize: 10,
     fontWeight: '600',
   },
 });

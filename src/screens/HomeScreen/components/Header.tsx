@@ -1,9 +1,43 @@
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View, Text } from 'react-native';
+import Svg, { Path, Rect } from 'react-native-svg';
+import { useNavigation } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 
-import { Notification } from '../../../../styles/icons';
+type TabParamList = {
+  Home: undefined;
+  Notes: undefined;
+  Tasks: undefined;
+  AI: undefined;
+  Profile: undefined;
+  Plans: undefined;
+};
+
+const PlanPurchaseIcon = () => (
+  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M8 7.5 10.2 4l2.2 3.5L16 5.8l-1.2 5.7H5.2L4 5.8l3.6 1.7Z"
+      stroke="#4338CA"
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Rect
+      x={4}
+      y={13}
+      width={16}
+      height={7}
+      rx={2}
+      stroke="#4338CA"
+      strokeWidth={1.8}
+    />
+    <Path d="M4 16h16" stroke="#4338CA" strokeWidth={1.8} />
+  </Svg>
+);
 
 const Header = () => {
+  const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
+
   return (
     <View style={styles.container}>
       <View style={styles.leftContainer}>
@@ -23,12 +57,15 @@ const Header = () => {
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.notificationButton}
+          accessibilityRole="button"
+          accessibilityLabel="Open plans and payment"
+          onPress={() => navigation.navigate('Plans')}
         >
-          <Notification width={19} height={19} />
+          <PlanPurchaseIcon />
         </TouchableOpacity>
 
         {/* <TouchableOpacity activeOpacity={0.85} style={styles.settingsButton}>
-          <Notification width={18} height={18} />
+          <PlanPurchaseIcon />
         </TouchableOpacity> */}
       </View>
     </View>

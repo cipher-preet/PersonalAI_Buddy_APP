@@ -7,8 +7,14 @@ import {
   MySpcaes,
   NotesIcon,
 } from '../../../../styles/icons';
-import { stats } from '../Note';
 import { COLORS } from './styles/color';
+
+const stats = [
+  { id: 'total', label: 'Notes', value: '86', icon: 'notes' },
+  { id: 'recent', label: 'Recent', value: '12', icon: 'calendar' },
+  { id: 'saved', label: 'Saved', value: '8', icon: 'saved' },
+  { id: 'shared', label: 'Shared', value: '5', icon: 'shared' },
+];
 
 const renderIcon = (icon: string) => {
   const iconColor = COLORS.icon;

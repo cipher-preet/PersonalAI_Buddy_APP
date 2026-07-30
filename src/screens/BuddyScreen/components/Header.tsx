@@ -6,7 +6,11 @@ import { HistoryIcon } from '../../../../styles/icons';
 import ChevronRightIcon from '../../../../styles/icons/GreatorThan';
 import { COLORS } from '../styles';
 
-const Header = () => {
+type Props = {
+  onHistoryPress?: () => void;
+};
+
+const Header = ({ onHistoryPress }: Props) => {
   const navigation = useNavigation();
 
   const handleBack = () => {
@@ -31,7 +35,12 @@ const Header = () => {
         <Text style={styles.subtitle}>Your personal assistant</Text>
       </View>
 
-      <TouchableOpacity style={styles.iconButton} activeOpacity={0.75}>
+      <TouchableOpacity
+        style={styles.iconButton}
+        activeOpacity={0.75}
+        onPress={onHistoryPress}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
         <HistoryIcon width={18} height={18} color="#111827" />
       </TouchableOpacity>
     </View>

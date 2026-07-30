@@ -151,4 +151,18 @@ export const styles = StyleSheet.create({
     color: COLORS.subText,
     letterSpacing: 0.2,
   },
+
+  loadingFooter: {
+    paddingTop: 14,
+    alignItems: 'center',
+  },
+
+  typingFooter: {
+    paddingTop: 4,
+    paddingBottom: 4,
+  },
+
+  suggestionChipDisabled: {
+    opacity: 0.55,
+  },
 });

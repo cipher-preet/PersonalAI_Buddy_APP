@@ -25,6 +25,7 @@ import Notes from '../screens/NotesScreen/Note';
 import TaskScreen from '../screens/TasksScreen/TaskScreen';
 import ProfileScreen from '../screens/ProfileScreen/ProfileScreen';
 import BuddyScreen from '../screens/BuddyScreen/BuddyScreen';
+import PlansScreen from '../screens/PlansScreen/PlansScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -168,17 +169,20 @@ const TAB_CONFIG = [
 const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
   const currentRoute = state.routes[state.index];
 
-  if (currentRoute.name === 'AI') {
+  if (currentRoute.name === 'AI' || currentRoute.name === 'Plans') {
     return null;
   }
 
   return (
     <View style={styles.tabBar}>
       {state.routes.map((route, index) => {
-        const isFocused = state.index === index;
+        const config = TAB_CONFIG.find(tab => tab.name === route.name);
 
-        const config =
-          TAB_CONFIG.find(tab => tab.name === route.name) || TAB_CONFIG[0];
+        if (!config) {
+          return null;
+        }
+
+        const isFocused = state.index === index;
 
         const onPress = () => {
           const event = navigation.emit({
@@ -231,7 +235,7 @@ const MainTabs = () => {
       <Tab.Screen name="AI" component={BuddyScreen} />
       <Tab.Screen name="Tasks" component={TaskScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
-
+      <Tab.Screen name="Plans" component={PlansScreen} />
     </Tab.Navigator>
   );
 };

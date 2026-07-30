@@ -8,3 +8,11 @@ export {
   useCompleteOnboardingMutation,
 } from './api/auth';
 export { homeApi  } from './api/home';
+export {
+  chatApi,
+  useAskBuddyMutation,
+  useCreateChatSessionMutation,
+  useGetChatSessionsQuery,
+  useLazyGetChatSessionsQuery,
+  useLazyGetChatSessionByIdQuery,
+} from './api/chat';
