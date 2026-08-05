@@ -6,6 +6,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useAppDispatch } from '../../../store/hooks';
 import { logout } from '../../../store/slices/authSlice';
 import { useToast } from '../../../store/context/ToastContext';
+import { ProfileSummary } from '../../../store/api/home';
 import { COLORS } from '../styles/colors';
 
 type IconProps = {
@@ -21,6 +22,12 @@ type ActionItem = {
   surface: string;
   icon: (props: IconProps) => React.ReactNode;
   onPress: () => void;
+};
+
+type ProfileActionGridProps = {
+  summary?: ProfileSummary;
+  isLoading?: boolean;
+  isError?: boolean;
 };
 
 const PlanIcon = ({ color = COLORS.primary }: IconProps) => (
@@ -109,7 +116,27 @@ const SpacesGridIcon = ({ color = COLORS.primary }: IconProps) => (
   </Svg>
 );
 
-const ProfileActionGrid = () => {
+const formatMetric = (
+  value: number | undefined,
+  isLoading?: boolean,
+  isError?: boolean,
+) => {
+  if (isLoading) {
+    return '...';
+  }
+
+  if (isError) {
+    return '-';
+  }
+
+  return String(value ?? 0);
+};
+
+const ProfileActionGrid = ({
+  summary,
+  isLoading,
+  isError,
+}: ProfileActionGridProps) => {
   const navigation = useNavigation<any>();
   const dispatch = useAppDispatch();
   const { showToast } = useToast();
@@ -123,7 +150,7 @@ const ProfileActionGrid = () => {
     {
       id: 'notes',
       title: 'Notes',
-      value: '86',
+      value: formatMetric(summary?.notesCount, isLoading, isError),
       tone: 'primary',
       accent: '#059669',
       surface: '#ECFDF5',
@@ -133,7 +160,7 @@ const ProfileActionGrid = () => {
     {
       id: 'tasks',
       title: 'Tasks',
-      value: '124',
+      value: formatMetric(summary?.tasksCount, isLoading, isError),
       tone: 'primary',
       accent: '#2563EB',
       surface: '#EFF6FF',
@@ -143,7 +170,7 @@ const ProfileActionGrid = () => {
     {
       id: 'spaces',
       title: 'Spaces',
-      value: '8',
+      value: formatMetric(summary?.spacesCount, isLoading, isError),
       tone: 'primary',
       accent: '#7C3AED',
       surface: '#F5F3FF',

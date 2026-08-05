@@ -8,9 +8,21 @@ import ProfileCard from './components/ProfileCard';
 import ProfileActionGrid from './components/ProfileActionGrid';
 // import SettingsList from './components/SettingsList';
 
+import { useAppSelector } from '../../store/hooks';
+import { useGetProfileSummaryQuery } from '../../store/api/home';
 import { COLORS } from './styles/colors';
 
 const ProfileScreen = () => {
+  const { userId: storedUserId, name, email } = useAppSelector(
+    state => state.auth,
+  );
+  const userId = storedUserId ?? '';
+  const {
+    data: profileSummaryData,
+    isFetching: isFetchingSummary,
+    isError: isSummaryError,
+  } = useGetProfileSummaryQuery({ userId }, { skip: !userId });
+
   return (
     <LinearGradient
       colors={[
@@ -30,8 +42,12 @@ const ProfileScreen = () => {
           contentContainerStyle={styles.content}
         >
           <ProfileHeader />
-          <ProfileCard />
-          <ProfileActionGrid />
+          <ProfileCard name={name} email={email} />
+          <ProfileActionGrid
+            summary={profileSummaryData?.data}
+            isLoading={isFetchingSummary}
+            isError={isSummaryError}
+          />
           {/* <SettingsList /> */}
         </ScrollView>
       </SafeAreaView>

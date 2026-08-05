@@ -11,10 +11,13 @@ import Svg, { Path } from 'react-native-svg';
 import { COLORS } from '../styles/colors';
 
 const PROFILE = {
-  name: 'Preet Kumar',
-  email: 'preet.kumar@gmail.com',
   avatar: 'https://i.pravatar.cc/300',
   plan: 'Pro',
+};
+
+type ProfileCardProps = {
+  name?: string | null;
+  email?: string | null;
 };
 
 const PencilIcon = () => (
@@ -29,8 +32,10 @@ const PencilIcon = () => (
   </Svg>
 );
 
-const ProfileCard = () => {
+const ProfileCard = ({ name, email }: ProfileCardProps) => {
   const handlePhotoPress = () => {};
+  const displayName = name?.trim() || 'Buddy User';
+  const displayEmail = email?.trim() || 'No email added';
 
   return (
     <View style={styles.wrapper}>
@@ -47,8 +52,8 @@ const ProfileCard = () => {
             </View>
           </TouchableOpacity>
 
-          <Text style={styles.name}>{PROFILE.name}</Text>
-          <Text style={styles.email}>{PROFILE.email}</Text>
+          <Text style={styles.name}>{displayName}</Text>
+          <Text style={styles.email}>{displayEmail}</Text>
 
           <View style={styles.planBadge}>
             <Text style={styles.planLabel}>Plan</Text>

@@ -59,6 +59,12 @@ export interface SpaceStats {
   completionPercentage: number;
 }
 
+export interface ProfileSummary {
+  notesCount: number;
+  tasksCount: number;
+  spacesCount: number;
+}
+
 export interface NoteWorkspace {
   id: string;
   name: string;
@@ -101,6 +107,11 @@ interface GetSpaceStatsResponse {
   data: SpaceStats;
 }
 
+interface GetProfileSummaryResponse {
+  success: boolean;
+  data: ProfileSummary;
+}
+
 interface GetNoteWorkspacesResponse {
   success: boolean;
   data: {
@@ -140,6 +151,9 @@ interface GetActiveSpacesArgs {
 interface GetSpaceStatsArgs {
   userId: string;
   spaceId: string;
+}
+interface GetProfileSummaryArgs {
+  userId: string;
 }
 interface GetNoteWorkspacesArgs {
   userId: string;
@@ -222,6 +236,20 @@ export const homeApi = baseApi.injectEndpoints({
       providesTags: ['Spaces'],
     }),
 
+    getProfileSummary: builder.query<
+      GetProfileSummaryResponse,
+      GetProfileSummaryArgs
+    >({
+      query: ({ userId }) => ({
+        url: 'home/getProfileSummary',
+        method: 'GET',
+        params: {
+          userId,
+        },
+      }),
+      providesTags: ['Spaces'],
+    }),
+
     getNoteWorkspaces: builder.query<
       GetNoteWorkspacesResponse,
       GetNoteWorkspacesArgs
@@ -292,6 +320,7 @@ export const {
   useStartListningMutation,
   useGetUserActiveSpaceQuery,
   useGetSpaceStatsQuery,
+  useGetProfileSummaryQuery,
   useGetNoteWorkspacesQuery,
   useGetStagedNotesBySpaceQuery,
   useLazyGetStagedNoteByIdQuery,
