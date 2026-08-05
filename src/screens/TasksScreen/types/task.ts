@@ -1,8 +1,3 @@
-export type TaskSection = {
-  title: string;
-  content: string;
-};
-
 export type TaskItem = {
   id: string;
   title: string;
@@ -17,9 +12,5 @@ export type TaskItem = {
   project: string;
   assignee: string;
   summary: string;
-  subtasks: string[];
-  sections: TaskSection[];
-  description: string;
-  actionItems: string[];
-  relatedTasks: string[];
+  evidence: unknown;
 };

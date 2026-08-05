@@ -3,16 +3,22 @@ import React, {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import {
+  Animated,
   BackHandler,
+  Easing,
+  LayoutAnimation,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
+  UIManager,
   View,
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -25,10 +31,94 @@ type Props = {
   task: TaskItem | null;
 };
 
+type IconProps = {
+  size?: number;
+  color?: string;
+};
+
+const EvidenceIcon = ({ size = 18, color = COLORS.primaryDark }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7l-5-5Z"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M14 2v5h5M9 13h6M9 17h4"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const ChevronDownIcon = ({
+  size = 16,
+  color = COLORS.primaryDark,
+}: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="m6 9 6 6 6-6"
+      stroke={color}
+      strokeWidth={2.2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const evidenceTextKeys = [
+  'text',
+  'quote',
+  'content',
+  'body',
+  'transcript',
+  'snippet',
+  'message',
+  'value',
+  'sourceText',
+  'source_text',
+];
+
+const getEvidenceText = (item: unknown): string => {
+  if (typeof item === 'string') {
+    return item.trim();
+  }
+
+  if (!item || typeof item !== 'object') {
+    return '';
+  }
+
+  const record = item as Record<string, unknown>;
+
+  for (const key of evidenceTextKeys) {
+    const value = record[key];
+
+    if (typeof value === 'string' && value.trim().length > 0) {
+      return value.trim();
+    }
+  }
+
+  for (const value of Object.values(record)) {
+    const nestedText = getEvidenceText(value);
+
+    if (nestedText) {
+      return nestedText;
+    }
+  }
+
+  return '';
+};
+
 const TaskDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
   ({ task }, ref) => {
     const snapPoints = useMemo(() => ['88%'], []);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
+    const [isEvidenceOpen, setIsEvidenceOpen] = useState(false);
+    const chevronRotation = useRef(new Animated.Value(0)).current;
 
     const handleClose = useCallback(() => {
       if (ref && 'current' in ref) {
@@ -65,6 +155,46 @@ const TaskDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
       return () => subscription.remove();
     }, [isSheetOpen, handleClose]);
 
+    useEffect(() => {
+      if (
+        Platform.OS === 'android' &&
+        UIManager.setLayoutAnimationEnabledExperimental
+      ) {
+        UIManager.setLayoutAnimationEnabledExperimental(true);
+      }
+    }, []);
+
+    useEffect(() => {
+      setIsEvidenceOpen(false);
+    }, [task?.id]);
+
+    useEffect(() => {
+      Animated.timing(chevronRotation, {
+        toValue: isEvidenceOpen ? 1 : 0,
+        duration: 180,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    }, [chevronRotation, isEvidenceOpen]);
+
+    const toggleEvidence = useCallback(() => {
+      LayoutAnimation.configureNext({
+        duration: 220,
+        create: {
+          type: LayoutAnimation.Types.easeInEaseOut,
+          property: LayoutAnimation.Properties.opacity,
+        },
+        update: {
+          type: LayoutAnimation.Types.easeInEaseOut,
+        },
+        delete: {
+          type: LayoutAnimation.Types.easeInEaseOut,
+          property: LayoutAnimation.Properties.opacity,
+        },
+      });
+      setIsEvidenceOpen(prev => !prev);
+    }, []);
+
     if (!task) {
       return (
         <BottomSheetModal
@@ -81,6 +211,15 @@ const TaskDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
         </BottomSheetModal>
       );
     }
+
+    const evidenceItems = Array.isArray(task.evidence)
+      ? task.evidence
+      : task.evidence
+        ? [task.evidence]
+        : [];
+    const evidenceTexts = evidenceItems
+      .map(getEvidenceText)
+      .filter(item => item.length > 0);
 
     return (
       <BottomSheetModal
@@ -113,7 +252,9 @@ const TaskDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
           </View>
 
           <Text style={styles.title}>{task.title}</Text>
-          <Text style={styles.subtitle}>{task.subtitle}</Text>
+          {task.subtitle ? (
+            <Text style={styles.subtitle}>{task.subtitle}</Text>
+          ) : null}
 
           <Text style={styles.meta}>
             Due {task.dueDate} · Updated {task.updatedAt}
@@ -131,51 +272,77 @@ const TaskDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
             </View>
           </View>
 
-          <View style={styles.summaryCard}>
-            <Text style={styles.sectionLabel}>Overview</Text>
-            <Text style={styles.summaryText}>{task.summary}</Text>
-          </View>
-
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Subtasks</Text>
-            {task.subtasks.map((item, index) => (
-              <View key={index} style={styles.subtaskRow}>
-                <View style={styles.subtaskCheck} />
-                <Text style={styles.subtaskText}>{item}</Text>
+            <TouchableOpacity
+              activeOpacity={0.78}
+              style={styles.evidenceHeader}
+              onPress={toggleEvidence}
+            >
+              <View style={styles.evidenceHeaderLeft}>
+                <View style={styles.evidenceIconWrap}>
+                  <EvidenceIcon size={18} color={COLORS.primaryDark} />
+                </View>
+
+                <View style={styles.evidenceCopy}>
+                  <Text style={styles.evidenceTitle}>Evidence</Text>
+                  <Text style={styles.evidenceSubtitle}>
+                    {evidenceTexts.length > 0
+                      ? `${evidenceTexts.length} source ${
+                          evidenceTexts.length === 1 ? 'line' : 'lines'
+                        }`
+                      : 'No source text available'}
+                  </Text>
+                </View>
               </View>
-            ))}
-          </View>
 
-          {task.sections.map((section, index) => (
-            <View key={index} style={styles.detailCard}>
-              <Text style={styles.detailTitle}>{section.title}</Text>
-              <Text style={styles.detailText}>{section.content}</Text>
-            </View>
-          ))}
-
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Description</Text>
-            <Text style={styles.bodyText}>{task.description}</Text>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Next steps</Text>
-            {task.actionItems.map((item, index) => (
-              <View key={index} style={styles.actionRow}>
-                <View style={styles.actionDot} />
-                <Text style={styles.actionText}>{item}</Text>
+              <View
+                style={[
+                  styles.evidenceToggle,
+                  isEvidenceOpen && styles.evidenceToggleOpen,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.evidenceToggleText,
+                    isEvidenceOpen && styles.evidenceToggleTextOpen,
+                  ]}
+                >
+                  {isEvidenceOpen ? 'Hide' : 'Show'}
+                </Text>
+                <Animated.View
+                  style={{
+                    transform: [
+                      {
+                        rotate: chevronRotation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['0deg', '180deg'],
+                        }),
+                      },
+                    ],
+                  }}
+                >
+                  <ChevronDownIcon
+                    size={16}
+                    color={isEvidenceOpen ? COLORS.white : COLORS.primaryDark}
+                  />
+                </Animated.View>
               </View>
-            ))}
-          </View>
+            </TouchableOpacity>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Related tasks</Text>
-            {task.relatedTasks.map((item, index) => (
-              <View key={index} style={styles.relatedRow}>
-                <View style={styles.relatedDot} />
-                <Text style={styles.relatedText}>{item}</Text>
-              </View>
-            ))}
+            {isEvidenceOpen ? (
+              evidenceTexts.length > 0 ? (
+                evidenceTexts.map((item, index) => (
+                  <View key={`${item}-${index}`} style={styles.evidenceCard}>
+                    <View style={styles.evidenceIndex}>
+                      <Text style={styles.evidenceIndexText}>{index + 1}</Text>
+                    </View>
+                    <Text style={styles.evidenceText}>{item}</Text>
+                  </View>
+                ))
+              ) : (
+                <Text style={styles.emptyText}>No evidence available.</Text>
+              )
+            ) : null}
           </View>
 
           <View style={styles.section}>
@@ -317,15 +484,6 @@ const styles = StyleSheet.create({
     color: '#B45309',
   },
 
-  summaryCard: {
-    backgroundColor: '#FAF8FF',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#F0E9FF',
-  },
-
   section: {
     marginBottom: 20,
   },
@@ -336,13 +494,6 @@ const styles = StyleSheet.create({
     color: COLORS.black,
     marginBottom: 10,
     letterSpacing: 0.2,
-  },
-
-  summaryText: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: '#4B5563',
-    fontWeight: '500',
   },
 
   subtaskRow: {
@@ -467,6 +618,132 @@ const styles = StyleSheet.create({
   pillText: {
     color: COLORS.gray,
     fontSize: 12,
+    fontWeight: '600',
+  },
+
+  evidenceHeader: {
+    minHeight: 66,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+    paddingVertical: 11,
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EDE9FE',
+    shadowColor: '#64748B',
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+
+  evidenceHeaderLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: 12,
+  },
+
+  evidenceIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 11,
+    backgroundColor: COLORS.purpleLight,
+  },
+
+  evidenceCopy: {
+    flex: 1,
+  },
+
+  evidenceTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.black,
+  },
+
+  evidenceSubtitle: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#64748B',
+  },
+
+  evidenceToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#EEF2FF',
+  },
+
+  evidenceToggleOpen: {
+    backgroundColor: COLORS.primaryDark,
+    borderColor: COLORS.primaryDark,
+  },
+
+  evidenceToggleText: {
+    color: COLORS.primaryDark,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  evidenceToggleTextOpen: {
+    color: COLORS.white,
+  },
+
+  evidenceCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+
+  evidenceIndex: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+    backgroundColor: '#EEF2FF',
+  },
+
+  evidenceIndexText: {
+    color: '#4338CA',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+
+  evidenceText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 20,
+    color: '#374151',
+    fontWeight: '500',
+  },
+
+  emptyText: {
+    marginTop: 10,
+    fontSize: 13,
+    lineHeight: 20,
+    color: COLORS.gray,
     fontWeight: '600',
   },
 

@@ -15,6 +15,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+  type RouteProp,
+} from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { MainTabParamList } from '../../navigation/types';
 
 import Header from './component/Header';
 import TasksFilterMenu from './component/TasksFilterMenu';
@@ -35,6 +43,8 @@ import {
 } from '../../store/api/home';
 
 const TaskScreen = () => {
+  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
+  const route = useRoute<RouteProp<MainTabParamList, 'Tasks'>>();
   const taskSheetRef = useRef<BottomSheetModal>(null);
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
   const [selectedSpaceId, setSelectedSpaceId] = useState('');
@@ -65,6 +75,16 @@ const TaskScreen = () => {
     [spacesData],
   );
   const selectedSpace = spaces.find(space => space._id === selectedSpaceId);
+  const taskCountBySpaceId = useMemo(
+    () =>
+      new Map(
+        spaces.map(space => [
+          space._id,
+          typeof space.tasksCount === 'number' ? space.tasksCount : 0,
+        ]),
+      ),
+    [spaces],
+  );
 
   const {
     data: stagedTasksData,
@@ -129,9 +149,21 @@ const TaskScreen = () => {
     return result;
   }, [isTaskDone, loadedTasks, searchQuery, taskFilter]);
 
+  useFocusEffect(
+    useCallback(() => {
+      const spaceId = route.params?.spaceId;
+
+      if (!spaceId) {
+        return;
+      }
+
+      setSelectedSpaceId(spaceId);
+      navigation.setParams({ spaceId: undefined });
+    }, [navigation, route.params?.spaceId]),
+  );
+
   useEffect(() => {
     if (spaces.length === 0) {
-      setSelectedSpaceId('');
       return;
     }
 
@@ -235,7 +267,8 @@ const TaskScreen = () => {
   const toTaskItem = (task: StagedTaskCard): TaskItem => {
     const done = isTaskDone(task);
     const status = done ? 'Done' : 'Not Done';
-    const preview = task.descriptionPreview || 'No task description available.';
+    const body = task.body || task.descriptionPreview || '';
+    const preview = task.descriptionPreview || body;
     const workspaceName = selectedSpace?.spacename || 'Space';
     const confidencePercent =
       typeof task.confidence === 'number'
@@ -258,17 +291,8 @@ const TaskScreen = () => {
       createdAt: formatDate(task.createdAt),
       project: workspaceName,
       assignee: 'You',
-      summary: preview,
-      subtasks: [],
-      sections: [
-        {
-          title: 'Captured task',
-          content: preview,
-        },
-      ],
-      description: preview,
-      actionItems: [],
-      relatedTasks: [],
+      summary: body,
+      evidence: task.evidence ?? null,
     };
   };
 
@@ -394,9 +418,7 @@ const TaskScreen = () => {
           selectedSpaceId={selectedSpaceId}
           isLoading={isFetchingSpaces}
           isError={isSpacesError}
-          getTaskCount={spaceId =>
-            spaceId === selectedSpaceId ? loadedTasks.length : 0
-          }
+          getTaskCount={spaceId => taskCountBySpaceId.get(spaceId) ?? 0}
           onRetry={refetchSpaces}
           onSelectSpace={setSelectedSpaceId}
         />

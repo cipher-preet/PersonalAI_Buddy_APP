@@ -15,6 +15,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+  type RouteProp,
+} from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { MainTabParamList } from '../../navigation/types';
 
 import Header from './component/Header';
 import NotesFilterMenu from './component/NotesFilterMenu';
@@ -217,6 +225,8 @@ export const notes: NoteItem[] = [
 ];
 
 const Notes = () => {
+  const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
+  const route = useRoute<RouteProp<MainTabParamList, 'Notes'>>();
   const noteSheetRef = useRef<BottomSheetModal>(null);
   const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
   const [selectedSpaceId, setSelectedSpaceId] = useState('');
@@ -298,9 +308,21 @@ const Notes = () => {
     return result;
   }, [loadedNotes, searchQuery, sortOrder]);
 
+  useFocusEffect(
+    useCallback(() => {
+      const spaceId = route.params?.spaceId;
+
+      if (!spaceId) {
+        return;
+      }
+
+      setSelectedSpaceId(spaceId);
+      navigation.setParams({ spaceId: undefined });
+    }, [navigation, route.params?.spaceId]),
+  );
+
   useEffect(() => {
     if (spaces.length === 0) {
-      setSelectedSpaceId('');
       return;
     }
 

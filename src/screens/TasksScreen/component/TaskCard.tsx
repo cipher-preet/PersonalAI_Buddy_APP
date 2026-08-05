@@ -90,9 +90,11 @@ const TaskCard = ({
               >
                 {item.title}
               </Text>
-              <Text numberOfLines={2} style={styles.subtitle}>
-                {item.subtitle}
-              </Text>
+              {item.subtitle ? (
+                <Text numberOfLines={2} style={styles.subtitle}>
+                  {item.subtitle}
+                </Text>
+              ) : null}
             </View>
 
             <View style={styles.actions}>

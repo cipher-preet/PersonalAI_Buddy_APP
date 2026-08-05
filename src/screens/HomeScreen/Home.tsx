@@ -27,6 +27,7 @@ import { useToast } from '../../store/context/ToastContext';
 import { useAppSelector } from '../../store/hooks';
 
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import type { MainTabParamList } from '../../navigation/types';
 import CreateSpaceBottomSheet from './components/addspcesheet/CreateSpaceBottomSheet';
 import SpaceDetailBottomSheet from './components/spacedetail/SpaceDetailBottomSheet';
 import {
@@ -89,13 +90,7 @@ type RecordingContext = {
   mode: string;
 };
 
-type TabParamList = {
-  Home: undefined;
-  Notes: undefined;
-  Tasks: undefined;
-  AI: undefined;
-  Profile: undefined;
-};
+type TabParamList = MainTabParamList;
 
 const Home = () => {
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
@@ -371,11 +366,19 @@ const Home = () => {
   };
 
   const handleNavigateNotes = () => {
-    navigation.navigate('Notes');
+    if (!selectedSpace?._id) {
+      return;
+    }
+
+    navigation.navigate('Notes', { spaceId: selectedSpace._id });
   };
 
   const handleNavigateTasks = () => {
-    navigation.navigate('Tasks');
+    if (!selectedSpace?._id) {
+      return;
+    }
+
+    navigation.navigate('Tasks', { spaceId: selectedSpace._id });
   };
 
   const handleAskBuddy = () => {

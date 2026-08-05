@@ -24,6 +24,7 @@ export interface Space {
   _id: string;
   spacename: string;
   description: string;
+  tasksCount?: number;
   userId: string;
   isListining: boolean;
   createdAt: string;
@@ -84,7 +85,9 @@ export interface StagedNoteDetail {
 export interface StagedTaskCard {
   id: string;
   title: string;
+  body: string;
   descriptionPreview: string;
+  evidence: unknown;
   operation: string | null;
   priority: string | null;
   dueDate: string | null;

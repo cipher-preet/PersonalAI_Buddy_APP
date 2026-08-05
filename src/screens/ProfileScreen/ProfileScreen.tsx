@@ -5,9 +5,8 @@ import LinearGradient from 'react-native-linear-gradient';
 
 import ProfileHeader from './components/ProfileHeader';
 import ProfileCard from './components/ProfileCard';
-import WeeklyGoalCard from './components/WeeklyGoalCard';
-import ActivityCard from './components/ActivityCard';
-import SettingsList from './components/SettingsList';
+import ProfileActionGrid from './components/ProfileActionGrid';
+// import SettingsList from './components/SettingsList';
 
 import { COLORS } from './styles/colors';
 
@@ -32,9 +31,8 @@ const ProfileScreen = () => {
         >
           <ProfileHeader />
           <ProfileCard />
-          <WeeklyGoalCard />
-          <ActivityCard />
-          <SettingsList />
+          <ProfileActionGrid />
+          {/* <SettingsList /> */}
         </ScrollView>
       </SafeAreaView>
     </LinearGradient>
@@ -53,8 +51,8 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    paddingHorizontal: 18,
-    paddingTop: 12,
+    paddingHorizontal: 20,
+    paddingTop: 14,
     paddingBottom: 120,
   },
 });
