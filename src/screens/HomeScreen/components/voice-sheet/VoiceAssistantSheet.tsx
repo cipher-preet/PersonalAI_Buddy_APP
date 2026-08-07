@@ -7,11 +7,11 @@ import React, {
 } from 'react';
 import {
   BackHandler,
-  Dimensions,
   Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
+  Keyboard,
   View,
 } from 'react-native';
 import {
@@ -21,6 +21,7 @@ import {
   BottomSheetScrollView,
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
+import { useNavigation } from '@react-navigation/native';
 import { useToast } from '../../../../store/context/ToastContext';
 import { useAppSelector } from '../../../../store/hooks';
 import {
@@ -29,19 +30,34 @@ import {
   useGetUserSpacesQuery,
   useStartListningMutation,
 } from '../../../../store/api/home';
+import UpgradePlanPromptModal from '../../../../components/UpgradePlanPromptModal';
+import { isPlanLimitError } from '../../../../utils/planLimitError';
 import SpaceCard from './SpaceCard';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  layout,
+  ms,
+  mvs,
+  radii,
+  screenHeight,
+  shadows,
+  spacing,
+} from '../../../../theme';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const FOOTER_HEIGHT = Platform.OS === 'ios' ? 110 : 90;
-const MAX_SHEET_HEIGHT = SCREEN_HEIGHT * 0.82;
+const FOOTER_HEIGHT = Platform.OS === 'ios' ? mvs(110) : mvs(90);
+const MAX_SHEET_HEIGHT = screenHeight * 0.82;
 
 const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
+  const navigation = useNavigation<any>();
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
   const [spaceName, setSpaceName] = useState('');
   const [cursor, setCursor] = useState('');
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const userId = useAppSelector(state => state.auth.userId) ?? '';
   const { showToast } = useToast();
   const [createSpace, { isLoading: isCreating }] = useCreateSpaceMutation();
@@ -56,6 +72,13 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
   );
 
   const snapPoints = useMemo(() => [MAX_SHEET_HEIGHT], []);
+
+  const showPlanLimitPrompt = useCallback(() => {
+    Keyboard.dismiss();
+    setTimeout(() => {
+      setShowUpgradePrompt(true);
+    }, Platform.OS === 'ios' ? 250 : 120);
+  }, []);
 
   const handleClose = useCallback(() => {
     ref?.current?.dismiss();
@@ -124,7 +147,7 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
 
       if (response?.success) {
         showToast({
-          message: response.data || 'Space created successfully.',
+          message: response.data?.message || 'Space created successfully.',
           type: 'success',
         });
         setSpaceName('');
@@ -137,7 +160,12 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
           type: 'error',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (isPlanLimitError(error)) {
+        showPlanLimitPrompt();
+        return;
+      }
+
       showToast({
         message: 'Create space failed. Please try again.',
         type: 'error',
@@ -196,7 +224,8 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
   );
 
   return (
-    <BottomSheetModal
+    <>
+      <BottomSheetModal
       ref={ref}
       index={0}
       snapPoints={snapPoints}
@@ -221,7 +250,7 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
       <BottomSheetScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
+        keyboardShouldPersistTaps="always"
       >
         <View style={styles.header}>
           <View style={styles.headerTop}>
@@ -243,7 +272,7 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
         <View style={styles.inputRow}>
           <BottomSheetTextInput
             placeholder="Create new space..."
-            placeholderTextColor="#9CA3AF"
+            placeholderTextColor={colors.muted}
             value={spaceName}
             onChangeText={setSpaceName}
             style={styles.input}
@@ -300,8 +329,20 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
         ) : null}
 
         <View style={{ height: FOOTER_HEIGHT }} />
+
       </BottomSheetScrollView>
-    </BottomSheetModal>
+      </BottomSheetModal>
+
+      <UpgradePlanPromptModal
+        visible={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+        onUpgrade={() => {
+          setShowUpgradePrompt(false);
+          ref?.current?.dismiss();
+          navigation.navigate('Plans');
+        }}
+      />
+    </>
   );
 });
 
@@ -309,26 +350,26 @@ export default VoiceAssistantSheet;
 
 const styles = StyleSheet.create({
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 20,
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing['3xl'],
   },
 
   sheetBackground: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    backgroundColor: colors.white,
+    borderTopLeftRadius: ms(32),
+    borderTopRightRadius: ms(32),
   },
 
   indicator: {
-    backgroundColor: '#CBD5E1',
-    width: 70,
-    height: 6,
-    borderRadius: 999,
+    backgroundColor: colors.muted,
+    width: ms(70),
+    height: ms(6),
+    borderRadius: radii.pill,
   },
 
   header: {
-    marginBottom: 20,
+    marginBottom: spacing['3xl'],
   },
 
   headerTop: {
@@ -338,168 +379,154 @@ const styles = StyleSheet.create({
   },
 
   closeButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: ms(34),
+    height: ms(34),
+    borderRadius: ms(17),
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.lightGray,
   },
 
   closeIcon: {
-    fontSize: 22,
-    lineHeight: 24,
-    color: '#6B7280',
-    fontWeight: '500',
-    marginTop: -1,
+    fontSize: ms(22),
+    lineHeight: ms(24),
+    color: colors.subText,
+    fontWeight: fontWeight.medium,
+    marginTop: -ms(1),
   },
 
   heading: {
     flex: 1,
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-    paddingRight: 12,
+    fontSize: fontSize['3xl'],
+    fontWeight: fontWeight.bold,
+    color: colors.black,
+    paddingRight: spacing.xl,
   },
 
   subHeading: {
-    marginTop: 8,
-    fontSize: 13,
-    color: '#475569',
-    lineHeight: 20,
+    marginTop: spacing.md,
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    lineHeight: ms(20),
   },
 
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: spacing['4xl'],
   },
 
   input: {
     flex: 1,
-    height: 54,
-    backgroundColor: '#F7F8FD',
+    height: mvs(54),
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
-    borderRadius: 18,
-    paddingHorizontal: 18,
-    color: '#111827',
-    fontSize: 14,
+    borderColor: colors.border,
+    borderRadius: ms(18),
+    paddingHorizontal: ms(18),
+    color: colors.black,
+    fontSize: fontSize.base,
   },
 
   createBtn: {
-    height: 54,
-    marginLeft: 12,
-    paddingHorizontal: 18,
-    borderRadius: 18,
+    height: mvs(54),
+    marginLeft: spacing.xl,
+    paddingHorizontal: ms(18),
+    borderRadius: ms(18),
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#5B5BFF',
-    shadowColor: '#4F46E5',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.16,
-    shadowRadius: 16,
-    elevation: 4,
+    backgroundColor: colors.primary,
+    ...shadows.primary,
   },
 
   createBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-    fontSize: 14,
+    color: colors.white,
+    fontWeight: fontWeight.bold,
+    fontSize: fontSize.base,
   },
 
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 18,
+    marginBottom: mvs(18),
   },
 
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.bold,
+    color: colors.black,
   },
 
   countText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#475569',
-    backgroundColor: '#EEF2FF',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
+    color: colors.textSecondary,
+    backgroundColor: colors.primaryLight,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: ms(5),
+    borderRadius: radii.pill,
   },
 
   spaceContainer: {
-    gap: 4,
+    gap: spacing.xs,
   },
 
   footer: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: ms(14),
+    paddingBottom: Platform.OS === 'ios' ? mvs(34) : spacing['3xl'],
+    backgroundColor: colors.white,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: colors.borderLight,
   },
 
   startButton: {
-    height: 58,
-    borderRadius: 18,
+    height: mvs(58),
+    borderRadius: ms(18),
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4338CA',
-    shadowColor: '#4338CA',
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    elevation: 5,
+    backgroundColor: colors.primary,
+    ...shadows.primary,
   },
 
   startButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    color: colors.white,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
   },
 
   loadMoreButton: {
-    marginTop: 12,
-    marginBottom: 8,
-    height: 60,
-    borderRadius: 18,
-    backgroundColor: '#F3F4F6',
+    marginTop: spacing.xl,
+    marginBottom: spacing.md,
+    height: mvs(60),
+    borderRadius: ms(18),
+    backgroundColor: colors.lightGray,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: colors.borderLight,
     borderStyle: 'dashed',
   },
 
   loadMoreButtonLoading: {
     opacity: 0.7,
-    backgroundColor: '#EEF2FF',
-    borderColor: '#C7D2FE',
+    backgroundColor: colors.primaryLight,
+    borderColor: colors.borderFocus,
   },
 
   loadMoreText: {
-    color: '#111827',
-    fontSize: 15,
-    fontWeight: '700',
+    color: colors.black,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
     textAlign: 'center',
   },
 
   loadMoreSubtext: {
-    color: '#6B7280',
-    fontSize: 12,
-    fontWeight: '500',
-    marginTop: 4,
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    marginTop: spacing.xs,
     textAlign: 'center',
   },
 });

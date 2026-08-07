@@ -10,6 +10,7 @@ import Animated, {
 import Svg, { Path } from 'react-native-svg';
 
 import { COLORS } from '../styles';
+import { colors, ms, radii } from '../../../theme';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -20,7 +21,7 @@ type Props = {
 };
 
 const DownArrowIcon = ({ color = COLORS.primary }: { color?: string }) => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+  <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M12 5v14m0 0-6-6m6 6 6-6"
       stroke={color}
@@ -75,18 +76,18 @@ const styles = StyleSheet.create({
   button: {
     position: 'absolute',
     alignSelf: 'center',
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+    width: ms(42),
+    height: ms(42),
+    borderRadius: ms(14),
     backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E0E7FF',
+    borderColor: colors.borderFocus,
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: ms(8) },
     shadowOpacity: 0.14,
-    shadowRadius: 16,
+    shadowRadius: ms(16),
     elevation: 6,
   },
 });

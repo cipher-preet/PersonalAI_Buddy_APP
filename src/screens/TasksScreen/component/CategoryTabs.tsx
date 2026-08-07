@@ -10,6 +10,14 @@ import {
 
 import { Space } from '../../../store/api/home';
 import { COLORS } from './styles/color';
+import {
+  fontSize,
+  fontWeight,
+  ms,
+  mvs,
+  radii,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   spaces: Space[];
@@ -110,32 +118,32 @@ export default CategoryTabs;
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginTop: 20,
+    marginTop: spacing['3xl'],
   },
 
   container: {
-    paddingRight: 4,
-    gap: 10,
+    paddingRight: spacing.xs,
+    gap: spacing.lg,
   },
 
   tab: {
-    minWidth: 132,
-    maxWidth: 172,
+    minWidth: ms(132),
+    maxWidth: ms(172),
     backgroundColor: COLORS.white,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 16,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: ms(14),
+    borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
 
   stateTab: {
-    minWidth: 180,
-    minHeight: 70,
+    minWidth: ms(180),
+    minHeight: mvs(70),
     backgroundColor: COLORS.white,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 16,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: ms(14),
+    borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
     justifyContent: 'center',
@@ -148,8 +156,8 @@ const styles = StyleSheet.create({
 
   label: {
     color: COLORS.black,
-    fontWeight: '700',
-    fontSize: 14,
+    fontWeight: fontWeight.bold,
+    fontSize: fontSize.base,
   },
 
   activeLabel: {
@@ -157,10 +165,10 @@ const styles = StyleSheet.create({
   },
 
   count: {
-    marginTop: 4,
+    marginTop: spacing.xs,
     color: COLORS.gray,
-    fontWeight: '600',
-    fontSize: 12,
+    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.sm,
   },
 
   activeCount: {
@@ -168,22 +176,22 @@ const styles = StyleSheet.create({
   },
 
   stateText: {
-    marginTop: 6,
+    marginTop: spacing.sm,
     color: COLORS.gray,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
   },
 
   errorText: {
-    color: '#B91C1C',
-    fontSize: 13,
-    fontWeight: '800',
+    color: COLORS.errorDark,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.extrabold,
   },
 
   retryText: {
-    marginTop: 4,
+    marginTop: spacing.xs,
     color: COLORS.primaryDark,
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.extrabold,
   },
 });

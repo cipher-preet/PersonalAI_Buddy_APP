@@ -12,6 +12,13 @@ import AuthLayout from './components/AuthLayout';
 import ProgressDots from './components/ProgressDots';
 import OptionChip from './components/OptionChip';
 import { AUTH_COLORS } from './styles/colors';
+import {
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  spacing,
+} from '../../theme';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 import { useAppDispatch } from '../../store/hooks';
 import { setOnboardingProfession } from '../../store/slices/authSlice';
@@ -91,17 +98,17 @@ export default OnboardingProfessionScreen;
 
 const styles = StyleSheet.create({
   title: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: fontSize['4xl'],
+    fontWeight: fontWeight.extrabold,
     color: AUTH_COLORS.text,
-    marginBottom: 8,
+    marginBottom: spacing.md,
   },
 
   subtitle: {
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: fontSize.base,
+    lineHeight: ms(22),
     color: AUTH_COLORS.subText,
-    marginBottom: 22,
+    marginBottom: ms(22),
   },
 
   list: {
@@ -109,20 +116,20 @@ const styles = StyleSheet.create({
   },
 
   input: {
-    height: 52,
-    borderRadius: 14,
-    paddingHorizontal: 16,
+    height: ms(52),
+    borderRadius: ms(14),
+    paddingHorizontal: spacing['2xl'],
     backgroundColor: AUTH_COLORS.white,
     borderWidth: 1,
     borderColor: AUTH_COLORS.border,
-    fontSize: 15,
+    fontSize: fontSize.lg,
     color: AUTH_COLORS.text,
-    marginBottom: 16,
+    marginBottom: spacing['2xl'],
   },
 
   primaryButton: {
-    height: 54,
-    borderRadius: 16,
+    height: ms(54),
+    borderRadius: radii.lg,
     backgroundColor: AUTH_COLORS.primary,
     alignItems: 'center',
     justifyContent: 'center',
@@ -135,7 +142,7 @@ const styles = StyleSheet.create({
 
   primaryButtonText: {
     color: AUTH_COLORS.white,
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
   },
 });

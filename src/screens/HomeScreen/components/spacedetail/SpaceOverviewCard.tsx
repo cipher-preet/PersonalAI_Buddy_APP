@@ -7,6 +7,17 @@ import {
   View,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  layout,
+  ms,
+  mvs,
+  radii,
+  shadows,
+  spacing,
+} from '../../../../theme';
 
 type Props = {
   notesCount: number;
@@ -51,7 +62,7 @@ const SpaceOverviewCard = ({
 
       {isLoading ? (
         <View style={styles.stateBox}>
-          <ActivityIndicator size="small" color="#4338CA" />
+          <ActivityIndicator size="small" color={colors.primary} />
           <Text style={styles.stateText}>Loading overview...</Text>
         </View>
       ) : isError ? (
@@ -87,7 +98,7 @@ const SpaceOverviewCard = ({
 
             <View style={styles.track}>
               <LinearGradient
-                colors={['#8B5CF6', '#4338CA']}
+                colors={[colors.primaryPurple, colors.primary]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={[styles.fill, { width: `${safeCompletionRate}%` }]}
@@ -108,70 +119,66 @@ export default SpaceOverviewCard;
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    padding: 16,
+    backgroundColor: colors.white,
+    borderRadius: ms(18),
+    padding: layout.cardPadding,
     borderWidth: 1,
-    borderColor: '#EEF2FF',
-    shadowColor: '#64748B',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 2,
+    borderColor: colors.primaryLight,
+    ...shadows.soft,
   },
 
   cardTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1E2432',
-    marginBottom: 14,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    marginBottom: ms(14),
   },
 
   stateBox: {
-    minHeight: 138,
+    minHeight: mvs(138),
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 14,
-    backgroundColor: '#F8FAFC',
+    borderRadius: ms(14),
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: colors.border,
   },
 
   stateText: {
-    marginTop: 10,
-    color: '#64748B',
-    fontSize: 12,
-    fontWeight: '700',
+    marginTop: spacing.lg,
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
   },
 
   errorText: {
-    color: '#B91C1C',
-    fontSize: 12,
-    fontWeight: '700',
+    color: colors.errorDark,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
   },
 
   retryButton: {
-    marginTop: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 999,
-    backgroundColor: '#EEF2FF',
+    marginTop: spacing.lg,
+    paddingHorizontal: ms(14),
+    paddingVertical: ms(7),
+    borderRadius: radii.pill,
+    backgroundColor: colors.primaryLight,
   },
 
   retryText: {
-    color: '#4338CA',
-    fontSize: 12,
-    fontWeight: '800',
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.extrabold,
   },
 
   metricsRow: {
     flexDirection: 'row',
     alignItems: 'stretch',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 14,
-    paddingVertical: 12,
+    backgroundColor: colors.inputBg,
+    borderRadius: ms(14),
+    paddingVertical: spacing.xl,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: colors.border,
   },
 
   metric: {
@@ -183,35 +190,35 @@ const styles = StyleSheet.create({
   metricInner: {
     flex: 1,
     alignItems: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: spacing.xs,
   },
 
   divider: {
     width: 1,
-    backgroundColor: '#E2E8F0',
-    marginVertical: 4,
+    backgroundColor: colors.border,
+    marginVertical: spacing.xs,
   },
 
   metricValue: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#111827',
+    fontSize: fontSize['3xl'],
+    fontWeight: fontWeight.extrabold,
+    color: colors.black,
     letterSpacing: -0.5,
-    lineHeight: 24,
+    lineHeight: ms(24),
   },
 
   metricLabel: {
-    marginTop: 4,
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
+    marginTop: spacing.xs,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    color: colors.subText,
     textAlign: 'center',
   },
 
   separator: {
     height: 1,
-    backgroundColor: '#F1F5F9',
-    marginVertical: 14,
+    backgroundColor: colors.border,
+    marginVertical: ms(14),
   },
 
   progressSection: {},
@@ -220,44 +227,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: spacing.lg,
   },
 
   progressTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#64748B',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.subText,
   },
 
   percentBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-    backgroundColor: '#F5F3FF',
+    paddingHorizontal: spacing.md,
+    paddingVertical: ms(3),
+    borderRadius: radii.pill,
+    backgroundColor: colors.primarySoft,
   },
 
   percentText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#4338CA',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.extrabold,
+    color: colors.primary,
   },
 
   track: {
-    height: 5,
-    borderRadius: 999,
-    backgroundColor: '#EEF2FF',
+    height: ms(5),
+    borderRadius: radii.pill,
+    backgroundColor: colors.primaryLight,
     overflow: 'hidden',
   },
 
   fill: {
     height: '100%',
-    borderRadius: 999,
+    borderRadius: radii.pill,
   },
 
   progressSubtext: {
-    marginTop: 8,
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#94A3B8',
+    marginTop: spacing.md,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    color: colors.muted,
   },
 });

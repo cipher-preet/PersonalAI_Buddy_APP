@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   Modal,
   Pressable,
   ScrollView,
@@ -26,9 +25,17 @@ import AddIcon from '../../../../styles/icons/AddSpace';
 import { HistoryIcon } from '../../../../styles/icons';
 import { COLORS } from '../styles';
 import type { ChatSession } from '../types';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  screenWidth,
+  spacing,
+} from '../../../theme';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const DRAWER_WIDTH = Math.min(SCREEN_WIDTH * 0.86, 340);
+const DRAWER_WIDTH = Math.min(screenWidth * 0.86, ms(340));
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -49,7 +56,7 @@ type Props = {
 };
 
 const CloseIcon = ({ color = COLORS.text }: { color?: string }) => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+  <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M18 6 6 18M6 6l12 12"
       stroke={color}
@@ -61,7 +68,7 @@ const CloseIcon = ({ color = COLORS.text }: { color?: string }) => (
 );
 
 const ChatBubbleIcon = ({ color = COLORS.primary }: { color?: string }) => (
-  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+  <Svg width={ms(16)} height={ms(16)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"
       stroke={color}
@@ -216,8 +223,8 @@ const ChatHistoryDrawer = ({
             styles.drawer,
             drawerStyle,
             {
-              paddingTop: insets.top + 12,
-              paddingBottom: Math.max(insets.bottom, 16),
+              paddingTop: insets.top + spacing.xl,
+              paddingBottom: Math.max(insets.bottom, spacing['2xl']),
             },
           ]}
         >
@@ -230,7 +237,7 @@ const ChatHistoryDrawer = ({
           <View style={styles.header}>
             <View style={styles.headerLeft}>
               <View style={styles.headerIconWrap}>
-                <HistoryIcon width={18} height={18} color={COLORS.primary} />
+                <HistoryIcon width={ms(18)} height={ms(18)} color={COLORS.primary} />
               </View>
               <View>
                 <Text style={styles.headerTitle}>Chat History</Text>
@@ -264,9 +271,9 @@ const ChatHistoryDrawer = ({
             >
               <View style={styles.newChatIconWrap}>
                 {creating ? (
-                  <ActivityIndicator size="small" color="#FFFFFF" />
+                  <ActivityIndicator size="small" color={colors.white} />
                 ) : (
-                  <AddIcon width={18} height={18} color="#FFFFFF" />
+                  <AddIcon width={ms(18)} height={ms(18)} color={colors.white} />
                 )}
               </View>
               <View style={styles.newChatTextWrap}>
@@ -364,8 +371,8 @@ const ChatHistoryDrawer = ({
                     </TouchableOpacity>
                   );
                 })}
-                </View>
-              ))}
+              </View>
+            ))}
 
             {!loading && hasMore && onLoadMore ? (
               <TouchableOpacity
@@ -385,7 +392,7 @@ const ChatHistoryDrawer = ({
             {!loading && sessions.length === 0 ? (
               <View style={styles.emptyState}>
                 <View style={styles.emptyIconWrap}>
-                  <HistoryIcon width={28} height={28} color={COLORS.muted} />
+                  <HistoryIcon width={ms(28)} height={ms(28)} color={COLORS.muted} />
                 </View>
                 <Text style={styles.emptyTitle}>No conversations yet</Text>
                 <Text style={styles.emptySubtitle}>
@@ -409,7 +416,7 @@ const styles = StyleSheet.create({
 
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: '#0F172A',
+    backgroundColor: colors.text,
   },
 
   drawer: {
@@ -418,13 +425,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: DRAWER_WIDTH,
-    borderTopRightRadius: 24,
-    borderBottomRightRadius: 24,
+    borderTopRightRadius: radii['3xl'],
+    borderBottomRightRadius: radii['3xl'],
     overflow: 'hidden',
-    shadowColor: '#4338CA',
-    shadowOffset: { width: 6, height: 0 },
+    shadowColor: colors.primary,
+    shadowOffset: { width: ms(6), height: 0 },
     shadowOpacity: 0.14,
-    shadowRadius: 24,
+    shadowRadius: ms(24),
     elevation: 16,
     borderRightWidth: 1,
     borderTopWidth: 1,
@@ -436,46 +443,46 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingBottom: 16,
+    paddingHorizontal: spacing['2xl'],
+    paddingBottom: spacing['2xl'],
   },
 
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: spacing.xl,
     flex: 1,
   },
 
   headerIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: ms(40),
+    height: ms(40),
+    borderRadius: radii.md,
     backgroundColor: COLORS.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E0E7FF',
+    borderColor: colors.borderFocus,
   },
 
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.extrabold,
     color: COLORS.text,
     letterSpacing: -0.3,
   },
 
   headerSubtitle: {
-    marginTop: 2,
-    fontSize: 12,
-    fontWeight: '600',
+    marginTop: spacing.xxs,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
     color: COLORS.subText,
   },
 
   closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: ms(36),
+    height: ms(36),
+    borderRadius: radii.md,
     backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
@@ -484,29 +491,29 @@ const styles = StyleSheet.create({
   },
 
   newChatTouchable: {
-    marginHorizontal: 18,
-    marginBottom: 18,
-    borderRadius: 16,
+    marginHorizontal: spacing['2xl'],
+    marginBottom: spacing['2xl'],
+    borderRadius: radii.lg,
     overflow: 'hidden',
     shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: ms(8) },
     shadowOpacity: 0.22,
-    shadowRadius: 16,
+    shadowRadius: ms(16),
     elevation: 6,
   },
 
   newChatGradient: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.xl,
+    gap: spacing.xl,
   },
 
   newChatIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: ms(36),
+    height: ms(36),
+    borderRadius: radii.md,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -517,16 +524,16 @@ const styles = StyleSheet.create({
   },
 
   newChatTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.extrabold,
+    color: colors.white,
     letterSpacing: -0.2,
   },
 
   newChatSubtitle: {
-    marginTop: 2,
-    fontSize: 11,
-    fontWeight: '600',
+    marginTop: spacing.xxs,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
     color: 'rgba(255, 255, 255, 0.82)',
   },
 
@@ -535,31 +542,31 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    paddingHorizontal: 18,
-    paddingBottom: 12,
+    paddingHorizontal: spacing['2xl'],
+    paddingBottom: spacing.xl,
   },
 
   section: {
-    marginBottom: 18,
+    marginBottom: spacing['2xl'],
   },
 
   sectionLabel: {
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.extrabold,
     color: COLORS.muted,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    marginBottom: 10,
-    paddingLeft: 2,
+    marginBottom: spacing.lg,
+    paddingLeft: spacing.xxs,
   },
 
   sessionCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     backgroundColor: COLORS.white,
-    borderRadius: 16,
-    padding: 12,
-    marginBottom: 8,
+    borderRadius: radii.lg,
+    padding: spacing.xl,
+    marginBottom: spacing.md,
     borderWidth: 1,
     borderColor: COLORS.border,
     position: 'relative',
@@ -572,32 +579,32 @@ const styles = StyleSheet.create({
   },
 
   sessionIconWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    backgroundColor: '#F8FAFC',
+    width: ms(34),
+    height: ms(34),
+    borderRadius: radii.sm,
+    backgroundColor: colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: spacing.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
 
   sessionIconWrapActive: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.white,
     borderColor: '#C7D2FE',
   },
 
   sessionContent: {
     flex: 1,
-    paddingRight: 6,
+    paddingRight: spacing.sm,
   },
 
   sessionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
     color: COLORS.text,
-    marginBottom: 3,
+    marginBottom: spacing.xxs,
   },
 
   sessionTitleActive: {
@@ -605,11 +612,11 @@ const styles = StyleSheet.create({
   },
 
   sessionPreview: {
-    fontSize: 12,
-    lineHeight: 17,
-    fontWeight: '500',
+    fontSize: fontSize.sm,
+    lineHeight: ms(17),
+    fontWeight: fontWeight.medium,
     color: COLORS.subText,
-    marginBottom: 6,
+    marginBottom: spacing.sm,
   },
 
   sessionMeta: {
@@ -618,70 +625,70 @@ const styles = StyleSheet.create({
   },
 
   sessionMetaText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: ms(10),
+    fontWeight: fontWeight.bold,
     color: COLORS.muted,
   },
 
   metaDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 2,
+    width: ms(3),
+    height: ms(3),
+    borderRadius: ms(2),
     backgroundColor: COLORS.muted,
-    marginHorizontal: 6,
+    marginHorizontal: spacing.sm,
   },
 
   activeIndicator: {
     position: 'absolute',
     left: 0,
-    top: 12,
-    bottom: 12,
-    width: 3,
-    borderTopRightRadius: 3,
-    borderBottomRightRadius: 3,
+    top: spacing.xl,
+    bottom: spacing.xl,
+    width: ms(3),
+    borderTopRightRadius: ms(3),
+    borderBottomRightRadius: ms(3),
     backgroundColor: COLORS.primary,
   },
 
   emptyState: {
     alignItems: 'center',
-    paddingTop: 48,
-    paddingHorizontal: 20,
+    paddingTop: spacing['7xl'],
+    paddingHorizontal: spacing['3xl'],
   },
 
   emptyIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: '#F1F5F9',
+    width: ms(64),
+    height: ms(64),
+    borderRadius: radii.xl,
+    backgroundColor: colors.lightGray,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: spacing['2xl'],
   },
 
   emptyTitle: {
-    fontSize: 16,
-    fontWeight: '800',
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.extrabold,
     color: COLORS.text,
-    marginBottom: 6,
+    marginBottom: spacing.sm,
   },
 
   emptySubtitle: {
-    fontSize: 13,
-    lineHeight: 20,
-    fontWeight: '500',
+    fontSize: fontSize.md,
+    lineHeight: ms(20),
+    fontWeight: fontWeight.medium,
     color: COLORS.subText,
     textAlign: 'center',
   },
 
   loadingState: {
     alignItems: 'center',
-    paddingVertical: 24,
-    gap: 10,
+    paddingVertical: spacing['4xl'],
+    gap: spacing.lg,
   },
 
   loadingText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
     color: COLORS.subText,
   },
 
@@ -689,56 +696,56 @@ const styles = StyleSheet.create({
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
     borderColor: '#FECACA',
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 14,
+    borderRadius: ms(14),
+    padding: spacing.xl,
+    marginBottom: spacing.xl,
   },
 
   errorTitle: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.extrabold,
     color: '#991B1B',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
 
   errorText: {
-    fontSize: 12,
-    lineHeight: 17,
-    fontWeight: '600',
-    color: '#B91C1C',
+    fontSize: fontSize.sm,
+    lineHeight: ms(17),
+    fontWeight: fontWeight.semibold,
+    color: colors.errorDark,
   },
 
   retryButton: {
     alignSelf: 'flex-start',
-    marginTop: 10,
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
+    marginTop: spacing.lg,
+    borderRadius: radii.sm,
+    backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: '#FECACA',
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
   },
 
   retryButtonText: {
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.extrabold,
     color: '#991B1B',
   },
 
   loadMoreButton: {
-    height: 42,
-    borderRadius: 13,
+    height: ms(42),
+    borderRadius: ms(13),
     borderWidth: 1,
     borderColor: COLORS.border,
     backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 18,
+    marginBottom: spacing['2xl'],
   },
 
   loadMoreText: {
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.extrabold,
     color: COLORS.primary,
   },
 });

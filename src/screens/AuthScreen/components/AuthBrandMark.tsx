@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { AUTH_COLORS } from '../styles/colors';
+import { fontSize, fontWeight, ms, radii, spacing } from '../../../theme';
 
 type Props = {
   size?: 'md' | 'lg';
@@ -13,7 +14,11 @@ const AuthBrandMark = ({ size = 'lg' }: Props) => {
   return (
     <View style={[styles.wrapper, isLarge ? styles.wrapperLg : styles.wrapperMd]}>
       <LinearGradient
-        colors={['#8B5CF6', '#7C3AED', '#4338CA']}
+        colors={[
+          AUTH_COLORS.primaryPurple,
+          AUTH_COLORS.primaryMid,
+          AUTH_COLORS.primary,
+        ]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.mark, isLarge ? styles.markLg : styles.markMd]}
@@ -35,58 +40,58 @@ const styles = StyleSheet.create({
   },
 
   wrapperLg: {
-    marginBottom: 28,
+    marginBottom: spacing['4xl'],
   },
 
   wrapperMd: {
-    marginBottom: 20,
+    marginBottom: spacing['3xl'],
   },
 
   mark: {
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-    shadowColor: '#6D28D9',
-    shadowOffset: { width: 0, height: 10 },
+    shadowColor: AUTH_COLORS.primaryPurpleDark,
+    shadowOffset: { width: 0, height: ms(10) },
     shadowOpacity: 0.28,
-    shadowRadius: 20,
+    shadowRadius: ms(20),
     elevation: 8,
   },
 
   markLg: {
-    width: 76,
-    height: 76,
-    borderRadius: 24,
+    width: ms(76),
+    height: ms(76),
+    borderRadius: radii['3xl'],
   },
 
   markMd: {
-    width: 60,
-    height: 60,
-    borderRadius: 20,
+    width: ms(60),
+    height: ms(60),
+    borderRadius: radii.xl,
   },
 
   glow: {
     position: 'absolute',
-    top: -10,
-    right: -10,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    top: ms(-10),
+    right: ms(-10),
+    width: ms(40),
+    height: ms(40),
+    borderRadius: ms(20),
     backgroundColor: 'rgba(255,255,255,0.22)',
   },
 
   letter: {
     color: AUTH_COLORS.white,
-    fontWeight: '800',
+    fontWeight: fontWeight.extrabold,
   },
 
   letterLg: {
-    fontSize: 34,
+    fontSize: ms(34),
     letterSpacing: -1,
   },
 
   letterMd: {
-    fontSize: 28,
+    fontSize: fontSize['5xl'],
     letterSpacing: -0.5,
   },
 });

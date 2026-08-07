@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ScrollView,
+  ActivityIndicator,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -10,10 +11,44 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
+import RazorpayCheckout from 'react-native-razorpay';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  layout,
+  ms,
+  radii,
+  shadows,
+  spacing,
+} from '../../theme';
+import { useToast } from '../../store/context/ToastContext';
+import { useAppSelector } from '../../store/hooks';
+import {
+  Plan as BackendPlan,
+  PlanCode,
+  useActivateFreePlanMutation,
+  useCreatePaymentOrderMutation,
+  useGetPlanStatusQuery,
+  useGetPlansQuery,
+  useVerifyPaymentMutation,
+} from '../../store/api/payments';
 
-const plans = [
+type Plan = {
+  id: PlanCode;
+  backendPlan?: BackendPlan;
+  name: string;
+  price: string;
+  cadence: string;
+  description: string;
+  features: string[];
+  recommended?: boolean;
+  ctaLabel: string;
+};
+
+const fallbackPlans: Plan[] = [
   {
-    id: 'starter',
+    id: 'free',
     name: 'Starter',
     price: 'Free',
     cadence: 'forever',
@@ -26,11 +61,12 @@ const plans = [
       'Daily voice capture',
       'Standard AI summaries',
     ],
+    ctaLabel: 'Continue with Free',
   },
   {
     id: 'pro',
     name: 'Buddy Pro',
-    price: '$9',
+    price: '₹299',
     cadence: 'per month',
     description:
       'Unlock deeper recall, faster processing, unlimited spaces, and advanced AI summaries.',
@@ -42,16 +78,17 @@ const plans = [
       'Early access to new AI tools',
     ],
     recommended: true,
+    ctaLabel: 'Upgrade to Pro',
   },
 ];
 
-const CheckIcon = () => (
-  <View style={styles.checkIconWrap}>
-    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+const CheckIcon = ({ accent = false }: { accent?: boolean }) => (
+  <View style={[styles.checkIconWrap, accent && styles.checkIconAccent]}>
+    <Svg width={ms(12)} height={ms(12)} viewBox="0 0 24 24" fill="none">
       <Path
         d="m5 12 4 4L19 6"
-        stroke="#5B5FF8"
-        strokeWidth={2.6}
+        stroke={accent ? colors.white : colors.primary}
+        strokeWidth={2.8}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -59,28 +96,11 @@ const CheckIcon = () => (
   </View>
 );
 
-const CrownIcon = () => (
-  <View style={styles.crownWrap}>
-    <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="m5 16-1-9 5 4 3-6 3 6 5-4-1 9H5Z"
-        fill="#FFFFFF"
-      />
-      <Path
-        d="M5 19h14"
-        stroke="#FFFFFF"
-        strokeWidth={2}
-        strokeLinecap="round"
-      />
-    </Svg>
-  </View>
-);
-
 const BackIcon = () => (
-  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+  <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M15 18 9 12l6-6"
-      stroke="#111827"
+      stroke={colors.text}
       strokeWidth={2.2}
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -88,32 +108,226 @@ const BackIcon = () => (
   </Svg>
 );
 
+const ShieldIcon = () => (
+  <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6l-7-3Z"
+      stroke={colors.subText}
+      strokeWidth={1.8}
+      strokeLinejoin="round"
+    />
+    <Path
+      d="m9.5 12 1.8 1.8L15 10"
+      stroke={colors.subText}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const SparkIcon = () => (
+  <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 2.5 13.6 8.4 19.5 10 13.6 11.6 12 17.5 10.4 11.6 4.5 10 10.4 8.4 12 2.5Z"
+      fill={colors.white}
+    />
+  </Svg>
+);
+
 const PlansScreen = () => {
   const navigation = useNavigation();
-  const [selectedPlanId, setSelectedPlanId] = useState('pro');
-  const selectedPlanIndex = plans.findIndex(plan => plan.id === selectedPlanId);
+  const userId = useAppSelector(state => state.auth.userId) ?? '';
+  const name = useAppSelector(state => state.auth.name);
+  const email = useAppSelector(state => state.auth.email);
+  const phone = useAppSelector(state => state.auth.phone);
+  const { showToast } = useToast();
+  const [selectedPlanId, setSelectedPlanId] = useState<PlanCode>('pro');
+  const hasSyncedCurrentPlan = useRef(false);
+  const { data: plansData, isFetching: isFetchingPlans } = useGetPlansQuery();
+  const { data: planStatus, isFetching: isFetchingPlanStatus, refetch: refetchPlanStatus } =
+    useGetPlanStatusQuery({ userId }, { skip: !userId });
+  const [activateFreePlan, { isLoading: isActivatingFree }] =
+    useActivateFreePlanMutation();
+  const [createPaymentOrder, { isLoading: isCreatingOrder }] =
+    useCreatePaymentOrderMutation();
+  const [verifyPayment, { isLoading: isVerifyingPayment }] =
+    useVerifyPaymentMutation();
+
+  const plans = useMemo<Plan[]>(() => {
+    if (!plansData?.plans?.length) {
+      return fallbackPlans;
+    }
+
+    return plansData.plans.map(plan => ({
+      id: plan.code,
+      backendPlan: plan,
+      name: plan.name,
+      price:
+        plan.amount === 0
+          ? 'Free'
+          : `${plan.currency} ${Math.round(plan.amount / 100)}`,
+      cadence: plan.interval === 'forever' ? 'forever' : 'per month',
+      description: plan.description,
+      features: plan.features,
+      recommended: plan.code === 'pro',
+      ctaLabel: plan.code === 'pro' ? 'Upgrade to Pro' : 'Continue with Free',
+    }));
+  }, [plansData]);
+
   const selectedPlan = useMemo(
-    () => plans.find(plan => plan.id === selectedPlanId) ?? plans[1],
-    [selectedPlanId],
+    () =>
+      plans.find(plan => plan.id === selectedPlanId) ??
+      plans.find(plan => plan.id === 'pro') ??
+      plans[0],
+    [plans, selectedPlanId],
   );
+  const currentPlanCode = planStatus?.plan?.code;
+  const isLoadingInitialPlan =
+    !currentPlanCode && (isFetchingPlans || isFetchingPlanStatus);
+
+  useEffect(() => {
+    if (!currentPlanCode || hasSyncedCurrentPlan.current) {
+      return;
+    }
+
+    setSelectedPlanId(currentPlanCode);
+    hasSyncedCurrentPlan.current = true;
+  }, [currentPlanCode]);
+
+  const isBusy =
+    isActivatingFree ||
+    isCreatingOrder ||
+    isVerifyingPayment;
+  const ctaLabel =
+    currentPlanCode === selectedPlan.id
+      ? 'Current Plan'
+      : isBusy
+        ? 'Please wait...'
+        : selectedPlan.ctaLabel;
+
+  const priceHint =
+    selectedPlan.id === 'free'
+      ? 'No charge · Switch anytime'
+      : `${selectedPlan.price}/month · Cancel anytime`;
+
+  const displayPriceHint = priceHint.replace(/Â·/g, '.');
+
+  const handlePlanAction = async () => {
+    if (!userId || !selectedPlan) {
+      showToast({ message: 'Please login again to continue.', type: 'error' });
+      return;
+    }
+
+    if (currentPlanCode === selectedPlan.id) {
+      showToast({ message: 'This is already your active plan.', type: 'info' });
+      return;
+    }
+
+    try {
+      if (selectedPlan.id === 'free') {
+        const response = await activateFreePlan({ userId }).unwrap();
+        showToast({
+          message: response.message || 'Free plan activated.',
+          type: 'success',
+        });
+        refetchPlanStatus();
+        return;
+      }
+
+      const order = await createPaymentOrder({
+        userId,
+        planCode: selectedPlan.id,
+      }).unwrap();
+
+      if (!order.requiresPayment) {
+        showToast({
+          message: order.message || 'Plan updated successfully.',
+          type: 'success',
+        });
+        refetchPlanStatus();
+        return;
+      }
+
+      let checkoutResponse;
+
+      try {
+        checkoutResponse = await RazorpayCheckout.open({
+          key: order.keyId,
+          amount: order.amount,
+          currency: order.currency,
+          name: 'Buddy',
+          description: `${order.plan.name} subscription`,
+          order_id: order.orderId,
+          prefill: {
+            name,
+            email,
+            contact: phone,
+          },
+          theme: {
+            color: colors.primary,
+          },
+        });
+      } catch (checkoutError: any) {
+        if (/open.*null|native module/i.test(String(checkoutError?.message))) {
+          showToast({
+            message:
+              'Razorpay SDK is not linked in this Android build. Rebuild and reinstall the app, then try again.',
+            type: 'error',
+          });
+          return;
+        }
+
+        throw checkoutError;
+      }
+
+      const verification = await verifyPayment({
+        userId,
+        razorpay_order_id: checkoutResponse.razorpay_order_id,
+        razorpay_payment_id: checkoutResponse.razorpay_payment_id,
+        razorpay_signature: checkoutResponse.razorpay_signature,
+      }).unwrap();
+
+      showToast({
+        message: verification.message || 'Payment verified. Pro is active.',
+        type: 'success',
+      });
+      refetchPlanStatus();
+    } catch (error: any) {
+      const message =
+        error?.data?.message ||
+        error?.message ||
+        'Payment could not be completed. Please try again.';
+
+      showToast({ message, type: 'error' });
+      console.log('Payment flow failed:', error);
+    }
+  };
 
   return (
-    <LinearGradient
-      colors={['#F9F7FF', '#EFF3FF', '#F7FAFF', '#FFFFFF']}
-      locations={[0, 0.45, 0.78, 1]}
-      style={styles.container}
-    >
+    <View style={styles.container}>
+      <LinearGradient
+        colors={[colors.gradientStart, colors.gradientMid, colors.white]}
+        locations={[0, 0.55, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <View style={styles.headerBar}>
           <TouchableOpacity
             activeOpacity={0.78}
             style={styles.backButton}
             onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
           >
             <BackIcon />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>Choose your plan</Text>
+          <View style={styles.headerCenter}>
+            <Text style={styles.headerTitle}>Choose your plan</Text>
+          </View>
+
           <View style={styles.headerSpacer} />
         </View>
 
@@ -121,112 +335,176 @@ const PlansScreen = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
         >
-          <LinearGradient
-            colors={
-              selectedPlan.recommended
-                ? ['#C8D6FF', '#7C4DFF', '#15C7E8']
-                : ['#DDE5FF', '#E8EDF9', '#BFD7FF']
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.planBorder}
-          >
-            <View style={styles.planCard}>
-              <View style={styles.priceHeader}>
-                <View style={styles.priceRow}>
-                  <Text style={styles.price}>{selectedPlan.price}</Text>
-                  <Text style={styles.cadence}>/{selectedPlan.cadence}</Text>
-                </View>
-                {selectedPlan.recommended ? <CrownIcon /> : null}
-              </View>
-
-              <View style={styles.planIntro}>
-                <Text style={styles.planName}>{selectedPlan.name}</Text>
-                {selectedPlan.recommended ? (
-                  <View style={styles.recommendedBadge}>
-                    <Text style={styles.recommendedText}>Recommended</Text>
-                  </View>
-                ) : null}
-              </View>
-
-              <Text style={styles.planDescription}>
-                {selectedPlan.description}
-              </Text>
-
-              <Text style={styles.sectionLabel}>What you get</Text>
-
-              <View style={styles.featurePanel}>
-                {selectedPlan.features.map(feature => (
-                  <View key={feature} style={styles.featureRow}>
-                    <CheckIcon />
-                    <Text style={styles.featureText}>{feature}</Text>
-                  </View>
-                ))}
-              </View>
+          <View style={styles.hero}>
+            <View style={styles.heroBadge}>
+              <SparkIcon />
+              <Text style={styles.heroBadgeText}>Upgrade</Text>
             </View>
-          </LinearGradient>
-
-          <View style={styles.dotsRow}>
-            {plans.map((plan, index) => {
-              const selected = index === selectedPlanIndex;
-
-              return (
-                <TouchableOpacity
-                  key={plan.id}
-                  activeOpacity={0.78}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Select ${plan.name} plan`}
-                  style={[styles.dot, selected && styles.activeDot]}
-                  onPress={() => setSelectedPlanId(plan.id)}
-                />
-              );
-            })}
+            <Text style={styles.heroTitle}>Unlock more from Buddy</Text>
+            <Text style={styles.heroSubtitle}>
+              Pick the plan that fits your workflow. Upgrade anytime for
+              unlimited memory and priority AI.
+            </Text>
           </View>
 
-          <View style={styles.planSwitchRow}>
-            {plans.map(plan => {
+          {isLoadingInitialPlan ? (
+            <View style={styles.planLoaderCard}>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={styles.planLoaderTitle}>Loading your plan</Text>
+              <Text style={styles.planLoaderText}>
+                Checking your current subscription...
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.plansList}>
+              {plans.map(plan => {
               const selected = plan.id === selectedPlanId;
+              const isPro = Boolean(plan.recommended);
+              const isCurrent = currentPlanCode === plan.id;
 
               return (
                 <TouchableOpacity
                   key={plan.id}
-                  activeOpacity={0.82}
-                  style={[
-                    styles.planChip,
-                    selected && styles.selectedPlanChip,
-                  ]}
+                  activeOpacity={0.9}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={`${plan.name} plan, ${plan.price} ${plan.cadence}`}
                   onPress={() => setSelectedPlanId(plan.id)}
+                  style={[
+                    styles.planCard,
+                    styles.planCardWithRadio,
+                    selected && styles.planCardSelected,
+                    isPro && selected && styles.planCardProSelected,
+                  ]}
                 >
-                  <Text
+                  <View
                     style={[
-                      styles.planChipText,
-                      selected && styles.selectedPlanChipText,
+                      styles.radioOuter,
+                      selected && styles.radioOuterSelected,
                     ]}
                   >
-                    {plan.name}
-                  </Text>
+                    {selected ? <View style={styles.radioInner} /> : null}
+                  </View>
+
+                  {isPro || isCurrent ? (
+                    <View style={styles.badgeRow}>
+                      {isPro ? (
+                        <View style={styles.popularBadge}>
+                          <Text style={styles.popularBadgeText}>
+                            Most popular
+                          </Text>
+                        </View>
+                      ) : null}
+                      {isCurrent ? (
+                        <View style={styles.currentBadge}>
+                          <Text style={styles.currentBadgeText}>Current</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  ) : null}
+
+                  <View style={styles.planCardTop}>
+                    <View style={styles.planIdentity}>
+                      <View style={styles.planNameRow}>
+                        <Text
+                          style={[
+                            styles.planName,
+                            selected && styles.planNameSelected,
+                          ]}
+                        >
+                          {plan.name}
+                        </Text>
+                        {isPro ? (
+                          <View style={styles.proPill}>
+                            <Text style={styles.proPillText}>PRO</Text>
+                          </View>
+                        ) : null}
+                      </View>
+                      <Text style={styles.planDescription} numberOfLines={2}>
+                        {plan.description}
+                      </Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.priceBlock}>
+                    <Text
+                      style={[
+                        styles.price,
+                        selected && styles.priceSelected,
+                      ]}
+                    >
+                      {plan.price}
+                    </Text>
+                    <Text style={styles.cadence}>/{plan.cadence}</Text>
+                  </View>
+
+                  <View style={styles.divider} />
+
+                  <View style={styles.featureList}>
+                    {plan.features.map(feature => (
+                      <View key={feature} style={styles.featureRow}>
+                        <CheckIcon accent={selected && isPro} />
+                        <Text
+                          style={[
+                            styles.featureText,
+                            selected && styles.featureTextSelected,
+                          ]}
+                        >
+                          {feature}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
                 </TouchableOpacity>
               );
-            })}
+              })}
+            </View>
+          )}
+
+          {isFetchingPlans && !isLoadingInitialPlan ? (
+            <Text style={styles.loadingText}>Loading latest plans...</Text>
+          ) : null}
+
+          <View style={styles.trustRow}>
+            <ShieldIcon />
+            <Text style={styles.trustText}>
+              Secure checkout · Cancel anytime · Instant access
+            </Text>
           </View>
         </ScrollView>
 
-        <View style={styles.bottomBar}>
-          <TouchableOpacity activeOpacity={0.86} style={styles.subscribeButton}>
-            <LinearGradient
-              colors={['#5B5FF8', '#15C7E8']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.subscribeGradient}
+        <SafeAreaView edges={['bottom']} style={styles.bottomSafe}>
+          <View style={styles.bottomBar}>
+            <View style={styles.bottomSummary}>
+              <Text style={styles.bottomPlanName}>{selectedPlan.name}</Text>
+              <Text style={styles.bottomPriceHint}>{displayPriceHint}</Text>
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.88}
+              style={[styles.ctaButton, isBusy && styles.ctaButtonDisabled]}
+              accessibilityRole="button"
+              accessibilityLabel={ctaLabel}
+              onPress={handlePlanAction}
+              disabled={isBusy}
             >
-              <Text style={styles.subscribeText}>
-                {selectedPlan.id === 'starter' ? 'Start Free' : 'Subscribe'}
-              </Text>
-            </LinearGradient>
-          </TouchableOpacity>
-        </View>
+              <LinearGradient
+                colors={
+                  selectedPlan.recommended
+                    ? [colors.primary, colors.primaryMid]
+                    : [colors.accent, colors.accentCyan]
+                }
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.ctaGradient}
+              >
+                <Text style={styles.ctaText}>{ctaLabel}</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 };
 
@@ -235,7 +513,7 @@ export default PlansScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9F7FF',
+    backgroundColor: colors.background,
   },
 
   safeArea: {
@@ -243,266 +521,403 @@ const styles = StyleSheet.create({
   },
 
   headerBar: {
-    minHeight: 56,
-    paddingHorizontal: 20,
+    minHeight: layout.iconButton,
+    paddingHorizontal: layout.screenPadding,
+    paddingVertical: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
 
   backButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: layout.iconButtonSm,
+    height: layout.iconButtonSm,
+    borderRadius: radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFFA8',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
   },
 
   headerTitle: {
-    color: '#111827',
-    fontSize: 17,
-    fontWeight: '900',
+    color: colors.text,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    letterSpacing: -0.2,
   },
 
   headerSpacer: {
-    width: 42,
+    width: layout.iconButtonSm,
   },
 
   content: {
-    paddingHorizontal: 18,
-    paddingTop: 22,
-    paddingBottom: 126,
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: spacing.xl,
+    paddingBottom: ms(140),
   },
 
-  planBorder: {
-    borderRadius: 30,
-    padding: 1.6,
-    shadowColor: '#5B5FF8',
-    shadowOffset: {
-      width: 0,
-      height: 18,
-    },
-    shadowOpacity: 0.14,
-    shadowRadius: 28,
-    elevation: 8,
+  hero: {
+    marginBottom: spacing['4xl'],
+  },
+
+  heroBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
+    marginBottom: spacing.xl,
+  },
+
+  heroBadgeText: {
+    color: colors.white,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+
+  heroTitle: {
+    color: colors.text,
+    fontSize: fontSize['5xl'],
+    fontWeight: fontWeight.extrabold,
+    letterSpacing: -0.6,
+    lineHeight: ms(34),
+    marginBottom: spacing.md,
+  },
+
+  heroSubtitle: {
+    color: colors.subText,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.medium,
+    lineHeight: ms(22),
+    maxWidth: ms(320),
+  },
+
+  plansList: {
+    gap: spacing['2xl'],
+  },
+
+  planLoaderCard: {
+    minHeight: ms(184),
+    borderRadius: radii['3xl'],
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing['4xl'],
+    paddingVertical: spacing['4xl'],
+    ...shadows.soft,
+  },
+
+  planLoaderTitle: {
+    color: colors.text,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    marginTop: spacing.lg,
+  },
+
+  planLoaderText: {
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    marginTop: spacing.sm,
+    textAlign: 'center',
   },
 
   planCard: {
-    minHeight: 560,
-    borderRadius: 29,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 24,
+    backgroundColor: colors.white,
+    borderRadius: radii['3xl'],
+    padding: spacing['4xl'],
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    ...shadows.soft,
   },
 
-  priceHeader: {
+  planCardWithRadio: {
+    position: 'relative',
+    paddingRight: spacing['4xl'] + ms(34),
+  },
+
+  planCardSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.white,
+    ...shadows.card,
+  },
+
+  planCardProSelected: {
+    borderColor: colors.primary,
+    backgroundColor: '#FAFAFF',
+  },
+
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.xl,
+  },
+
+  popularBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primarySoft,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xs,
+  },
+
+  popularBadgeText: {
+    color: colors.primary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 0.3,
+  },
+
+  currentBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.primaryLight,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xs,
+  },
+
+  currentBadgeText: {
+    color: colors.primary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 0.3,
+  },
+
+  planCardTop: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
+    marginBottom: spacing['2xl'],
   },
 
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+  planIdentity: {
+    flex: 1,
+    gap: spacing.sm,
   },
 
-  price: {
-    color: '#111827',
-    fontSize: 42,
-    lineHeight: 48,
-    fontWeight: '900',
-  },
-
-  cadence: {
-    color: '#94A3B8',
-    fontSize: 12,
-    lineHeight: 24,
-    fontWeight: '700',
-    marginLeft: 2,
-  },
-
-  crownWrap: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#5B5FF8',
-    shadowColor: '#5B5FF8',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.22,
-    shadowRadius: 14,
-    elevation: 5,
-  },
-
-  planIntro: {
-    marginTop: 34,
+  planNameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    flexWrap: 'wrap',
+    gap: spacing.md,
   },
 
   planName: {
-    color: '#5B5FF8',
-    fontSize: 18,
-    fontWeight: '900',
+    color: colors.text,
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.bold,
+    letterSpacing: -0.3,
   },
 
-  recommendedBadge: {
-    borderRadius: 999,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    backgroundColor: '#F0F2FF',
+  planNameSelected: {
+    color: colors.primary,
   },
 
-  recommendedText: {
-    color: '#5B5FF8',
-    fontSize: 11,
-    fontWeight: '900',
+  proPill: {
+    backgroundColor: colors.primarySoft,
+    borderRadius: radii.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xxs,
+  },
+
+  proPillText: {
+    color: colors.primary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.extrabold,
+    letterSpacing: 0.6,
   },
 
   planDescription: {
-    marginTop: 12,
-    color: '#64748B',
-    fontSize: 14,
-    lineHeight: 22,
-    fontWeight: '600',
+    color: colors.subText,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.medium,
+    lineHeight: ms(18),
   },
 
-  sectionLabel: {
-    marginTop: 34,
-    color: '#111827',
-    fontSize: 17,
-    fontWeight: '900',
+  radioOuter: {
+    position: 'absolute',
+    top: spacing['4xl'],
+    right: spacing['4xl'],
+    width: ms(22),
+    height: ms(22),
+    borderRadius: ms(11),
+    borderWidth: 2,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
   },
 
-  featurePanel: {
-    marginTop: 16,
-    borderRadius: 22,
-    backgroundColor: '#FAF8FF',
-    paddingHorizontal: 16,
-    paddingVertical: 18,
-    gap: 14,
+  radioOuterSelected: {
+    borderColor: colors.primary,
+  },
+
+  radioInner: {
+    width: ms(12),
+    height: ms(12),
+    borderRadius: ms(6),
+    backgroundColor: colors.primary,
+  },
+
+  priceBlock: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    marginBottom: spacing['2xl'],
+  },
+
+  price: {
+    color: colors.text,
+    fontSize: ms(36),
+    lineHeight: ms(40),
+    fontWeight: fontWeight.extrabold,
+    letterSpacing: -1,
+  },
+
+  priceSelected: {
+    color: colors.primaryDark,
+  },
+
+  cadence: {
+    color: colors.muted,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    marginLeft: spacing.xs,
+    marginBottom: ms(6),
+  },
+
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginBottom: spacing['2xl'],
+  },
+
+  featureList: {
+    gap: spacing.xl,
   },
 
   featureRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.md,
   },
 
   checkIconWrap: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1,
-    borderColor: '#C8D6FF',
+    width: ms(20),
+    height: ms(20),
+    borderRadius: ms(10),
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.primaryLight,
+  },
+
+  checkIconAccent: {
+    backgroundColor: colors.primary,
   },
 
   featureText: {
-    color: '#334155',
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '700',
     flex: 1,
+    color: colors.textSecondary,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.medium,
+    lineHeight: ms(20),
   },
 
-  dotsRow: {
-    marginTop: 22,
+  featureTextSelected: {
+    color: colors.text,
+    fontWeight: fontWeight.semibold,
+  },
+
+  trustRow: {
+    marginTop: spacing['4xl'],
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
   },
 
-  dot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#CBD5E1',
+  trustText: {
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    textAlign: 'center',
   },
 
-  activeDot: {
-    width: 34,
-    backgroundColor: '#5B5FF8',
+  loadingText: {
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    marginTop: spacing.xl,
+    textAlign: 'center',
   },
 
-  planSwitchRow: {
-    marginTop: 18,
-    flexDirection: 'row',
-    gap: 12,
-  },
-
-  planChip: {
-    flex: 1,
-    minHeight: 50,
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E8EDF9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  selectedPlanChip: {
-    backgroundColor: '#F0F2FF',
-    borderColor: '#5B5FF8',
-  },
-
-  planChipText: {
-    color: '#64748B',
-    fontSize: 14,
-    fontWeight: '900',
-  },
-
-  selectedPlanChipText: {
-    color: '#5B5FF8',
+  bottomSafe: {
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
 
   bottomBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: 22,
-    paddingTop: 14,
-    paddingBottom: 24,
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#EEF2FF',
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
+    gap: spacing.xl,
   },
 
-  subscribeButton: {
-    borderRadius: 18,
+  bottomSummary: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  bottomPlanName: {
+    color: colors.text,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+  },
+
+  bottomPriceHint: {
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+
+  ctaButton: {
+    borderRadius: radii.lg,
     overflow: 'hidden',
-    shadowColor: '#5B5FF8',
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    elevation: 8,
+    ...shadows.primary,
   },
 
-  subscribeGradient: {
-    minHeight: 58,
-    borderRadius: 19,
+  ctaButtonDisabled: {
+    opacity: 0.65,
+  },
+
+  ctaGradient: {
+    minHeight: ms(54),
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  subscribeText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '900',
+  ctaText: {
+    color: colors.white,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 0.2,
   },
 });

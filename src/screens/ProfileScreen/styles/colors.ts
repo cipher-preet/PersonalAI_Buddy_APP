@@ -1,15 +1,21 @@
+/**
+ * Profile color tokens — backed by the shared app theme.
+ * Prefer importing from `src/theme` in new code.
+ */
+import { colors } from '../../../theme';
+
 export const COLORS = {
-  background: '#F7F7FB',
-  gradientStart: '#F9F7FF',
-  gradientMid: '#EFF3FF',
-  gradientEnd: '#FFFFFF',
-  white: '#FFFFFF',
-  primary: '#4338CA',
-  primaryPurple: '#8B5CF6',
-  primaryDark: '#6D28D9',
-  lightPurple: '#EEF2FF',
-  text: '#111827',
-  subText: '#64748B',
-  muted: '#94A3B8',
-  border: '#E5E7EB',
+  background: colors.background,
+  gradientStart: colors.gradientStart,
+  gradientMid: colors.gradientMid,
+  gradientEnd: colors.gradientEnd,
+  white: colors.white,
+  primary: colors.primary,
+  primaryPurple: colors.primaryPurple,
+  primaryDark: colors.primaryPurpleDark,
+  lightPurple: colors.lightPurple,
+  text: colors.text,
+  subText: colors.subText,
+  muted: colors.muted,
+  border: colors.borderLight,
 };

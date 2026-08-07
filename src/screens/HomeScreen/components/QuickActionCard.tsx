@@ -1,5 +1,14 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  shadows,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   title: string;
@@ -36,45 +45,36 @@ export default QuickActionCard;
 
 const styles = StyleSheet.create({
   card: {
-    width: 82,
+    width: ms(82),
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: spacing.lg,
   },
 
   iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    width: ms(60),
+    height: ms(60),
+    borderRadius: radii.xl,
+    backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#F1F4FB',
-    shadowColor: '#64748B',
-    shadowOffset: {
-      width: 0,
-      height: 6,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 4,
+    borderColor: colors.border,
+    ...shadows.soft,
   },
 
   iconWrapper: {
-    width: 34,
-    height: 34,
-
-    borderRadius: 12,
-
+    width: ms(34),
+    height: ms(34),
+    borderRadius: radii.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   title: {
-    marginTop: 12,
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#475569',
+    marginTop: spacing.xl,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    color: colors.textSecondary,
     letterSpacing: 0.2,
   },
 });

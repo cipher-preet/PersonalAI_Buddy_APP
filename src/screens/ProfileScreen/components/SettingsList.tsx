@@ -12,6 +12,14 @@ import { COLORS } from '../styles/colors';
 import { useAppDispatch } from '../../../store/hooks';
 import { logout } from '../../../store/slices/authSlice';
 import { useToast } from '../../../store/context/ToastContext';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  spacing,
+} from '../../../theme';
 
 const settings = [
   {
@@ -81,23 +89,23 @@ export default SettingsList;
 
 const styles = StyleSheet.create({
   heading: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
     color: COLORS.text,
-    marginBottom: 12,
+    marginBottom: spacing.xl,
   },
 
   group: {
     backgroundColor: COLORS.white,
-    borderRadius: 20,
+    borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: COLORS.border,
     overflow: 'hidden',
   },
 
   card: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.xl,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -105,7 +113,7 @@ const styles = StyleSheet.create({
 
   cardBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: colors.lightGray,
   },
 
   left: {
@@ -115,32 +123,32 @@ const styles = StyleSheet.create({
   },
 
   iconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: ms(40),
+    height: ms(40),
+    borderRadius: radii.md,
     backgroundColor: COLORS.lightPurple,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: spacing.xl,
   },
 
   title: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
     color: COLORS.text,
   },
 
   sub: {
-    marginTop: 2,
-    fontSize: 12,
+    marginTop: spacing.xxs,
+    fontSize: fontSize.sm,
     color: COLORS.subText,
-    fontWeight: '500',
+    fontWeight: fontWeight.medium,
   },
 
   logoutButton: {
-    marginTop: 16,
-    height: 52,
-    borderRadius: 16,
+    marginTop: spacing['2xl'],
+    height: ms(52),
+    borderRadius: radii.lg,
     backgroundColor: COLORS.white,
     borderWidth: 1,
     borderColor: '#FEE2E2',
@@ -149,8 +157,8 @@ const styles = StyleSheet.create({
   },
 
   logoutText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#DC2626',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+    color: colors.error,
   },
 });

@@ -1,4 +1,5 @@
 import {
+  NativeModules,
   PermissionsAndroid,
   Permission,
   PermissionStatus,
@@ -19,6 +20,15 @@ type RNFSType = typeof import('react-native-fs');
 
 declare const require: (moduleName: string) => RNFSType;
 
+type BuddyListeningServiceModule = {
+  start: (title?: string, message?: string) => Promise<boolean>;
+  stop: () => Promise<boolean>;
+};
+
+const { BuddyListeningService } = NativeModules as {
+  BuddyListeningService?: BuddyListeningServiceModule;
+};
+
 const audioRecorderPlayer = AudioRecorderPlayer;
 const SILENCE_THRESHOLD_DB = -30;
 const SILENCE_DURATION_MS = 2000;
@@ -29,6 +39,8 @@ const SPEECH_API_URL = BUDDY_ENDPOINTS.speechBase;
 const VOICE_MESSAGE_URL = `${SPEECH_API_URL}/transcripting`;
 const START_LISTENING_SESSION_URL = `${SPEECH_API_URL}/listening/start`;
 const END_LISTENING_SESSION_URL = `${SPEECH_API_URL}/listening/end`;
+const androidNotificationPermission =
+  'android.permission.POST_NOTIFICATIONS' as Permission;
 
 let currentRecordingPath: string | null = null;
 let silenceStartedAt: number | null = null;
@@ -176,6 +188,70 @@ export const requestMicrophonePermission = async () => {
   );
 
   return status === PermissionsAndroid.RESULTS.GRANTED;
+};
+
+export const requestListeningNotificationPermission = async () => {
+  if (Platform.OS !== 'android' || Number(Platform.Version) < 33) {
+    return true;
+  }
+
+  const hasPermission = await PermissionsAndroid.check(
+    androidNotificationPermission,
+  );
+
+  if (hasPermission) {
+    return true;
+  }
+
+  const status = await PermissionsAndroid.request(
+    androidNotificationPermission,
+    {
+      title: 'Listening Notification',
+      message:
+        'Buddy shows a notification while listening in the background or on the lock screen.',
+      buttonPositive: 'Allow',
+      buttonNegative: 'Cancel',
+    },
+  );
+
+  return status === PermissionsAndroid.RESULTS.GRANTED;
+};
+
+export const startBackgroundListeningNotification = async ({
+  spaceName,
+}: {
+  spaceName?: string;
+} = {}) => {
+  if (Platform.OS !== 'android') {
+    return;
+  }
+
+  const hasPermission = await requestListeningNotificationPermission();
+
+  if (!hasPermission) {
+    throw new Error('Notification permission denied.');
+  }
+
+  if (!BuddyListeningService) {
+    throw new Error(
+      'Buddy listening service is unavailable. Rebuild the Android app.',
+    );
+  }
+
+  await BuddyListeningService.start(
+    'Buddy is listening',
+    spaceName
+      ? `Recording continues in ${spaceName}. Tap to return to Buddy.`
+      : 'Recording continues in the background. Tap to return to Buddy.',
+  );
+};
+
+export const stopBackgroundListeningNotification = async () => {
+  if (Platform.OS !== 'android' || !BuddyListeningService) {
+    return;
+  }
+
+  await BuddyListeningService.stop();
 };
 
 export const stopVoiceRecording = async (): Promise<VoiceRecordingResult> => {

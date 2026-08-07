@@ -8,7 +8,9 @@ interface CreateSpacePayload {
 interface CreateSpaceResponse {
   success: boolean;
   message: string;
-  data: any;
+  data: {
+    message?: string;
+  };
 }
 
 interface StartLIstningResponse {

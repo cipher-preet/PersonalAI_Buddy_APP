@@ -42,6 +42,15 @@ import {
   useGetStagedNotesBySpaceQuery,
   useLazyGetStagedNoteByIdQuery,
 } from '../../store/api/home';
+import {
+  fontSize,
+  fontWeight,
+  layout,
+  ms,
+  mvs,
+  radii,
+  spacing,
+} from '../../theme';
 
 export const categories = [
   { id: 'all', label: 'All Notes', count: 86 },
@@ -657,75 +666,75 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
-    paddingTop: 16,
-    paddingBottom: 40,
+    paddingTop: mvs(16),
+    paddingBottom: mvs(40),
   },
 
   headerWrap: {
-    paddingHorizontal: 20,
-    marginBottom: 10,
+    paddingHorizontal: layout.screenPadding,
+    marginBottom: spacing.lg,
   },
 
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 120,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: layout.tabBarClearance,
   },
 
   stateBox: {
-    minHeight: 120,
-    marginBottom: 12,
+    minHeight: mvs(120),
+    marginBottom: spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 16,
+    borderRadius: radii.lg,
     backgroundColor: COLORS.white,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
 
   stateText: {
-    marginTop: 8,
+    marginTop: spacing.md,
     color: COLORS.gray,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
     textAlign: 'center',
   },
 
   emptyTitle: {
     color: COLORS.black,
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.extrabold,
   },
 
   errorText: {
-    color: '#B91C1C',
-    fontSize: 12,
-    fontWeight: '700',
+    color: COLORS.errorDark,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
   },
 
   retryButton: {
-    marginTop: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 999,
+    marginTop: spacing.lg,
+    paddingHorizontal: ms(14),
+    paddingVertical: ms(7),
+    borderRadius: radii.pill,
     backgroundColor: COLORS.purpleLight,
   },
 
   retryText: {
     color: COLORS.primaryDark,
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.extrabold,
   },
 
   loadMoreButton: {
-    minHeight: 52,
-    borderRadius: 16,
+    minHeight: mvs(52),
+    borderRadius: radii.lg,
     backgroundColor: COLORS.white,
     borderWidth: 1,
     borderColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
-    gap: 8,
+    gap: spacing.md,
   },
 
   loadMoreButtonDisabled: {
@@ -734,19 +743,19 @@ const styles = StyleSheet.create({
 
   loadMoreText: {
     color: COLORS.primaryDark,
-    fontSize: 13,
-    fontWeight: '800',
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.extrabold,
   },
 
   paginationFooter: {
-    marginBottom: 36,
+    marginBottom: mvs(36),
   },
 
   paginationText: {
-    marginBottom: 8,
+    marginBottom: spacing.md,
     color: COLORS.gray,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
     textAlign: 'center',
   },
 });

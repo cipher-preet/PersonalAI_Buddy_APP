@@ -1,7 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-
-import { COLORS } from '../styles/colors';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  layout,
+  ms,
+  spacing,
+} from '../../../theme';
 
 const ProfileHeader = () => {
   return (
@@ -15,16 +21,16 @@ export default ProfileHeader;
 
 const styles = StyleSheet.create({
   container: {
-    height: 44,
+    height: layout.iconButton,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: spacing.xl,
   },
 
   title: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: COLORS.text,
-    lineHeight: 22,
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.extrabold,
+    color: colors.text,
+    lineHeight: ms(22),
   },
 });

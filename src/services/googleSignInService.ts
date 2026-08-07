@@ -29,5 +29,6 @@ export const signInWithGoogle = async () => {
     idToken,
     name: response.data.user.name ?? 'Buddy User',
     email: response.data.user.email ?? '',
+    avatar: response.data.user.photo ?? '',
   };
 };

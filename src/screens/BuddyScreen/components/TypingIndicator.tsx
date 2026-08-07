@@ -11,9 +11,17 @@ import Animated, {
 } from 'react-native-reanimated';
 
 import { COLORS } from '../styles';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  spacing,
+} from '../../../theme';
 
-const DOT_SIZE = 7;
-const BOUNCE_HEIGHT = -5;
+const DOT_SIZE = ms(7);
+const BOUNCE_HEIGHT = -ms(5);
 
 const Dot = ({ delay }: { delay: number }) => {
   const translateY = useSharedValue(0);
@@ -65,31 +73,31 @@ export default TypingIndicator;
 
 const styles = StyleSheet.create({
   row: {
-    marginTop: 8,
+    marginTop: spacing.md,
     alignItems: 'flex-start',
   },
 
   bubble: {
     maxWidth: '72%',
     backgroundColor: COLORS.aiBubble,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 20,
-    borderBottomLeftRadius: 6,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.xl,
+    borderRadius: radii.xl,
+    borderBottomLeftRadius: radii.xs,
     borderWidth: 1,
-    borderColor: '#EEF2FF',
-    shadowColor: '#64748B',
-    shadowOffset: { width: 0, height: 4 },
+    borderColor: colors.primaryLight,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: ms(4) },
     shadowOpacity: 0.05,
-    shadowRadius: 10,
+    shadowRadius: ms(10),
     elevation: 2,
   },
 
   dotsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    height: 18,
+    gap: spacing.xs,
+    height: ms(18),
   },
 
   dot: {
@@ -100,9 +108,9 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    marginTop: 6,
-    fontSize: 11,
-    fontWeight: '600',
+    marginTop: spacing.sm,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
     color: COLORS.muted,
     letterSpacing: 0.1,
   },

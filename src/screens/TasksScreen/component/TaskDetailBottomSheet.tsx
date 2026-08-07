@@ -26,6 +26,14 @@ import {
 } from '@gorhom/bottom-sheet';
 import { TaskItem } from '../types/task';
 import { COLORS } from './styles/color';
+import {
+  fontSize,
+  fontWeight,
+  ms,
+  mvs,
+  radii,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   task: TaskItem | null;
@@ -36,7 +44,10 @@ type IconProps = {
   color?: string;
 };
 
-const EvidenceIcon = ({ size = 18, color = COLORS.primaryDark }: IconProps) => (
+const EvidenceIcon = ({
+  size = ms(18),
+  color = COLORS.primaryDark,
+}: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
       d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7l-5-5Z"
@@ -56,7 +67,7 @@ const EvidenceIcon = ({ size = 18, color = COLORS.primaryDark }: IconProps) => (
 );
 
 const ChevronDownIcon = ({
-  size = 16,
+  size = ms(16),
   color = COLORS.primaryDark,
 }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -372,105 +383,105 @@ export default TaskDetailBottomSheet;
 const styles = StyleSheet.create({
   sheetBackground: {
     backgroundColor: COLORS.white,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: ms(28),
+    borderTopRightRadius: ms(28),
   },
 
   indicator: {
-    backgroundColor: '#CBD5E1',
-    width: 48,
-    height: 5,
-    borderRadius: 999,
+    backgroundColor: COLORS.border,
+    width: ms(48),
+    height: ms(5),
+    borderRadius: radii.pill,
   },
 
   scrollContent: {
-    paddingHorizontal: 22,
-    paddingTop: 4,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 32,
+    paddingHorizontal: ms(22),
+    paddingTop: spacing.xs,
+    paddingBottom: Platform.OS === 'ios' ? mvs(40) : mvs(32),
   },
 
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: ms(14),
   },
 
   statusBadge: {
     backgroundColor: COLORS.purpleLight,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: ms(5),
+    borderRadius: ms(8),
   },
 
   statusText: {
     color: COLORS.primaryDark,
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
     letterSpacing: 0.3,
   },
 
   closeButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: ms(34),
+    height: ms(34),
+    borderRadius: ms(17),
     backgroundColor: COLORS.lightGray,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   closeIcon: {
-    fontSize: 22,
-    lineHeight: 24,
-    color: '#6B7280',
+    fontSize: fontSize['2xl'] + ms(4),
+    lineHeight: ms(24),
+    color: COLORS.muted,
     marginTop: -1,
   },
 
   title: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: fontSize['2xl'] + ms(4),
+    fontWeight: fontWeight.extrabold,
     color: COLORS.black,
-    lineHeight: 30,
+    lineHeight: ms(30),
     letterSpacing: -0.3,
   },
 
   subtitle: {
-    marginTop: 6,
-    fontSize: 14,
-    fontWeight: '500',
+    marginTop: spacing.sm,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.medium,
     color: COLORS.gray,
-    lineHeight: 20,
+    lineHeight: ms(20),
   },
 
   meta: {
-    marginTop: 8,
-    marginBottom: 4,
-    fontSize: 12,
-    fontWeight: '500',
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
     color: COLORS.gray,
   },
 
   infoRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 12,
-    marginBottom: 20,
+    gap: spacing.md,
+    marginTop: spacing.xl,
+    marginBottom: spacing['3xl'],
   },
 
   infoChip: {
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
+    backgroundColor: COLORS.inputBg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.sm,
     borderWidth: 1,
-    borderColor: '#EEF2FF',
+    borderColor: COLORS.primaryLight,
   },
 
   infoChipText: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#64748B',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    color: COLORS.subText,
   },
 
   priorityChip: {
@@ -479,160 +490,160 @@ const styles = StyleSheet.create({
   },
 
   priorityText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
     color: '#B45309',
   },
 
   section: {
-    marginBottom: 20,
+    marginBottom: spacing['3xl'],
   },
 
   sectionLabel: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
     color: COLORS.black,
-    marginBottom: 10,
+    marginBottom: spacing.lg,
     letterSpacing: 0.2,
   },
 
   subtaskRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 10,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    marginBottom: spacing.lg,
+    backgroundColor: COLORS.inputBg,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
   },
 
   subtaskCheck: {
-    width: 16,
-    height: 16,
-    borderRadius: 5,
+    width: ms(16),
+    height: ms(16),
+    borderRadius: ms(5),
     borderWidth: 1.5,
     borderColor: COLORS.primary,
-    marginRight: 10,
-    marginTop: 2,
+    marginRight: spacing.lg,
+    marginTop: spacing.xxs,
   },
 
   subtaskText: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#374151',
-    fontWeight: '500',
+    fontSize: fontSize.base,
+    lineHeight: ms(20),
+    color: COLORS.textSecondary,
+    fontWeight: fontWeight.medium,
   },
 
   detailCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 10,
+    backgroundColor: COLORS.white,
+    borderRadius: ms(14),
+    padding: ms(14),
+    marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: '#F1F5F9',
+    borderColor: COLORS.lightGray,
   },
 
   detailTitle: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
     color: COLORS.black,
-    marginBottom: 6,
+    marginBottom: spacing.sm,
   },
 
   detailText: {
-    fontSize: 14,
-    lineHeight: 22,
-    color: '#4B5563',
-    fontWeight: '400',
+    fontSize: fontSize.base,
+    lineHeight: ms(22),
+    color: COLORS.textSecondary,
+    fontWeight: fontWeight.regular,
   },
 
   bodyText: {
-    fontSize: 15,
-    lineHeight: 24,
-    color: '#374151',
-    fontWeight: '400',
+    fontSize: fontSize.lg,
+    lineHeight: ms(24),
+    color: COLORS.textSecondary,
+    fontWeight: fontWeight.regular,
   },
 
   actionRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 10,
+    marginBottom: spacing.lg,
   },
 
   actionDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: ms(6),
+    height: ms(6),
+    borderRadius: ms(3),
     backgroundColor: COLORS.primary,
-    marginTop: 8,
-    marginRight: 10,
+    marginTop: spacing.md,
+    marginRight: spacing.lg,
   },
 
   actionText: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 22,
-    color: '#374151',
-    fontWeight: '500',
+    fontSize: fontSize.base,
+    lineHeight: ms(22),
+    color: COLORS.textSecondary,
+    fontWeight: fontWeight.medium,
   },
 
   relatedRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: '#FAFAFA',
-    borderRadius: 10,
+    marginBottom: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    backgroundColor: COLORS.lightGray,
+    borderRadius: radii.sm,
   },
 
   relatedDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: ms(6),
+    height: ms(6),
+    borderRadius: ms(3),
     backgroundColor: COLORS.primaryDark,
-    marginRight: 10,
+    marginRight: spacing.lg,
   },
 
   relatedText: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4B5563',
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: COLORS.textSecondary,
   },
 
   tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: spacing.md,
   },
 
   pill: {
     backgroundColor: COLORS.lightGray,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.sm,
   },
 
   pillText: {
     color: COLORS.gray,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
   },
 
   evidenceHeader: {
-    minHeight: 66,
+    minHeight: mvs(66),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-    paddingVertical: 11,
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: spacing.xl,
+    paddingVertical: ms(11),
+    borderRadius: ms(14),
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: '#EDE9FE',
-    shadowColor: '#64748B',
+    borderColor: COLORS.borderFocus,
+    shadowColor: COLORS.shadow,
     shadowOffset: {
       width: 0,
       height: 3,
@@ -646,16 +657,16 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingRight: 12,
+    paddingRight: spacing.xl,
   },
 
   evidenceIconWrap: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
+    width: ms(38),
+    height: ms(38),
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 11,
+    marginRight: ms(11),
     backgroundColor: COLORS.purpleLight,
   },
 
@@ -664,28 +675,28 @@ const styles = StyleSheet.create({
   },
 
   evidenceTitle: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.extrabold,
     color: COLORS.black,
   },
 
   evidenceSubtitle: {
-    marginTop: 2,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#64748B',
+    marginTop: spacing.xxs,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: COLORS.subText,
   },
 
   evidenceToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 999,
-    backgroundColor: '#F8FAFC',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: ms(7),
+    borderRadius: radii.pill,
+    backgroundColor: COLORS.inputBg,
     borderWidth: 1,
-    borderColor: '#EEF2FF',
+    borderColor: COLORS.primaryLight,
   },
 
   evidenceToggleOpen: {
@@ -695,8 +706,8 @@ const styles = StyleSheet.create({
 
   evidenceToggleText: {
     color: COLORS.primaryDark,
-    fontSize: 12,
-    fontWeight: '800',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.extrabold,
   },
 
   evidenceToggleTextOpen: {
@@ -706,55 +717,55 @@ const styles = StyleSheet.create({
   evidenceCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    marginTop: 10,
+    backgroundColor: COLORS.white,
+    borderRadius: ms(14),
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xl,
+    marginTop: spacing.lg,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.border,
   },
 
   evidenceIndex: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
+    width: ms(24),
+    height: ms(24),
+    borderRadius: ms(8),
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
-    backgroundColor: '#EEF2FF',
+    marginRight: spacing.lg,
+    backgroundColor: COLORS.primaryLight,
   },
 
   evidenceIndexText: {
-    color: '#4338CA',
-    fontSize: 11,
-    fontWeight: '800',
+    color: COLORS.primary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.extrabold,
   },
 
   evidenceText: {
     flex: 1,
-    fontSize: 13,
-    lineHeight: 20,
-    color: '#374151',
-    fontWeight: '500',
+    fontSize: fontSize.md,
+    lineHeight: ms(20),
+    color: COLORS.textSecondary,
+    fontWeight: fontWeight.medium,
   },
 
   emptyText: {
-    marginTop: 10,
-    fontSize: 13,
-    lineHeight: 20,
+    marginTop: spacing.lg,
+    fontSize: fontSize.md,
+    lineHeight: ms(20),
     color: COLORS.gray,
-    fontWeight: '600',
+    fontWeight: fontWeight.semibold,
   },
 
   createdText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
     color: COLORS.gray,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
 
   footerSpace: {
-    height: 16,
+    height: spacing['2xl'],
   },
 });

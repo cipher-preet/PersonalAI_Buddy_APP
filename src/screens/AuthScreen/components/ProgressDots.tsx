@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { AUTH_COLORS } from '../styles/colors';
+import { ms, radii, spacing } from '../../../theme';
 
 type Props = {
   step: number;
@@ -25,15 +26,15 @@ export default ProgressDots;
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 28,
+    gap: spacing.md,
+    marginBottom: spacing['4xl'],
   },
 
   dot: {
     flex: 1,
-    height: 5,
-    borderRadius: 999,
-    backgroundColor: '#E2E8F0',
+    height: ms(5),
+    borderRadius: radii.pill,
+    backgroundColor: AUTH_COLORS.border,
   },
 
   dotActive: {

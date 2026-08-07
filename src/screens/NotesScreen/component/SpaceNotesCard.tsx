@@ -3,6 +3,14 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 import { MySpcaes } from '../../../../styles/icons';
 import { COLORS } from './styles/color';
+import {
+  fontSize,
+  fontWeight,
+  ms,
+  mvs,
+  shadows,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   name: string;
@@ -13,7 +21,7 @@ const SpaceNotesCard = ({ name, notesCount }: Props) => {
   return (
     <TouchableOpacity activeOpacity={0.86} style={styles.card}>
       <View style={styles.iconBox}>
-        <MySpcaes width={18} height={18} color={COLORS.primaryDark} />
+        <MySpcaes width={ms(18)} height={ms(18)} color={COLORS.primaryDark} />
       </View>
 
       <View style={styles.content}>
@@ -31,34 +39,30 @@ export default SpaceNotesCard;
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-    minHeight: 74,
-    marginTop: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 18,
+    minHeight: mvs(74),
+    marginTop: spacing.xl,
+    paddingHorizontal: ms(14),
+    paddingVertical: spacing.xl,
+    borderRadius: ms(18),
     backgroundColor: COLORS.white,
     borderWidth: 1,
     borderColor: COLORS.border,
     flexDirection: 'row',
     alignItems: 'center',
-    shadowColor: '#64748B',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    ...shadows.soft,
     shadowOpacity: 0.06,
     shadowRadius: 10,
     elevation: 2,
   },
 
   iconBox: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
+    width: ms(42),
+    height: ms(42),
+    borderRadius: ms(14),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: COLORS.purpleLight,
-    marginRight: 12,
+    marginRight: spacing.xl,
   },
 
   content: {
@@ -67,14 +71,14 @@ const styles = StyleSheet.create({
 
   name: {
     color: COLORS.black,
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.extrabold,
   },
 
   count: {
-    marginTop: 4,
+    marginTop: spacing.xs,
     color: COLORS.gray,
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
   },
 });

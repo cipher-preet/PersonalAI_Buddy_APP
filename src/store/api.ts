@@ -9,6 +9,15 @@ export {
 } from './api/auth';
 export { homeApi  } from './api/home';
 export {
+  paymentsApi,
+  useActivateFreePlanMutation,
+  useCreatePaymentLinkMutation,
+  useCreatePaymentOrderMutation,
+  useGetPlansQuery,
+  useGetPlanStatusQuery,
+  useVerifyPaymentMutation,
+} from './api/payments';
+export {
   chatApi,
   useAskBuddyMutation,
   useCreateChatSessionMutation,

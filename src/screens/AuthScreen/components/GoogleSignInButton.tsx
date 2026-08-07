@@ -7,6 +7,13 @@ import {
   View,
 } from 'react-native';
 import { AUTH_COLORS } from '../styles/colors';
+import {
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   onPress: () => void;
@@ -40,19 +47,19 @@ export default GoogleSignInButton;
 
 const styles = StyleSheet.create({
   button: {
-    height: 56,
-    borderRadius: 28,
+    height: ms(56),
+    borderRadius: ms(28),
     backgroundColor: AUTH_COLORS.white,
     borderWidth: 1,
     borderColor: AUTH_COLORS.googleBorder,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: spacing.xl,
     shadowColor: AUTH_COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: ms(2) },
     shadowOpacity: 0.04,
-    shadowRadius: 8,
+    shadowRadius: ms(8),
     elevation: 1,
   },
 
@@ -61,25 +68,25 @@ const styles = StyleSheet.create({
   },
 
   iconCircle: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: '#FFFFFF',
+    width: ms(22),
+    height: ms(22),
+    borderRadius: ms(11),
+    backgroundColor: AUTH_COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 0.5,
-    borderColor: '#E2E8F0',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: AUTH_COLORS.border,
   },
 
   iconG: {
-    fontSize: 14,
-    fontWeight: '800',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.extrabold,
     color: '#4285F4',
   },
 
   label: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
     color: AUTH_COLORS.text,
     letterSpacing: -0.2,
   },

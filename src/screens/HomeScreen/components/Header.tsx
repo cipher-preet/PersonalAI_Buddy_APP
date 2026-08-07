@@ -3,6 +3,17 @@ import { StyleSheet, TouchableOpacity, View, Text } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { useAppSelector } from '../../../store/hooks';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  layout,
+  ms,
+  radii,
+  shadows,
+  spacing,
+} from '../../../theme';
 
 type TabParamList = {
   Home: undefined;
@@ -14,10 +25,10 @@ type TabParamList = {
 };
 
 const PlanPurchaseIcon = () => (
-  <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+  <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M8 7.5 10.2 4l2.2 3.5L16 5.8l-1.2 5.7H5.2L4 5.8l3.6 1.7Z"
-      stroke="#4338CA"
+      stroke={colors.primary}
       strokeWidth={1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -28,32 +39,38 @@ const PlanPurchaseIcon = () => (
       width={16}
       height={7}
       rx={2}
-      stroke="#4338CA"
+      stroke={colors.primary}
       strokeWidth={1.8}
     />
-    <Path d="M4 16h16" stroke="#4338CA" strokeWidth={1.8} />
+    <Path d="M4 16h16" stroke={colors.primary} strokeWidth={1.8} />
   </Svg>
 );
 
 const Header = () => {
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
+  const name = useAppSelector(state => state.auth.name);
+  const displayName = name?.trim() || 'Buddy User';
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
 
   return (
     <View style={styles.container}>
       <View style={styles.leftContainer}>
         <View style={styles.greetingWrapper}>
-          <Text style={styles.greetingText}>Good Evening</Text>
+          <Text style={styles.greetingText}>{greeting}</Text>
 
           <Text style={styles.wave}>👋</Text>
 
           <View style={styles.onlineDot} />
         </View>
 
-        <Text style={styles.userName}>Preet Kumar</Text>
+        <Text numberOfLines={1} style={styles.userName}>
+          {displayName}
+        </Text>
       </View>
 
       <View style={styles.actionContainer}>
-
         <TouchableOpacity
           activeOpacity={0.85}
           style={styles.notificationButton}
@@ -91,34 +108,30 @@ const styles = StyleSheet.create({
   },
 
   greetingText: {
-    fontSize: 13,
-    color: '#6B7280',
-    fontWeight: '500',
+    fontSize: fontSize.md,
+    color: colors.subText,
+    fontWeight: fontWeight.medium,
     letterSpacing: 0.3,
   },
 
   wave: {
-    marginLeft: 5,
-
-    fontSize: 13,
+    marginLeft: ms(5),
+    fontSize: fontSize.md,
   },
 
   onlineDot: {
-    width: 6,
-    height: 6,
-
-    borderRadius: 20,
-
-    backgroundColor: '#08C7FA',
-
-    marginLeft: 8,
+    width: ms(6),
+    height: ms(6),
+    borderRadius: radii.pill,
+    backgroundColor: colors.online,
+    marginLeft: spacing.md,
   },
 
   userName: {
-    marginTop: 7,
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#0F172A',
+    marginTop: ms(7),
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.bold,
+    color: colors.text,
     letterSpacing: -0.6,
   },
 
@@ -128,46 +141,25 @@ const styles = StyleSheet.create({
   },
 
   notificationButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: '#FBFBFF',
+    width: layout.iconButton,
+    height: layout.iconButton,
+    borderRadius: radii.pill,
+    backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: spacing.xl,
     borderWidth: 1,
-    borderColor: '#E8EDF9',
-    shadowColor: '#64748B',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 5,
+    borderColor: colors.border,
+    ...shadows.soft,
   },
 
   settingsButton: {
-    width: 48,
-    height: 48,
-
-    borderRadius: 24,
-
+    width: layout.iconButton,
+    height: layout.iconButton,
+    borderRadius: radii.pill,
     justifyContent: 'center',
     alignItems: 'center',
-
-    backgroundColor: '#5B5FF8',
-
-    shadowColor: '#5B5FF8',
-
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-
-    elevation: 8,
+    backgroundColor: colors.primary,
+    ...shadows.primary,
   },
 });

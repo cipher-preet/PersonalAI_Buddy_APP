@@ -17,7 +17,7 @@ import {
 import Header from './components/Header';
 import UserMessage from './components/UserMessage';
 import AIMessage from './components/AIMessage';
-import BottomInput, { INPUT_BAR_HEIGHT } from './components/BottomInput';
+import BottomInput from './components/BottomInput';
 import ChatHistoryDrawer from './components/ChatHistoryDrawer';
 import TypingIndicator from './components/TypingIndicator';
 import ScrollToBottomButton from './components/ScrollToBottomButton';
@@ -35,6 +35,7 @@ import type {
   ChatMessageDto,
   ChatSessionDto,
 } from '../../store/api/chat';
+import { ms, spacing } from '../../theme';
 
 const SUGGESTIONS = [
   'Summarize my day',
@@ -48,7 +49,8 @@ const formatTime = () =>
     minute: '2-digit',
   });
 
-const KEYBOARD_INPUT_GAP = 20;
+/** Keep a comfortable gap between the input bar and the keyboard. */
+const KEYBOARD_INPUT_GAP = spacing.xl;
 const PAGE_SIZE = 20;
 
 const fallbackErrorMessage = 'Something went wrong. Please try again.';
@@ -216,7 +218,7 @@ const BuddyScreen = () => {
         event.nativeEvent;
       const distanceFromBottom =
         contentSize.height - layoutMeasurement.height - contentOffset.y;
-      const nearBottom = distanceFromBottom < 96;
+      const nearBottom = distanceFromBottom < ms(96);
 
       if (nearBottom !== isNearBottomRef.current) {
         isNearBottomRef.current = nearBottom;
@@ -239,7 +241,10 @@ const BuddyScreen = () => {
       Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
     const showSub = Keyboard.addListener(showEvent, event => {
-      setKeyboardHeight(event.endCoordinates.height);
+      // Height of the keyboard overlay from the bottom of the screen.
+      // With adjustNothing we own this offset — no system pan/resize.
+      const height = Math.max(0, event.endCoordinates.height);
+      setKeyboardHeight(height);
       scrollToEnd(true);
     });
 
@@ -635,13 +640,10 @@ const BuddyScreen = () => {
     </View>
   );
 
-  const inputBottomOffset =
-    keyboardHeight > 0
-      ? keyboardHeight + KEYBOARD_INPUT_GAP
-      : Math.max(insets.bottom, 12);
-
-  const listBottomPadding = INPUT_BAR_HEIGHT + inputBottomOffset + 16;
-  const scrollButtonBottom = inputBottomOffset + INPUT_BAR_HEIGHT + 12;
+  const keyboardOpen = keyboardHeight > 0;
+  const inputSafeBottom = keyboardOpen
+    ? keyboardHeight + KEYBOARD_INPUT_GAP
+    : Math.max(insets.bottom, spacing.xl);
 
   return (
     <LinearGradient
@@ -660,45 +662,47 @@ const BuddyScreen = () => {
         <Header onHistoryPress={handleOpenHistory} />
 
         <View style={styles.chatArea}>
-          <FlatList
-            ref={listRef}
-            data={messages}
-            keyExtractor={item => item.id}
-            renderItem={renderMessage}
-            contentContainerStyle={[
-              styles.listContent,
-              { paddingBottom: listBottomPadding },
-            ]}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            ListEmptyComponent={renderEmptyState}
-            ListFooterComponent={
-              activeChatLoading || sendingMessage ? (
-                <View style={styles.typingFooter}>
-                  <TypingIndicator />
-                </View>
-              ) : null
-            }
-            ListHeaderComponent={
-              messages.length > 0 ? (
-                <View style={styles.dateSeparator}>
-                  <Text style={styles.dateSeparatorText}>Today</Text>
-                </View>
-              ) : null
-            }
-            onContentSizeChange={handleContentSizeChange}
-            onScroll={handleListScroll}
-            scrollEventThrottle={16}
-          />
+          <View style={styles.listWrap}>
+            <FlatList
+              ref={listRef}
+              data={messages}
+              keyExtractor={item => item.id}
+              renderItem={renderMessage}
+              contentContainerStyle={[
+                styles.listContent,
+                { paddingBottom: spacing['2xl'] },
+              ]}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              ListEmptyComponent={renderEmptyState}
+              ListFooterComponent={
+                activeChatLoading || sendingMessage ? (
+                  <View style={styles.typingFooter}>
+                    <TypingIndicator />
+                  </View>
+                ) : null
+              }
+              ListHeaderComponent={
+                messages.length > 0 ? (
+                  <View style={styles.dateSeparator}>
+                    <Text style={styles.dateSeparatorText}>Today</Text>
+                  </View>
+                ) : null
+              }
+              onContentSizeChange={handleContentSizeChange}
+              onScroll={handleListScroll}
+              scrollEventThrottle={16}
+            />
 
-          <ScrollToBottomButton
-            visible={showScrollToBottom}
-            bottom={scrollButtonBottom}
-            onPress={handleScrollToBottomPress}
-          />
+            <ScrollToBottomButton
+              visible={showScrollToBottom}
+              bottom={spacing.xl}
+              onPress={handleScrollToBottomPress}
+            />
+          </View>
 
-          <View style={[styles.inputBar, { bottom: inputBottomOffset }]}>
+          <View style={[styles.inputBar, { paddingBottom: inputSafeBottom }]}>
             <BottomInput
               ref={inputRef}
               value={input}

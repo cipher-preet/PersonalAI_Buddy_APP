@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useMemo, useState } from 'react';
 import {
   View,
   TextInput,
@@ -6,12 +6,32 @@ import {
   StyleSheet,
   Platform,
   TextInputProps,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 
 import { MicIcon, UpArrowIcon } from '../../../../styles/icons';
 import { COLORS } from '../styles';
+import {
+  colors,
+  fontSize,
+  ms,
+  radii,
+  spacing,
+} from '../../../theme';
 
-export const INPUT_BAR_HEIGHT = 76;
+export const INPUT_BAR_HEIGHT = ms(76);
+const COLLAPSED_INPUT_HEIGHT = ms(52);
+const EXPANDED_INPUT_HEIGHT = ms(104);
+const MAX_INPUT_HEIGHT = ms(148);
+const CONTAINER_VERTICAL_PADDING = spacing.sm;
+
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 type Props = {
   value: string;
@@ -24,32 +44,71 @@ type Props = {
 const BottomInput = forwardRef<TextInput, Props>(
   ({ value, onChangeText, onSend, onFocus, disabled = false }, ref) => {
     const canSend = value.trim().length > 0 && !disabled;
+    const [focused, setFocused] = useState(false);
+    const [hasTypedInFocus, setHasTypedInFocus] = useState(false);
+    const [contentHeight, setContentHeight] = useState(ms(24));
+    const hasText = value.length > 0;
+    const inputHeight = useMemo(() => {
+      const shouldExpand = focused && (hasText || !hasTypedInFocus);
+      const contentDrivenHeight =
+        contentHeight + CONTAINER_VERTICAL_PADDING * 2;
+      const targetHeight = shouldExpand
+        ? Math.max(EXPANDED_INPUT_HEIGHT, contentDrivenHeight)
+        : COLLAPSED_INPUT_HEIGHT;
+
+      return Math.min(MAX_INPUT_HEIGHT, targetHeight);
+    }, [contentHeight, focused, hasText, hasTypedInFocus]);
+
+    const animateHeightChange = () => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    };
 
     return (
       <View style={styles.wrapper}>
-        <View style={styles.container}>
-          <TextInput
-            ref={ref}
-            placeholder="Ask Buddy anything..."
-            placeholderTextColor="#9CA3AF"
-            value={value}
-            onChangeText={onChangeText}
-            onFocus={onFocus}
-            style={styles.input}
-            multiline
-            maxLength={2000}
-            returnKeyType="default"
-            blurOnSubmit={false}
-            textAlignVertical="center"
-            editable={!disabled}
-          />
+        <View style={[styles.container, { height: inputHeight }]}>
+          <View style={styles.inputWrap}>
+            <TextInput
+              ref={ref}
+              placeholder="Ask Buddy anything..."
+              placeholderTextColor={colors.muted}
+              value={value}
+              onChangeText={text => {
+                animateHeightChange();
+                setHasTypedInFocus(previous => previous || text.length > 0);
+                onChangeText(text);
+              }}
+              onFocus={event => {
+                animateHeightChange();
+                setHasTypedInFocus(false);
+                setFocused(true);
+                onFocus?.(event);
+              }}
+              onBlur={() => {
+                animateHeightChange();
+                setFocused(false);
+                setHasTypedInFocus(false);
+              }}
+              onContentSizeChange={event => {
+                animateHeightChange();
+                setContentHeight(event.nativeEvent.contentSize.height);
+              }}
+              style={styles.input}
+              multiline
+              maxLength={2000}
+              returnKeyType="default"
+              blurOnSubmit={false}
+              textAlignVertical="top"
+              editable={!disabled}
+              scrollEnabled={inputHeight >= MAX_INPUT_HEIGHT}
+            />
+          </View>
 
           <TouchableOpacity
             style={styles.micButton}
             activeOpacity={0.75}
             disabled={disabled}
           >
-            <MicIcon width={18} height={18} color="#64748B" />
+            <MicIcon width={ms(18)} height={ms(18)} color={colors.subText} />
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -58,7 +117,7 @@ const BottomInput = forwardRef<TextInput, Props>(
             activeOpacity={0.85}
             disabled={!canSend}
           >
-            <UpArrowIcon width={16} height={16} color="#FFFFFF" />
+            <UpArrowIcon width={ms(16)} height={ms(16)} color={colors.white} />
           </TouchableOpacity>
         </View>
       </View>
@@ -72,59 +131,66 @@ export default BottomInput;
 
 const styles = StyleSheet.create({
   wrapper: {
-    paddingTop: 8,
-    paddingHorizontal: 18,
-    paddingBottom: 8,
+    paddingTop: spacing.md,
+    paddingHorizontal: spacing['2xl'],
+    paddingBottom: spacing.lg,
     backgroundColor: 'transparent',
   },
 
   container: {
-    height: 52,
+    minHeight: COLLAPSED_INPUT_HEIGHT,
     backgroundColor: COLORS.inputBg,
-    borderRadius: 18,
+    borderRadius: radii.lg,
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingLeft: 16,
-    paddingRight: 6,
-    borderWidth: 1,
-    borderColor: '#E0E7FF',
-    shadowColor: '#4338CA',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
+    alignItems: 'flex-end',
+    paddingLeft: spacing.xl,
+    paddingRight: spacing.sm,
+    paddingVertical: CONTAINER_VERTICAL_PADDING,
+    borderWidth: 0,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: ms(10) },
+    shadowOpacity: 0.14,
+    shadowRadius: ms(18),
+    elevation: 8,
+  },
+
+  inputWrap: {
+    flex: 1,
+    alignSelf: 'stretch',
+    justifyContent: 'flex-start',
+    paddingVertical: spacing.md,
   },
 
   input: {
     flex: 1,
-    height: 52,
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: fontSize.lg,
+    lineHeight: ms(20),
     color: COLORS.text,
-    paddingTop: Platform.OS === 'ios' ? 16 : 0,
-    paddingBottom: Platform.OS === 'ios' ? 16 : 0,
+    paddingTop: 0,
+    paddingBottom: 0,
+    paddingHorizontal: 0,
     margin: 0,
     ...(Platform.OS === 'android' ? { includeFontPadding: false } : {}),
   },
 
   micButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 14,
+    width: ms(38),
+    height: ms(38),
+    borderRadius: ms(14),
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 6,
-    backgroundColor: '#F8FAFC',
+    marginLeft: spacing.sm,
+    backgroundColor: colors.inputBg,
   },
 
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+    width: ms(40),
+    height: ms(40),
+    borderRadius: ms(14),
     backgroundColor: '#C7D2FE',
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 6,
+    marginLeft: spacing.sm,
   },
 
   sendButtonActive: {

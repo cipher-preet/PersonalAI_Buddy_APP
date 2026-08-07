@@ -23,6 +23,8 @@ export type OtpVerifyResponse = {
   token: string;
   userId: string;
   isNewUser: boolean;
+  name?: string;
+  avatar?: string;
   message?: string;
 };
 
@@ -32,17 +34,28 @@ export type GoogleAuthResponse = {
   isNewUser: boolean;
   name?: string;
   email?: string;
+  avatar?: string;
 };
 
-export type CheckAuthResponse = {
-  authenticated: boolean;
+export type AuthUserProfile = {
   userId: string;
-  isNewUser: boolean;
-  hasCompletedOnboarding: boolean;
   phone?: string | number;
   email?: string;
   name?: string;
+  avatar?: string;
+};
+
+export type CheckAuthResponse = AuthUserProfile & {
+  authenticated: boolean;
+  isNewUser: boolean;
+  hasCompletedOnboarding: boolean;
   sessionAuthenticated?: boolean;
+};
+
+export type UpdateProfileRequest = {
+  name?: string;
+  email?: string;
+  phone?: string;
 };
 
 export const authApi = baseApi.injectEndpoints({
@@ -64,7 +77,10 @@ export const authApi = baseApi.injectEndpoints({
       transformResponse: response => unwrapApiData<{ message?: string }>(response),
     }),
 
-    verifyOtp: builder.mutation<OtpVerifyResponse, { phone: string; otp: string }>({
+    verifyOtp: builder.mutation<
+      OtpVerifyResponse,
+      { phone: string; otp: string; username: string }
+    >({
       query: body => ({
         url: 'auth/verify-otp',
         method: 'POST',
@@ -80,6 +96,24 @@ export const authApi = baseApi.injectEndpoints({
         body,
       }),
       transformResponse: response => unwrapApiData<GoogleAuthResponse>(response),
+    }),
+
+    updateProfile: builder.mutation<AuthUserProfile, UpdateProfileRequest>({
+      query: body => ({
+        url: 'auth/me',
+        method: 'PATCH',
+        body,
+      }),
+      transformResponse: response => unwrapApiData<AuthUserProfile>(response),
+    }),
+
+    updateProfileAvatar: builder.mutation<AuthUserProfile, FormData>({
+      query: body => ({
+        url: 'auth/me/avatar',
+        method: 'PATCH',
+        body,
+      }),
+      transformResponse: response => unwrapApiData<AuthUserProfile>(response),
     }),
 
     completeOnboarding: builder.mutation<
@@ -116,6 +150,8 @@ export const {
   useSendOtpMutation,
   useVerifyOtpMutation,
   useGoogleLoginMutation,
+  useUpdateProfileMutation,
+  useUpdateProfileAvatarMutation,
   useCompleteOnboardingMutation,
   useLoginMutation,
 } = authApi;

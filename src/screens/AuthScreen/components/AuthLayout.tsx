@@ -10,6 +10,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AUTH_COLORS } from '../styles/colors';
+import { layout, ms, mvs } from '../../../theme';
 
 type Props = {
   children: React.ReactNode;
@@ -74,35 +75,35 @@ const styles = StyleSheet.create({
 
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 24,
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: mvs(8),
+    paddingBottom: mvs(24),
   },
 
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 32,
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: mvs(8),
+    paddingBottom: mvs(32),
   },
 
   orbTop: {
     position: 'absolute',
-    top: -60,
-    right: -40,
-    width: 220,
-    height: 220,
-    borderRadius: 110,
+    top: mvs(-60),
+    right: ms(-40),
+    width: ms(220),
+    height: ms(220),
+    borderRadius: ms(110),
     backgroundColor: AUTH_COLORS.overlay,
   },
 
   orbBottom: {
     position: 'absolute',
-    bottom: 80,
-    left: -80,
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    bottom: mvs(80),
+    left: ms(-80),
+    width: ms(200),
+    height: ms(200),
+    borderRadius: ms(100),
     backgroundColor: 'rgba(139, 92, 246, 0.06)',
   },
 });

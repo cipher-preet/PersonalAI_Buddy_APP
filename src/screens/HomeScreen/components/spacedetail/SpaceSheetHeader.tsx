@@ -1,6 +1,15 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MySpcaes } from '../../../../../styles/icons';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  layout,
+  ms,
+  radii,
+  spacing,
+} from '../../../../theme';
 
 type Props = {
   title: string;
@@ -23,7 +32,7 @@ const SpaceSheetHeader = ({
     <View style={styles.container}>
       <View style={styles.left}>
         <View style={[styles.icon, { backgroundColor: accentColor }]}>
-          <MySpcaes width={16} height={16} color="#111827" />
+          <MySpcaes width={ms(16)} height={ms(16)} color={colors.black} />
         </View>
 
         <View style={styles.textWrap}>
@@ -64,21 +73,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
-    gap: 10,
+    marginBottom: ms(14),
+    gap: spacing.lg,
   },
 
   left: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.lg,
   },
 
   icon: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+    width: layout.iconButtonSm,
+    height: layout.iconButtonSm,
+    borderRadius: ms(14),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -88,69 +97,69 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    color: colors.black,
     letterSpacing: -0.3,
   },
 
   meta: {
-    marginTop: 2,
-    fontSize: 11,
-    fontWeight: '500',
-    color: '#64748B',
+    marginTop: spacing.xxs,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    color: colors.subText,
   },
 
   right: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.md,
   },
 
   statusPill: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: '#F1F5F9',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.pill,
+    backgroundColor: colors.lightGray,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
 
   statusLive: {
-    backgroundColor: '#ECFDF5',
+    backgroundColor: colors.inputBg,
   },
 
   liveDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: '#22C55E',
+    width: ms(5),
+    height: ms(5),
+    borderRadius: ms(3),
+    backgroundColor: colors.successBright,
   },
 
   statusText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#64748B',
+    fontSize: ms(10),
+    fontWeight: fontWeight.bold,
+    color: colors.subText,
   },
 
   statusLiveText: {
-    color: '#15803D',
+    color: colors.success,
   },
 
   closeButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: ms(30),
+    height: ms(30),
+    borderRadius: ms(15),
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.lightGray,
   },
 
   closeIcon: {
-    fontSize: 18,
-    lineHeight: 20,
-    color: '#64748B',
-    marginTop: -1,
+    fontSize: fontSize['2xl'],
+    lineHeight: ms(20),
+    color: colors.subText,
+    marginTop: -ms(1),
   },
 });

@@ -8,6 +8,14 @@ import {
   View,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  spacing,
+} from '../theme';
 
 type Props = {
   visible: boolean;
@@ -18,10 +26,10 @@ type Props = {
 };
 
 const AlertIcon = () => (
-  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+  <Svg width={ms(16)} height={ms(16)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"
-      stroke="#B91C1C"
+      stroke={colors.errorDark}
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -91,23 +99,23 @@ export default DeleteConfirmationModal;
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.46)',
+    backgroundColor: colors.backdrop,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing['4xl'],
   },
 
   dialog: {
     width: '100%',
-    maxWidth: 312,
-    borderRadius: 18,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 14,
+    maxWidth: ms(312),
+    borderRadius: radii.xl,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing['2xl'],
+    paddingTop: spacing['2xl'],
+    paddingBottom: spacing.xl,
     borderWidth: 1,
     borderColor: '#FEE2E2',
-    shadowColor: '#0F172A',
+    shadowColor: colors.text,
     shadowOffset: {
       width: 0,
       height: 14,
@@ -120,71 +128,71 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 9,
+    gap: spacing.lg,
   },
 
   iconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: ms(28),
+    height: ms(28),
+    borderRadius: ms(14),
     backgroundColor: '#FEF2F2',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   title: {
-    color: '#111827',
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '800',
+    color: colors.text,
+    fontSize: fontSize.xl,
+    lineHeight: ms(22),
+    fontWeight: fontWeight.extrabold,
   },
 
   message: {
-    marginTop: 6,
-    color: '#64748B',
-    fontSize: 12,
-    lineHeight: 18,
-    fontWeight: '600',
+    marginTop: spacing.sm,
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    lineHeight: ms(18),
+    fontWeight: fontWeight.semibold,
   },
 
   actions: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    gap: 8,
-    marginTop: 16,
+    gap: spacing.md,
+    marginTop: spacing['2xl'],
   },
 
   cancelButton: {
-    minWidth: 78,
-    minHeight: 38,
-    borderRadius: 12,
-    backgroundColor: '#F8FAFC',
+    minWidth: ms(78),
+    minHeight: ms(38),
+    borderRadius: radii.md,
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.xl,
   },
 
   deleteButton: {
-    minWidth: 78,
-    minHeight: 38,
-    borderRadius: 12,
-    backgroundColor: '#DC2626',
+    minWidth: ms(78),
+    minHeight: ms(38),
+    borderRadius: radii.md,
+    backgroundColor: colors.error,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.xl,
   },
 
   cancelText: {
-    color: '#334155',
-    fontSize: 13,
-    fontWeight: '800',
+    color: colors.textSecondary,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.extrabold,
   },
 
   deleteText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '800',
+    color: colors.white,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.extrabold,
   },
 });

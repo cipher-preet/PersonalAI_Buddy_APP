@@ -1,6 +1,9 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 
+import { COLORS } from './styles/color';
+import { fontSize, fontWeight, ms, radii, spacing } from '../../../theme';
+
 type Props = {
   item: string;
   active?: boolean;
@@ -23,49 +26,38 @@ export default CategoryPill;
 
 const styles = StyleSheet.create({
   container: {
-    height: 34,
-
-    paddingHorizontal: 10,
-
-    borderRadius: 17,
-
+    height: ms(34),
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.pill,
     justifyContent: 'center',
     alignItems: 'center',
-
-    marginRight: 10,
-
-    backgroundColor: '#FFFFFF',
-
+    marginRight: spacing.lg,
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.border,
   },
 
   activeContainer: {
-    backgroundColor: '#8EC5B5',
-
-    borderColor: '#8EC5B5',
-
-    shadowColor: '#8EC5B5',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+    shadowColor: COLORS.primary,
     shadowOpacity: 0.22,
     shadowRadius: 8,
     shadowOffset: {
       width: 0,
       height: 4,
     },
-
     elevation: 3,
   },
 
   text: {
-    fontSize: 12.5,
-    fontWeight: '700',
-
-    color: '#6B7280',
-
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    color: COLORS.muted,
     letterSpacing: -0.1,
   },
 
   activeText: {
-    color: '#FFFFFF',
+    color: COLORS.white,
   },
 });

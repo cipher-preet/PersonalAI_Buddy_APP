@@ -1,5 +1,14 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Animated, StyleSheet, Text, ViewStyle } from 'react-native';
+import {
+  colors,
+  fontSize,
+  layout,
+  ms,
+  mvs,
+  radii,
+  spacing,
+} from '../theme';
 
 export type ToastType = 'success' | 'error' | 'info';
 
@@ -12,9 +21,9 @@ export interface CustomToastProps {
 }
 
 const backgroundColors: Record<ToastType, string> = {
-  success: '#22c55e',
-  error: '#ef4444',
-  info: '#0992f2',
+  success: colors.successBright,
+  error: colors.error,
+  info: colors.info,
 };
 
 const CustomToast = ({
@@ -95,23 +104,23 @@ const CustomToast = ({
 const styles = StyleSheet.create({
   toastContainer: {
     position: 'absolute',
-    bottom: 32,
-    left: 16,
-    right: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 18,
-    borderRadius: 16,
+    bottom: mvs(32),
+    left: layout.screenPadding,
+    right: layout.screenPadding,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing['2xl'],
+    borderRadius: radii.lg,
     zIndex: 999,
-    shadowColor: '#000',
+    shadowColor: colors.text,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.12,
     shadowRadius: 16,
     elevation: 10,
   },
   messageText: {
-    color: '#fff',
-    fontSize: 14,
-    lineHeight: 20,
+    color: colors.white,
+    fontSize: fontSize.base,
+    lineHeight: ms(20),
     textAlign: 'center',
   },
 });

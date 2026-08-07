@@ -1,5 +1,15 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  mvs,
+  radii,
+  shadows,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   title: string;
@@ -81,50 +91,43 @@ export default SpaceCard;
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-    minHeight: 84,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 26,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    marginTop: 12,
+    minHeight: mvs(84),
+    backgroundColor: colors.white,
+    borderRadius: ms(26),
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing['2xl'],
+    marginTop: spacing.xl,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#EFF2F8',
-    shadowColor: '#64748B',
-    shadowOffset: {
-      width: 0,
-      height: 7,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
+    borderColor: colors.border,
+    ...shadows.soft,
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    elevation: 2,
   },
 
   leftSection: {
     flex: 1,
-
     flexDirection: 'row',
     alignItems: 'center',
   },
 
   iconWrapper: {
-    width: 52,
-    height: 52,
-    borderRadius: 999,
+    width: ms(52),
+    height: ms(52),
+    borderRadius: radii.pill,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 14,
-    backgroundColor: '#F3F6FF',
+    marginRight: ms(14),
+    backgroundColor: colors.primaryLight,
   },
 
   contentContainer: {
     flex: 1,
-
     justifyContent: 'center',
-
-    paddingRight: 8,
+    paddingRight: spacing.md,
   },
 
   titleRow: {
@@ -134,64 +137,57 @@ const styles = StyleSheet.create({
 
   title: {
     flexShrink: 1,
-
-    fontSize: 14,
-
-    color: '#111827',
-
-    fontWeight: '700',
-
+    fontSize: fontSize.base,
+    color: colors.black,
+    fontWeight: fontWeight.bold,
     letterSpacing: -0.3,
   },
 
   badge: {
-    height: 22,
-    paddingHorizontal: 10,
-    borderRadius: 12,
+    height: ms(22),
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.md,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 10,
-    backgroundColor: '#EFF4FF',
+    marginLeft: spacing.lg,
+    backgroundColor: colors.primaryLight,
   },
 
   badgeText: {
-    fontSize: 8,
-
-    fontWeight: '700',
-
+    fontSize: ms(8),
+    fontWeight: fontWeight.bold,
     letterSpacing: 0.4,
-
-    color: '#4F7CFF',
+    color: colors.primary,
   },
 
   description: {
-    marginTop: 4,
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '500',
-    lineHeight: 18,
+    marginTop: spacing.xs,
+    fontSize: fontSize.sm,
+    color: colors.subText,
+    fontWeight: fontWeight.medium,
+    lineHeight: ms(18),
   },
 
   time: {
-    marginTop: 2,
-    fontSize: 11,
-    color: '#94A3B8',
-    fontWeight: '600',
+    marginTop: spacing.xxs,
+    fontSize: fontSize.xs,
+    color: colors.muted,
+    fontWeight: fontWeight.semibold,
   },
 
   arrowButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: ms(32),
+    height: ms(32),
+    borderRadius: ms(16),
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F8FAFC',
-    marginLeft: 10,
+    backgroundColor: colors.inputBg,
+    marginLeft: spacing.lg,
   },
 
   arrow: {
-    fontSize: 20,
-    color: '#5B6D98',
-    marginTop: -2,
+    fontSize: fontSize['3xl'],
+    color: colors.subText,
+    marginTop: -spacing.xxs,
   },
 });

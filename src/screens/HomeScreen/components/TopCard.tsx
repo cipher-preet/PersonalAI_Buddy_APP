@@ -1,5 +1,15 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  mvs,
+  radii,
+  shadows,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   title: string;
@@ -21,7 +31,7 @@ const TopCard = ({
   rightIcon,
   color,
   active = false,
-  activeColor = '#15C7E8',
+  activeColor = colors.accentCyan,
   onPress,
 }: Props) => {
   return (
@@ -30,7 +40,7 @@ const TopCard = ({
       style={[
         styles.card,
         active && {
-          backgroundColor: '#ECFEFF',
+          backgroundColor: colors.inputBg,
           borderColor: activeColor,
           shadowColor: activeColor,
           shadowOpacity: 0.14,
@@ -86,21 +96,14 @@ export default TopCard;
 const styles = StyleSheet.create({
   card: {
     width: '48%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 26,
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 20,
+    backgroundColor: colors.white,
+    borderRadius: ms(26),
+    paddingHorizontal: ms(18),
+    paddingTop: ms(18),
+    paddingBottom: mvs(20),
     borderWidth: 1,
-    borderColor: '#F1F4FB',
-    shadowColor: '#64748B',
-    shadowOffset: {
-      width: 0,
-      height: 8,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    elevation: 6,
+    borderColor: colors.border,
+    ...shadows.card,
   },
 
   topSection: {
@@ -110,17 +113,15 @@ const styles = StyleSheet.create({
   },
 
   iconWrapper: {
-    width: 42,
-    height: 42,
-
-    borderRadius: 21,
-
+    width: ms(42),
+    height: ms(42),
+    borderRadius: ms(21),
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   rightIconContainer: {
-    marginTop: 4,
+    marginTop: spacing.xs,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -128,54 +129,54 @@ const styles = StyleSheet.create({
   livePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: '#FFFFFF',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.pill,
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: '#A5F3FC',
+    borderColor: colors.accentCyan,
   },
 
   liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#10B981',
+    width: ms(6),
+    height: ms(6),
+    borderRadius: ms(3),
+    backgroundColor: colors.successBright,
   },
 
   liveText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#0E7490',
+    fontSize: ms(9),
+    fontWeight: fontWeight.extrabold,
+    color: colors.textSecondary,
     letterSpacing: 0.3,
   },
 
   content: {
-    marginTop: 28,
+    marginTop: mvs(28),
   },
 
   title: {
-    fontSize: 15,
-    color: '#111827',
-    fontWeight: '700',
+    fontSize: fontSize.lg,
+    color: colors.black,
+    fontWeight: fontWeight.bold,
     letterSpacing: -0.3,
   },
 
   titleActive: {
-    color: '#0E7490',
+    color: colors.textSecondary,
   },
 
   subtitle: {
-    marginTop: 6,
-    fontSize: 12,
-    color: '#64748B',
-    fontWeight: '500',
-    lineHeight: 18,
-    paddingRight: 8,
+    marginTop: spacing.sm,
+    fontSize: fontSize.sm,
+    color: colors.subText,
+    fontWeight: fontWeight.medium,
+    lineHeight: ms(18),
+    paddingRight: spacing.md,
   },
 
   subtitleActive: {
-    color: '#0891B2',
+    color: colors.info,
   },
 });

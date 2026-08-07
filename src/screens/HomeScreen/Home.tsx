@@ -40,11 +40,25 @@ import {
 } from '../../store/api/home';
 import {
   endListeningSession,
+  startBackgroundListeningNotification,
   startListeningSession,
   startVoiceRecordingWithSilenceDetection,
+  stopBackgroundListeningNotification,
   stopVoiceRecording,
   uploadVoiceMessage,
 } from '../../services/voiceRecorderService';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  layout,
+  ms,
+  mvs,
+  radii,
+  shadows,
+  spacing,
+  vSpacing,
+} from '../../theme';
 
 const SPACE_PAGE_LIMIT = 10;
 const SPACE_COLORS = [
@@ -106,7 +120,9 @@ const Home = () => {
   const [isUploadingVoice, setIsUploadingVoice] = useState(false);
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
-  const [selectedSpaceColor, setSelectedSpaceColor] = useState('#8B5CF6');
+  const [selectedSpaceColor, setSelectedSpaceColor] = useState<string>(
+    colors.primaryPurple,
+  );
   const [cursor, setCursor] = useState('');
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const userId = useAppSelector(state => state.auth.userId) ?? '';
@@ -230,6 +246,9 @@ const Home = () => {
         userId: userId,
         spaceId: voiceSpace._id,
       });
+      await startBackgroundListeningNotification({
+        spaceName: voiceSpace.spacename,
+      });
 
       await startVoiceRecordingWithSilenceDetection({
         onSegmentReady: async recording => {
@@ -255,6 +274,9 @@ const Home = () => {
       console.log('START ERROR:', error);
       recordingContextRef.current = null;
       setIsListening(false);
+      await stopBackgroundListeningNotification().catch(serviceError => {
+        console.log('Unable to stop listening notification:', serviceError);
+      });
       try {
         await endListeningSession({
           userId: userId,
@@ -297,6 +319,9 @@ const Home = () => {
     try {
       if (recordingContext) {
         const recording = await stopVoiceRecording();
+        await stopBackgroundListeningNotification().catch(serviceError => {
+          console.log('Unable to stop listening notification:', serviceError);
+        });
         showToast({
           message: 'Recording stopped. Sending final voice...',
           type: 'success',
@@ -329,6 +354,9 @@ const Home = () => {
       }
 
       if (activeSpace?._id) {
+        await stopBackgroundListeningNotification().catch(serviceError => {
+          console.log('Unable to stop listening notification:', serviceError);
+        });
         await endListeningSession({
           userId: userId,
           spaceId: activeSpace._id,
@@ -348,6 +376,9 @@ const Home = () => {
         }
       }
     } catch (err) {
+      await stopBackgroundListeningNotification().catch(serviceError => {
+        console.log('Unable to stop listening notification:', serviceError);
+      });
       showToast({ message: 'Stop failed. Try again.', type: 'error' });
       console.log('stopListening error:', err);
     }
@@ -387,7 +418,12 @@ const Home = () => {
 
   return (
     <LinearGradient
-      colors={['#F9F7FF', '#EFF3FF', '#F7FAFF', '#FFFFFF']}
+      colors={[
+        colors.gradientStart,
+        colors.gradientMid,
+        colors.background,
+        colors.gradientEnd,
+      ]}
       locations={[0, 0.2, 0.65, 1]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
@@ -403,8 +439,14 @@ const Home = () => {
             <TopCard
               title="Create Space"
               subtitle="New AI memory workspace"
-              color="#8B5CF6"
-              icon={<AddSpace width={18} height={18} color="#FFFFFF" />}
+              color={colors.primaryPurple}
+              icon={
+                <AddSpace
+                  width={ms(18)}
+                  height={ms(18)}
+                  color={colors.white}
+                />
+              }
               onPress={() => {
                 openSpaceSheet();
               }}
@@ -421,10 +463,16 @@ const Home = () => {
                   ? `In: ${activeSpace?.spacename || 'Space'}`
                   : 'Buddy is Ready to Listen.'
               }
-              color="#15C7E8"
+              color={colors.accentCyan}
               active={isVoiceActive}
-              activeColor="#15C7E8"
-              icon={<MicIcon width={18} height={18} color="#FFFFFF" />}
+              activeColor={colors.accentCyan}
+              icon={
+                <MicIcon
+                  width={ms(18)}
+                  height={ms(18)}
+                  color={colors.white}
+                />
+              }
               onPress={() => {
                 if (isVoiceActive) {
                   handleStopListening();
@@ -461,7 +509,7 @@ const Home = () => {
 
           {isInitialSpacesLoading ? (
             <View style={styles.spacesLoader}>
-              <ActivityIndicator size="large" color="#4338CA" />
+              <ActivityIndicator size="large" color={colors.primary} />
               <Text style={styles.spacesLoaderText}>Loading spaces...</Text>
             </View>
           ) : spaces.length === 0 ? (
@@ -475,7 +523,13 @@ const Home = () => {
                   item.description || formatCreatedAt(item.createdAt)
                 }
                 time={formatCreatedAt(item.createdAt)}
-                icon={<MySpcaes width={18} height={18} color="#000000" />}
+                icon={
+                  <MySpcaes
+                    width={ms(18)}
+                    height={ms(18)}
+                    color={colors.black}
+                  />
+                }
                 color={getSpaceColor(item._id)}
                 onPress={() => openSpaceDetail(item)}
               />
@@ -493,7 +547,7 @@ const Home = () => {
               onPress={() => setCursor(nextCursor)}
             >
               {isFetchingSpaces ? (
-                <ActivityIndicator size="small" color="#4338CA" />
+                <ActivityIndicator size="small" color={colors.primary} />
               ) : null}
               <View style={styles.loadMoreTextGroup}>
                 <Text style={styles.loadMoreText}>
@@ -522,72 +576,65 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    backgroundColor: '#F9F7FF',
-    paddingTop: 4,
+    backgroundColor: colors.gradientStart,
+    paddingTop: mvs(4),
   },
 
   scrollContainer: {
-    paddingTop: 18,
-    paddingHorizontal: 20,
-    paddingBottom: 100,
+    paddingTop: vSpacing.xl,
+    paddingHorizontal: layout.screenPadding,
+    paddingBottom: layout.tabBarClearance,
   },
 
   topCardsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 28,
+    marginTop: mvs(28),
   },
 
   sectionHeader: {
-    marginTop: 34,
+    marginTop: mvs(34),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
 
   sectionTitle: {
-    fontSize: 16,
-    color: '#1E2432',
-    fontWeight: '700',
+    fontSize: fontSize.xl,
+    color: colors.text,
+    fontWeight: fontWeight.bold,
   },
 
   spacesLoader: {
-    minHeight: 150,
-    marginTop: 12,
+    minHeight: mvs(150),
+    marginTop: spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 24,
-    backgroundColor: '#FFFFFF',
+    borderRadius: radii['3xl'],
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: '#EEF2FF',
+    borderColor: colors.primaryLight,
   },
 
   spacesLoaderText: {
-    marginTop: 12,
-    color: '#64748B',
-    fontSize: 13,
-    fontWeight: '700',
+    marginTop: spacing.xl,
+    color: colors.subText,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
   },
 
   loadMoreButton: {
-    minHeight: 64,
-    borderRadius: 22,
-    marginTop: 18,
+    minHeight: mvs(64),
+    borderRadius: radii['2xl'],
+    marginTop: mvs(18),
     alignItems: 'center',
     justifyContent: 'flex-start',
     flexDirection: 'row',
-    paddingHorizontal: 18,
-    backgroundColor: '#FFFFFF',
+    paddingHorizontal: ms(18),
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: '#DDE5FF',
-    shadowColor: '#64748B',
-    shadowOffset: {
-      width: 0,
-      height: 7,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
+    borderColor: colors.borderFocus,
+    ...shadows.soft,
   },
 
   loadMoreButtonDisabled: {
@@ -595,19 +642,19 @@ const styles = StyleSheet.create({
   },
 
   loadMoreTextGroup: {
-    marginLeft: 12,
+    marginLeft: spacing.xl,
   },
 
   loadMoreText: {
-    color: '#4338CA',
-    fontSize: 14,
-    fontWeight: '700',
+    color: colors.primary,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
   },
 
   loadMoreSubText: {
-    marginTop: 3,
-    color: '#64748B',
-    fontSize: 11,
-    fontWeight: '600',
+    marginTop: ms(3),
+    color: colors.subText,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
   },
 });

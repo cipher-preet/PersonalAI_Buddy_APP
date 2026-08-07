@@ -2,6 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 import { COLORS } from '../styles/colors';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  spacing,
+} from '../../../theme';
 
 const activities = [
   { title: 'Completed UI Design', time: '2 hours ago' },
@@ -39,21 +47,21 @@ export default ActivityCard;
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 18,
+    marginBottom: spacing['2xl'],
   },
 
   heading: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
     color: COLORS.text,
-    marginBottom: 12,
+    marginBottom: spacing.xl,
   },
 
   card: {
     backgroundColor: COLORS.white,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 4,
+    borderRadius: radii.xl,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.xs,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
@@ -61,21 +69,21 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: 14,
+    paddingVertical: spacing.xl,
   },
 
   rowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: colors.lightGray,
   },
 
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: ms(8),
+    height: ms(8),
+    borderRadius: ms(4),
     backgroundColor: COLORS.primaryPurple,
-    marginTop: 6,
-    marginRight: 12,
+    marginTop: spacing.sm,
+    marginRight: spacing.xl,
   },
 
   rowContent: {
@@ -83,15 +91,15 @@ const styles = StyleSheet.create({
   },
 
   text: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
     color: COLORS.text,
   },
 
   time: {
-    marginTop: 3,
+    marginTop: spacing.xxs,
     color: COLORS.subText,
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
   },
 });

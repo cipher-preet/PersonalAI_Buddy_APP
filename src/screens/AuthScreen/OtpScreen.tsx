@@ -14,6 +14,15 @@ import AuthBrandMark from './components/AuthBrandMark';
 import AuthHeaderBar from './components/AuthHeaderBar';
 import OtpInputBoxes from './components/OtpInputBoxes';
 import { AUTH_COLORS } from './styles/colors';
+import {
+  fontSize,
+  fontWeight,
+  layout,
+  ms,
+  mvs,
+  radii,
+  spacing,
+} from '../../theme';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 import { useAppDispatch } from '../../store/hooks';
 import { loginSuccess } from '../../store/slices/authSlice';
@@ -26,7 +35,7 @@ import { useToast } from '../../store/context/ToastContext';
 type Props = NativeStackScreenProps<AuthStackParamList, 'Otp'>;
 
 const OtpScreen = ({ navigation, route }: Props) => {
-  const { phone } = route.params;
+  const { phone, username } = route.params;
   const dispatch = useAppDispatch();
   const { showToast } = useToast();
   const [otp, setOtp] = useState('');
@@ -59,7 +68,7 @@ const OtpScreen = ({ navigation, route }: Props) => {
     verifyingRef.current = true;
 
     try {
-      const result = await verifyOtp({ phone, otp }).unwrap();
+      const result = await verifyOtp({ phone, otp, username }).unwrap();
 
       dispatch(
         loginSuccess({
@@ -67,6 +76,8 @@ const OtpScreen = ({ navigation, route }: Props) => {
           token: result.token,
           isNewUser: result.isNewUser,
           phone,
+          name: result.name ?? username,
+          avatar: result.avatar,
         }),
       );
 
@@ -83,7 +94,7 @@ const OtpScreen = ({ navigation, route }: Props) => {
     } finally {
       verifyingRef.current = false;
     }
-  }, [dispatch, loading, navigation, otp, phone, showToast, verifyOtp]);
+  }, [dispatch, loading, navigation, otp, phone, showToast, username, verifyOtp]);
 
   useEffect(() => {
     if (otp.length === 4 && otp !== submittedOtpRef.current) {
@@ -163,15 +174,15 @@ const OtpScreen = ({ navigation, route }: Props) => {
           <LinearGradient
             colors={
               isComplete
-                ? ['#8B5CF6', '#7C3AED', '#4338CA']
-                : ['#C4B5FD', '#A78BFA', '#A5B4FC']
+                ? [AUTH_COLORS.primaryPurple, AUTH_COLORS.primaryMid, AUTH_COLORS.primary]
+                : ['#C4B5FD', '#A78BFA', AUTH_COLORS.borderFocus]
             }
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.primaryButton}
           >
             {loading ? (
-              <ActivityIndicator color="#FFFFFF" />
+              <ActivityIndicator color={AUTH_COLORS.white} />
             ) : (
               <Text style={styles.primaryButtonText}>Verify & Continue</Text>
             )}
@@ -192,65 +203,65 @@ export default OtpScreen;
 const styles = StyleSheet.create({
   hero: {
     alignItems: 'center',
-    paddingTop: 8,
-    paddingBottom: 24,
+    paddingTop: mvs(8),
+    paddingBottom: mvs(24),
   },
 
   title: {
-    fontSize: 26,
-    fontWeight: '800',
+    fontSize: ms(26),
+    fontWeight: fontWeight.extrabold,
     color: AUTH_COLORS.text,
     textAlign: 'center',
     letterSpacing: -0.6,
-    lineHeight: 32,
+    lineHeight: ms(32),
   },
 
   subtitle: {
-    marginTop: 8,
-    fontSize: 15,
-    lineHeight: 22,
+    marginTop: spacing.md,
+    fontSize: fontSize.lg,
+    lineHeight: ms(22),
     color: AUTH_COLORS.subText,
     textAlign: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: spacing.xl,
   },
 
   phoneBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+    marginTop: ms(18),
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.lg,
+    borderRadius: radii.xl,
     backgroundColor: AUTH_COLORS.primarySoft,
     borderWidth: 1,
     borderColor: '#E0E7FF',
-    gap: 12,
+    gap: spacing.xl,
   },
 
   phoneText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
     color: AUTH_COLORS.textSecondary,
     letterSpacing: 0.3,
   },
 
   changeLink: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
     color: AUTH_COLORS.primary,
   },
 
   card: {
     backgroundColor: AUTH_COLORS.white,
-    borderRadius: 24,
-    paddingVertical: 22,
-    paddingHorizontal: 16,
+    borderRadius: radii['3xl'],
+    paddingVertical: ms(22),
+    paddingHorizontal: spacing['2xl'],
     borderWidth: 1,
     borderColor: 'rgba(226, 232, 240, 0.8)',
     shadowColor: AUTH_COLORS.shadow,
-    shadowOffset: { width: 0, height: 12 },
+    shadowOffset: { width: 0, height: ms(12) },
     shadowOpacity: 0.08,
-    shadowRadius: 24,
+    shadowRadius: ms(24),
     elevation: 4,
     alignItems: 'center',
   },
@@ -258,63 +269,63 @@ const styles = StyleSheet.create({
   timerRow: {
     alignItems: 'center',
     alignSelf: 'stretch',
-    marginTop: 20,
-    marginBottom: 22,
-    minHeight: 32,
+    marginTop: spacing['3xl'],
+    marginBottom: ms(22),
+    minHeight: ms(32),
     justifyContent: 'center',
   },
 
   timerPill: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 14,
+    paddingHorizontal: spacing.xl + spacing.xxs,
+    paddingVertical: spacing.sm,
+    borderRadius: ms(14),
     backgroundColor: AUTH_COLORS.inputBg,
   },
 
   timerText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
     color: AUTH_COLORS.subText,
   },
 
   resendLink: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
     color: AUTH_COLORS.primary,
   },
 
   ctaWrap: {
-    borderRadius: 28,
+    borderRadius: ms(28),
     overflow: 'hidden',
     alignSelf: 'stretch',
-    marginHorizontal: 6,
-    shadowColor: '#6D28D9',
-    shadowOffset: { width: 0, height: 6 },
+    marginHorizontal: spacing.sm,
+    shadowColor: AUTH_COLORS.primaryPurpleDark,
+    shadowOffset: { width: 0, height: ms(6) },
     shadowOpacity: 0.25,
-    shadowRadius: 12,
+    shadowRadius: ms(12),
     elevation: 4,
   },
 
   primaryButton: {
-    height: 56,
+    height: ms(56),
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 28,
+    borderRadius: ms(28),
   },
 
   primaryButtonText: {
     color: AUTH_COLORS.white,
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
     letterSpacing: -0.2,
   },
 
   hint: {
-    marginTop: 20,
-    fontSize: 12,
-    lineHeight: 18,
+    marginTop: spacing['3xl'],
+    fontSize: fontSize.sm,
+    lineHeight: ms(18),
     color: AUTH_COLORS.muted,
     textAlign: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: layout.screenPadding,
   },
 });

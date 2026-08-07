@@ -5,6 +5,14 @@ import Svg, { Path } from 'react-native-svg';
 import { LinkArrow } from '../../../../styles/icons';
 import { COLORS } from './styles/color';
 import { NoteItem } from '../types/note';
+import {
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  shadows,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   item: NoteItem;
@@ -12,8 +20,8 @@ type Props = {
   onDelete?: () => void;
 };
 
-const TrashIcon = ({ color = '#EF4444' }: { color?: string }) => (
-  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none">
+const TrashIcon = ({ color = COLORS.errorDark }: { color?: string }) => (
+  <Svg width={ms(15)} height={ms(15)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM8 12h8"
       stroke={color}
@@ -68,7 +76,7 @@ const NoteCard = ({ item, onPress, onDelete }: Props) => {
               <TrashIcon />
             </TouchableOpacity>
             <View style={styles.linkButton}>
-              <LinkArrow width={12} height={12} color={COLORS.icon} />
+              <LinkArrow width={ms(12)} height={ms(12)} color={COLORS.icon} />
             </View>
           </View>
         </View>
@@ -89,14 +97,10 @@ export default NoteCard;
 
 const styles = StyleSheet.create({
   shadowWrap: {
-    marginBottom: 12,
-    borderRadius: 20,
+    marginBottom: spacing.xl,
+    borderRadius: radii.xl,
     backgroundColor: COLORS.white,
-    shadowColor: '#64748B',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    ...shadows.soft,
     shadowOpacity: 0.07,
     shadowRadius: 10,
     elevation: 2,
@@ -104,9 +108,9 @@ const styles = StyleSheet.create({
 
   container: {
     backgroundColor: COLORS.white,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderRadius: radii.xl,
+    paddingHorizontal: ms(14),
+    paddingVertical: spacing.xl,
     overflow: 'hidden',
   },
 
@@ -118,68 +122,63 @@ const styles = StyleSheet.create({
 
   tag: {
     backgroundColor: COLORS.purpleLight,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.xs,
   },
 
   tagText: {
     color: COLORS.primaryDark,
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: ms(10),
+    fontWeight: fontWeight.bold,
     letterSpacing: 0.3,
   },
 
-  rightTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
   datePill: {
-    maxWidth: 124,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: '#F8FAFC',
+    maxWidth: ms(124),
+    paddingHorizontal: ms(9),
+    paddingVertical: ms(5),
+    borderRadius: radii.pill,
+    backgroundColor: COLORS.inputBg,
     borderWidth: 1,
-    borderColor: '#EEF2FF',
+    borderColor: COLORS.primaryLight,
   },
 
   date: {
     color: COLORS.gray,
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
   },
 
   bodyRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: spacing.lg,
   },
 
   textContent: {
     flex: 1,
-    paddingRight: 12,
+    paddingRight: spacing.xl,
   },
 
   actions: {
-    width: 68,
+    width: ms(68),
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
-    gap: 7,
+    gap: ms(7),
   },
 
   deleteButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: ms(30),
+    height: ms(30),
+    borderRadius: ms(15),
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#64748B',
+    borderColor: COLORS.border,
+    shadowColor: COLORS.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -190,49 +189,49 @@ const styles = StyleSheet.create({
   },
 
   linkButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
+    width: ms(30),
+    height: ms(30),
+    borderRadius: radii.sm,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: COLORS.lightGray,
     borderWidth: 1,
-    borderColor: '#EEF2FF',
+    borderColor: COLORS.primaryLight,
   },
 
   title: {
     color: COLORS.black,
-    fontSize: 15,
-    fontWeight: '700',
-    lineHeight: 20,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    lineHeight: ms(20),
     letterSpacing: -0.2,
   },
 
   desc: {
-    marginTop: 4,
+    marginTop: spacing.xs,
     color: COLORS.gray,
-    fontSize: 12,
-    lineHeight: 18,
-    fontWeight: '500',
+    fontSize: fontSize.sm,
+    lineHeight: ms(18),
+    fontWeight: fontWeight.medium,
   },
 
   footer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
-    gap: 6,
+    marginTop: spacing.lg,
+    gap: spacing.sm,
   },
 
   pill: {
     backgroundColor: COLORS.lightGray,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: ms(8),
   },
 
   pillText: {
     color: COLORS.gray,
-    fontSize: 11,
-    fontWeight: '600',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
   },
 });

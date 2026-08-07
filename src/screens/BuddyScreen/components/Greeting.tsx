@@ -1,9 +1,6 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { colors, fontSize, fontWeight, ms, spacing } from '../../../theme';
 
 const Greeting = () => {
   return (
@@ -19,15 +16,15 @@ export default Greeting;
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 34,
+    marginTop: ms(34),
     alignItems: 'center',
   },
 
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
+    fontSize: fontSize['4xl'],
+    fontWeight: fontWeight.bold,
+    color: colors.text,
     textAlign: 'center',
-    lineHeight: 38,
+    lineHeight: ms(38),
   },
 });

@@ -20,6 +20,14 @@ import {
 import SpaceSheetHeader from './SpaceSheetHeader';
 import SpaceOverviewCard from './SpaceOverviewCard';
 import SpaceActionList from './SpaceActionList';
+import {
+  colors,
+  layout,
+  ms,
+  radii,
+  spacing,
+  vSpacing,
+} from '../../../../theme';
 
 type Props = {
   space: Space | null;
@@ -51,7 +59,7 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
   (
     {
       space,
-      accentColor = '#E9D5FF',
+      accentColor = colors.primarySoft,
       stats,
       isStatsLoading = false,
       isStatsError = false,
@@ -136,19 +144,29 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
       {
         id: 'notes',
         label: 'Open Notes',
-        icon: <NotesIcon width={16} height={16} color="#4338CA" />,
+        icon: (
+          <NotesIcon width={ms(16)} height={ms(16)} color={colors.primary} />
+        ),
         onPress: handleNotes,
       },
       {
         id: 'tasks',
         label: 'Open Tasks',
-        icon: <TaskIcons width={16} height={16} color="#4338CA" />,
+        icon: (
+          <TaskIcons width={ms(16)} height={ms(16)} color={colors.primary} />
+        ),
         onPress: handleTasks,
       },
       {
         id: 'buddy',
         label: 'Ask Buddy',
-        icon: <AIChatIcons width={17} height={17} color="#FFFFFF" />,
+        icon: (
+          <AIChatIcons
+            width={ms(17)}
+            height={ms(17)}
+            color={colors.white}
+          />
+        ),
         onPress: handleBuddy,
         variant: 'primary' as const,
       },
@@ -199,22 +217,22 @@ export default SpaceDetailBottomSheet;
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: '#F7F7FB',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    backgroundColor: colors.background,
+    borderTopLeftRadius: ms(28),
+    borderTopRightRadius: ms(28),
   },
 
   indicator: {
-    backgroundColor: '#CBD5E1',
-    width: 56,
-    height: 5,
-    borderRadius: 999,
+    backgroundColor: colors.muted,
+    width: ms(56),
+    height: ms(5),
+    borderRadius: radii.pill,
   },
 
   scrollContent: {
-    paddingHorizontal: 18,
-    paddingTop: 2,
-    paddingBottom: Platform.OS === 'ios' ? 32 : 24,
-    gap: 16,
+    paddingHorizontal: ms(18),
+    paddingTop: spacing.xxs,
+    paddingBottom: Platform.OS === 'ios' ? vSpacing['3xl'] : vSpacing['2xl'],
+    gap: layout.sectionGap,
   },
 });

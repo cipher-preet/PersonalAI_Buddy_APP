@@ -5,6 +5,15 @@ import { useNavigation } from '@react-navigation/native';
 import { HistoryIcon } from '../../../../styles/icons';
 import ChevronRightIcon from '../../../../styles/icons/GreatorThan';
 import { COLORS } from '../styles';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  layout,
+  ms,
+  radii,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   onHistoryPress?: () => void;
@@ -26,7 +35,7 @@ const Header = ({ onHistoryPress }: Props) => {
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
         <View style={styles.backIcon}>
-          <ChevronRightIcon width={18} height={18} color="#111827" />
+          <ChevronRightIcon width={ms(18)} height={ms(18)} color={colors.text} />
         </View>
       </TouchableOpacity>
 
@@ -41,7 +50,7 @@ const Header = ({ onHistoryPress }: Props) => {
         onPress={onHistoryPress}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <HistoryIcon width={18} height={18} color="#111827" />
+        <HistoryIcon width={ms(18)} height={ms(18)} color={colors.text} />
       </TouchableOpacity>
     </View>
   );
@@ -55,25 +64,25 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
-    paddingTop: 8,
-    paddingBottom: 14,
+    paddingHorizontal: spacing['2xl'],
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
     backgroundColor: 'transparent',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(229, 231, 235, 0.9)',
   },
 
   backButton: {
-    width: 40,
-    height: 40,
+    width: layout.iconButtonSm,
+    height: layout.iconButtonSm,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   backIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
+    width: ms(36),
+    height: ms(36),
+    borderRadius: radii.md,
     backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
@@ -86,26 +95,26 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 8,
+    paddingHorizontal: spacing.md,
   },
 
   title: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
     color: COLORS.text,
   },
 
   subtitle: {
-    marginTop: 2,
-    fontSize: 11,
-    fontWeight: '500',
+    marginTop: spacing.xxs,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
     color: COLORS.subText,
   },
 
   iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
+    width: layout.iconButtonSm,
+    height: layout.iconButtonSm,
+    borderRadius: radii.md,
     backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',

@@ -7,7 +7,16 @@ import {
   ScrollView,
 } from 'react-native';
 
-import { HomeIcon, LinkArrow } from '../../../../styles/icons';
+import { LinkArrow } from '../../../../styles/icons';
+import { COLORS } from './styles/color';
+import {
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  shadows,
+  spacing,
+} from '../../../theme';
 
 type CardItem = {
   id: number;
@@ -31,7 +40,7 @@ const Card = ({ title, icon }: CardProps) => {
         <View style={styles.iconContainer}>{icon}</View>
 
         <TouchableOpacity activeOpacity={0.8} style={styles.linkButton}>
-          <LinkArrow width={14} height={14} color="#94A3B8" />
+          <LinkArrow width={ms(14)} height={ms(14)} color={COLORS.muted} />
         </TouchableOpacity>
       </View>
 
@@ -62,35 +71,24 @@ export default AIActionCard;
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
 
   scrollContainer: {
-    paddingRight: 8,
+    paddingRight: spacing.md,
   },
 
   card: {
-    width: 142,
-
-    backgroundColor: '#FFFFFF',
-
-    borderRadius: 22,
-
-    padding: 14,
-
-    marginRight: 12,
-
+    width: ms(142),
+    backgroundColor: COLORS.white,
+    borderRadius: radii['2xl'],
+    padding: ms(14),
+    marginRight: spacing.xl,
     borderWidth: 1,
-    borderColor: '#EEF2F6',
-
-    shadowColor: '#CBD5E1',
+    borderColor: COLORS.border,
+    ...shadows.soft,
     shadowOpacity: 0.08,
     shadowRadius: 10,
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-
     elevation: 3,
   },
 
@@ -101,42 +99,31 @@ const styles = StyleSheet.create({
   },
 
   iconContainer: {
-    width: 42,
-    height: 42,
-
-    borderRadius: 14,
-
+    width: ms(42),
+    height: ms(42),
+    borderRadius: ms(14),
     justifyContent: 'center',
     alignItems: 'center',
-
-    backgroundColor: '#F7F9FB',
+    backgroundColor: COLORS.inputBg,
   },
 
   linkButton: {
-    width: 30,
-    height: 30,
-
-    borderRadius: 10,
-
+    width: ms(30),
+    height: ms(30),
+    borderRadius: radii.sm,
     justifyContent: 'center',
     alignItems: 'center',
-
-    backgroundColor: '#F8FAFC',
-
+    backgroundColor: COLORS.inputBg,
     borderWidth: 1,
-    borderColor: '#EEF2F6',
+    borderColor: COLORS.border,
   },
 
   cardTitle: {
-    marginTop: 16,
-
-    fontSize: 14,
-    lineHeight: 20,
-
-    fontWeight: '600',
-
-    color: '#46525A',
-
+    marginTop: spacing['2xl'],
+    fontSize: fontSize.base,
+    lineHeight: ms(20),
+    fontWeight: fontWeight.semibold,
+    color: COLORS.textSecondary,
     letterSpacing: -0.1,
   },
 });

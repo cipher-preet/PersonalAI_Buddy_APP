@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import {
-  Dimensions,
   NativeSyntheticEvent,
   StyleSheet,
   TextInput,
@@ -8,14 +7,23 @@ import {
   View,
 } from 'react-native';
 import { AUTH_COLORS } from '../styles/colors';
+import {
+  fontWeight,
+  ms,
+  radii,
+  screenWidth,
+  spacing,
+} from '../../../theme';
 
 const OTP_LENGTH = 4;
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const HORIZONTAL_PADDING = 84;
-const BOX_GAP = 8;
+const HORIZONTAL_PADDING = ms(84);
+const BOX_GAP = spacing.md;
 const BOX_SIZE = Math.min(
-  48,
-  Math.floor((SCREEN_WIDTH - HORIZONTAL_PADDING - BOX_GAP * (OTP_LENGTH - 1)) / OTP_LENGTH),
+  ms(48),
+  Math.floor(
+    (screenWidth - HORIZONTAL_PADDING - BOX_GAP * (OTP_LENGTH - 1)) /
+      OTP_LENGTH,
+  ),
 );
 
 type Props = {
@@ -142,8 +150,8 @@ const styles = StyleSheet.create({
 
   box: {
     width: BOX_SIZE,
-    height: BOX_SIZE + 8,
-    borderRadius: 14,
+    height: BOX_SIZE + ms(8),
+    borderRadius: radii.sm,
     backgroundColor: AUTH_COLORS.white,
     borderWidth: 1.5,
     borderColor: AUTH_COLORS.border,
@@ -162,15 +170,15 @@ const styles = StyleSheet.create({
     shadowColor: AUTH_COLORS.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.18,
-    shadowRadius: 8,
+    shadowRadius: ms(8),
     elevation: 3,
   },
 
   input: {
     width: '100%',
     height: '100%',
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: ms(22),
+    fontWeight: fontWeight.bold,
     color: AUTH_COLORS.text,
     padding: 0,
     margin: 0,

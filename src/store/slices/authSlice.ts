@@ -15,6 +15,7 @@ type AuthState = {
   phone: string | number | null;
   email: string | null;
   name: string | null;
+  avatar: string | null;
   onboarding: OnboardingData;
 };
 
@@ -27,6 +28,7 @@ const initialState: AuthState = {
   phone: null,
   email: null,
   name: null,
+  avatar: null,
   onboarding: {
     profession: '',
     usageGoal: '',
@@ -41,7 +43,15 @@ type LoginSuccessPayload = {
   phone?: string | number;
   email?: string;
   name?: string;
+  avatar?: string;
   hasCompletedOnboarding?: boolean;
+};
+
+type UpdateProfilePayload = {
+  phone?: string | number | null;
+  email?: string | null;
+  name?: string | null;
+  avatar?: string | null;
 };
 
 const authSlice = createSlice({
@@ -58,6 +68,7 @@ const authSlice = createSlice({
       state.phone = action.payload.phone ?? null;
       state.email = action.payload.email ?? null;
       state.name = action.payload.name ?? null;
+      state.avatar = action.payload.avatar ?? null;
     },
     setOnboardingProfession: (state, action: PayloadAction<string>) => {
       state.onboarding.profession = action.payload;
@@ -85,6 +96,24 @@ const authSlice = createSlice({
       state.phone = action.payload.phone ?? null;
       state.email = action.payload.email ?? null;
       state.name = action.payload.name ?? null;
+      state.avatar = action.payload.avatar ?? null;
+    },
+    updateProfileSuccess: (
+      state,
+      action: PayloadAction<UpdateProfilePayload>,
+    ) => {
+      if (action.payload.phone !== undefined) {
+        state.phone = action.payload.phone;
+      }
+      if (action.payload.email !== undefined) {
+        state.email = action.payload.email;
+      }
+      if (action.payload.name !== undefined) {
+        state.name = action.payload.name;
+      }
+      if (action.payload.avatar !== undefined) {
+        state.avatar = action.payload.avatar;
+      }
     },
     logout: () => initialState,
   },
@@ -97,6 +126,7 @@ export const {
   setOnboardingSource,
   completeOnboarding,
   checkAuthSuccess,
+  updateProfileSuccess,
   logout,
 } = authSlice.actions;
 

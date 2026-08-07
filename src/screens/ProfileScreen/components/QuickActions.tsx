@@ -1,46 +1,39 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 
 import { HomeIcon } from '../../../../styles/icons';
 
 import { COLORS } from '../styles/colors';
+import {
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  spacing,
+} from '../../../theme';
 
 const actions = [
-  {title: 'Tasks', icon: 'create-outline'},
-  {title: 'Projects', icon: 'folder-outline'},
-  {title: 'Notes', icon: 'document-text-outline'},
-  {title: 'Analytics', icon: 'pie-chart-outline'},
-  {title: 'AI Assistant', icon: 'sparkles-outline'},
-  {title: 'Team', icon: 'people-outline'},
+  { title: 'Tasks', icon: 'create-outline' },
+  { title: 'Projects', icon: 'folder-outline' },
+  { title: 'Notes', icon: 'document-text-outline' },
+  { title: 'Analytics', icon: 'pie-chart-outline' },
+  { title: 'AI Assistant', icon: 'sparkles-outline' },
+  { title: 'Team', icon: 'people-outline' },
 ];
 
 const QuickActions = () => {
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.heading}>
-        Quick Actions
-      </Text>
+      <Text style={styles.heading}>Quick Actions</Text>
 
       <View style={styles.grid}>
         {actions.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.card}>
-            
+          <TouchableOpacity key={index} style={styles.card}>
             <View style={styles.iconBox}>
-              <HomeIcon
-                color={COLORS.primary}
-              />
+              <HomeIcon color={COLORS.primary} />
             </View>
 
-            <Text style={styles.title}>
-              {item.title}
-            </Text>
+            <Text style={styles.title}>{item.title}</Text>
           </TouchableOpacity>
         ))}
       </View>
@@ -52,15 +45,14 @@ export default QuickActions;
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: 24,
+    marginBottom: spacing['4xl'],
   },
 
   heading: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
     color: COLORS.text,
-
-    marginBottom: 14,
+    marginBottom: spacing.xl,
   },
 
   grid: {
@@ -71,35 +63,26 @@ const styles = StyleSheet.create({
 
   card: {
     width: '31%',
-
     backgroundColor: COLORS.white,
-
-    borderRadius: 18,
-
-    paddingVertical: 20,
-
+    borderRadius: radii.lg,
+    paddingVertical: spacing['3xl'],
     alignItems: 'center',
-
-    marginBottom: 12,
+    marginBottom: spacing.xl,
   },
 
   iconBox: {
-    width: 42,
-    height: 42,
-
-    borderRadius: 14,
-
+    width: ms(42),
+    height: ms(42),
+    borderRadius: ms(14),
     backgroundColor: COLORS.lightPurple,
-
     justifyContent: 'center',
     alignItems: 'center',
-
-    marginBottom: 10,
+    marginBottom: spacing.lg,
   },
 
   title: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
     color: COLORS.text,
   },
 });

@@ -1,8 +1,15 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-import { AiInsightIcon, BrainIcon, HomeIcon } from '../../../../styles/icons';
-import { COLORS } from '../component/styles/color';
+import { AiInsightIcon, BrainIcon } from '../../../../styles/icons';
+import { COLORS } from './styles/color';
+import {
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  spacing,
+} from '../../../theme';
 
 const AIInsightCard = () => {
   return (
@@ -10,7 +17,7 @@ const AIInsightCard = () => {
       <View style={styles.header}>
         <View style={styles.left}>
           <View style={styles.iconBox}>
-            <AiInsightIcon width={18} height={18}/>
+            <AiInsightIcon width={ms(18)} height={ms(18)} />
           </View>
 
           <Text style={styles.heading}>AI Insights</Text>
@@ -24,7 +31,7 @@ const AIInsightCard = () => {
       <View style={styles.card}>
         <View style={styles.top}>
           <View style={styles.aiCircle}>
-            <BrainIcon width={18} height={18} />
+            <BrainIcon width={ms(18)} height={ms(18)} />
           </View>
 
           <View style={styles.content}>
@@ -59,7 +66,7 @@ export default AIInsightCard;
 
 const styles = StyleSheet.create({
   header: {
-    marginTop: 10,
+    marginTop: spacing.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -71,32 +78,32 @@ const styles = StyleSheet.create({
   },
 
   iconBox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: ms(24),
+    height: ms(24),
+    borderRadius: ms(12),
     backgroundColor: COLORS.purpleLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginRight: spacing.md,
   },
 
   heading: {
     color: COLORS.black,
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.extrabold,
   },
 
   viewAll: {
     color: COLORS.primary,
-    fontWeight: '700',
-    fontSize: 12,
+    fontWeight: fontWeight.bold,
+    fontSize: fontSize.sm,
   },
 
   card: {
-    marginTop: 14,
+    marginTop: ms(14),
     backgroundColor: COLORS.white,
-    borderRadius: 24,
-    padding: 16,
+    borderRadius: radii['3xl'],
+    padding: spacing['2xl'],
   },
 
   top: {
@@ -104,13 +111,13 @@ const styles = StyleSheet.create({
   },
 
   aiCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: ms(38),
+    height: ms(38),
+    borderRadius: ms(19),
     backgroundColor: COLORS.purpleLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: spacing.xl,
   },
 
   content: {
@@ -119,54 +126,54 @@ const styles = StyleSheet.create({
 
   title: {
     color: COLORS.black,
-    fontWeight: '800',
-    fontSize: 15,
+    fontWeight: fontWeight.extrabold,
+    fontSize: fontSize.lg,
   },
 
   description: {
-    marginTop: 4,
+    marginTop: spacing.xs,
     color: COLORS.gray,
-    fontSize: 12,
-    lineHeight: 18,
+    fontSize: fontSize.sm,
+    lineHeight: ms(18),
   },
 
   badge: {
     backgroundColor: COLORS.purpleLight,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 20,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: ms(5),
+    borderRadius: radii.xl,
     alignSelf: 'flex-start',
   },
 
   badgeText: {
     color: COLORS.primary,
-    fontWeight: '700',
-    fontSize: 10,
+    fontWeight: fontWeight.bold,
+    fontSize: ms(10),
   },
 
   buttons: {
-    marginTop: 18,
+    marginTop: ms(18),
     flexDirection: 'row',
     alignItems: 'center',
   },
 
   startButton: {
     backgroundColor: COLORS.primary,
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 14,
+    paddingHorizontal: ms(18),
+    paddingVertical: spacing.lg,
+    borderRadius: ms(14),
   },
 
   startText: {
     color: COLORS.white,
-    fontWeight: '700',
-    fontSize: 12,
+    fontWeight: fontWeight.bold,
+    fontSize: fontSize.sm,
   },
 
   dismissText: {
-    marginLeft: 16,
+    marginLeft: spacing['2xl'],
     color: COLORS.gray,
-    fontWeight: '600',
-    fontSize: 12,
+    fontWeight: fontWeight.semibold,
+    fontSize: fontSize.sm,
   },
 });

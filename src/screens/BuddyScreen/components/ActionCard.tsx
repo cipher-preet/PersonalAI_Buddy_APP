@@ -1,10 +1,13 @@
 import React from 'react';
+import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
 import {
-  TouchableOpacity,
-  View,
-  Text,
-  StyleSheet,
-} from 'react-native';
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   emoji: string;
@@ -28,30 +31,30 @@ export default ActionCard;
 const styles = StyleSheet.create({
   container: {
     width: '48%',
-    minHeight: 150,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 18,
+    minHeight: ms(150),
+    backgroundColor: colors.white,
+    borderRadius: radii['3xl'],
+    padding: spacing['2xl'],
     justifyContent: 'space-between',
   },
 
   iconBox: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: '#F3F4FF',
+    width: ms(42),
+    height: ms(42),
+    borderRadius: ms(14),
+    backgroundColor: colors.primarySoft,
     justifyContent: 'center',
     alignItems: 'center',
   },
 
   icon: {
-    fontSize: 20,
+    fontSize: fontSize['3xl'],
   },
 
   title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    lineHeight: 24,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
+    lineHeight: ms(24),
   },
 });

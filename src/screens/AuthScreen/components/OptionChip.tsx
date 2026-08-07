@@ -1,6 +1,12 @@
 import React from 'react';
 import { Pressable, Text, StyleSheet } from 'react-native';
 import { AUTH_COLORS } from '../styles/colors';
+import {
+  fontSize,
+  fontWeight,
+  radii,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   label: string;
@@ -24,12 +30,12 @@ export default OptionChip;
 const styles = StyleSheet.create({
   chip: {
     backgroundColor: AUTH_COLORS.white,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.xl,
     borderWidth: 1,
     borderColor: AUTH_COLORS.border,
-    marginBottom: 10,
+    marginBottom: spacing.lg,
   },
 
   chipSelected: {
@@ -38,8 +44,8 @@ const styles = StyleSheet.create({
   },
 
   text: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
     color: AUTH_COLORS.text,
   },
 

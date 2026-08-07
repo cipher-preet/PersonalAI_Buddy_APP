@@ -2,6 +2,14 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import ChevronRightIcon from '../../../../styles/icons/GreatorThan';
 import { AUTH_COLORS } from '../styles/colors';
+import {
+  fontSize,
+  fontWeight,
+  layout,
+  ms,
+  radii,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   title?: string;
@@ -18,7 +26,11 @@ const AuthHeaderBar = ({ title = 'Verification', onBack }: Props) => {
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
         <View style={styles.backIcon}>
-          <ChevronRightIcon width={18} height={18} color={AUTH_COLORS.text} />
+          <ChevronRightIcon
+            width={ms(18)}
+            height={ms(18)}
+            color={AUTH_COLORS.text}
+          />
         </View>
       </TouchableOpacity>
 
@@ -37,21 +49,21 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
-    minHeight: 44,
+    marginBottom: spacing.xl,
+    minHeight: layout.iconButton,
   },
 
   side: {
-    width: 44,
-    height: 44,
+    width: layout.iconButton,
+    height: layout.iconButton,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   backIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+    width: layout.iconButtonSm,
+    height: layout.iconButtonSm,
+    borderRadius: radii.sm,
     backgroundColor: AUTH_COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
@@ -59,9 +71,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: AUTH_COLORS.border,
     shadowColor: AUTH_COLORS.shadow,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: ms(2) },
     shadowOpacity: 0.06,
-    shadowRadius: 6,
+    shadowRadius: ms(6),
     elevation: 2,
   },
 
@@ -72,8 +84,8 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
     color: AUTH_COLORS.text,
     letterSpacing: -0.2,
   },

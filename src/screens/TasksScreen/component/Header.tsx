@@ -21,9 +21,17 @@ import Svg, { Path } from 'react-native-svg';
 import { FilterIcon, SearchIcon } from '../../../../styles/icons';
 import { COLORS } from './styles/color';
 import type { TaskFilter } from '../types/filter';
+import {
+  fontSize,
+  fontWeight,
+  layout,
+  ms,
+  radii,
+  spacing,
+} from '../../../theme';
 
-const ICON_SIZE = 40;
-const ICON_GAP = 10;
+const ICON_SIZE = layout.iconButtonSm;
+const ICON_GAP = spacing.lg;
 const RIGHT_ACTIONS_WIDTH = ICON_SIZE * 2 + ICON_GAP;
 
 type Props = {
@@ -37,7 +45,7 @@ type Props = {
 };
 
 const CloseIcon = ({ color = COLORS.gray }: { color?: string }) => (
-  <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+  <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M18 6 6 18M6 6l12 12"
       stroke={color}
@@ -122,14 +130,14 @@ const Header = ({
               innerSearchWidth > 0 && { width: innerSearchWidth },
             ]}
           >
-            <SearchIcon width={15} height={15} color={COLORS.gray} />
+            <SearchIcon width={ms(15)} height={ms(15)} color={COLORS.gray} />
 
             <TextInput
               ref={inputRef}
               value={searchQuery}
               onChangeText={onSearchQueryChange}
               placeholder="Search tasks..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={COLORS.muted}
               style={styles.searchInput}
               returnKeyType="search"
               autoCorrect={false}
@@ -157,7 +165,7 @@ const Header = ({
               activeOpacity={0.78}
               onPress={onSearchOpen}
             >
-              <SearchIcon width={18} height={18} color={COLORS.black} />
+              <SearchIcon width={ms(18)} height={ms(18)} color={COLORS.icon} />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -168,9 +176,9 @@ const Header = ({
           onPress={onFilterPress}
         >
           <FilterIcon
-            width={18}
-            height={18}
-            color={isFilterActive ? COLORS.primaryDark : COLORS.black}
+            width={ms(18)}
+            height={ms(18)}
+            color={isFilterActive ? COLORS.primaryDark : COLORS.icon}
           />
         </TouchableOpacity>
       </View>
@@ -182,7 +190,7 @@ export default Header;
 
 const styles = StyleSheet.create({
   container: {
-    height: 44,
+    height: layout.iconButton,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -193,10 +201,10 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.extrabold,
     color: COLORS.black,
-    lineHeight: 22,
+    lineHeight: ms(22),
   },
 
   middleSection: {
@@ -208,7 +216,7 @@ const styles = StyleSheet.create({
   },
 
   middleSectionActive: {
-    marginLeft: 12,
+    marginLeft: spacing.xl,
   },
 
   searchBarWrap: {
@@ -219,15 +227,15 @@ const styles = StyleSheet.create({
 
   searchInputContainer: {
     height: ICON_SIZE,
-    borderRadius: 14,
+    borderRadius: ms(14),
     backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: '#E9D5FF',
+    borderColor: COLORS.borderFocus,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: 12,
-    paddingRight: 6,
-    shadowColor: '#7C3AED',
+    paddingLeft: spacing.xl,
+    paddingRight: spacing.sm,
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 10,
@@ -236,20 +244,20 @@ const styles = StyleSheet.create({
 
   searchInput: {
     flex: 1,
-    marginLeft: 8,
-    marginRight: 4,
-    fontSize: 14,
-    fontWeight: '600',
+    marginLeft: spacing.md,
+    marginRight: spacing.xs,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
     color: COLORS.black,
     paddingVertical: 0,
     height: ICON_SIZE,
   },
 
   closeButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 10,
-    backgroundColor: '#F8FAFC',
+    width: ms(28),
+    height: ms(28),
+    borderRadius: radii.sm,
+    backgroundColor: COLORS.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -273,7 +281,7 @@ const styles = StyleSheet.create({
   iconButton: {
     width: ICON_SIZE,
     height: ICON_SIZE,
-    borderRadius: 14,
+    borderRadius: ms(14),
     backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
@@ -283,6 +291,6 @@ const styles = StyleSheet.create({
 
   iconButtonActive: {
     backgroundColor: COLORS.purpleLight,
-    borderColor: '#E9D5FF',
+    borderColor: COLORS.borderFocus,
   },
 });

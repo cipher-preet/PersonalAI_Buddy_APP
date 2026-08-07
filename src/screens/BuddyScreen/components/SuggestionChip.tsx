@@ -1,9 +1,12 @@
 import React from 'react';
+import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import {
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-} from 'react-native';
+  colors,
+  fontSize,
+  fontWeight,
+  radii,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   title: string;
@@ -21,15 +24,15 @@ export default SuggestionChip;
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 30,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.lg,
+    borderRadius: radii.pill,
   },
 
   text: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#4B5563',
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.textSecondary,
   },
 });

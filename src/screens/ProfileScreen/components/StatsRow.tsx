@@ -1,11 +1,13 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-} from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
 import { COLORS } from '../styles/colors';
+import {
+  fontSize,
+  fontWeight,
+  radii,
+  spacing,
+} from '../../../theme';
 
 const stats = [
   {
@@ -27,13 +29,9 @@ const StatsRow = () => {
     <View style={styles.container}>
       {stats.map((item, index) => (
         <View key={index} style={styles.card}>
-          <Text style={styles.value}>
-            {item.value}
-          </Text>
+          <Text style={styles.value}>{item.value}</Text>
 
-          <Text style={styles.label}>
-            {item.label}
-          </Text>
+          <Text style={styles.label}>{item.label}</Text>
         </View>
       ))}
     </View>
@@ -46,21 +44,15 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-
-    marginBottom: 18,
+    marginBottom: spacing['2xl'],
   },
 
   card: {
     width: '31%',
-
     backgroundColor: COLORS.white,
-
-    borderRadius: 18,
-
-    paddingVertical: 18,
-
+    borderRadius: radii.lg,
+    paddingVertical: spacing['2xl'],
     alignItems: 'center',
-
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -68,20 +60,18 @@ const styles = StyleSheet.create({
       width: 0,
       height: 4,
     },
-
     elevation: 3,
   },
 
   value: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: fontSize['4xl'],
+    fontWeight: fontWeight.bold,
     color: COLORS.text,
   },
 
   label: {
-    marginTop: 4,
-
+    marginTop: spacing.xs,
     color: COLORS.subText,
-    fontSize: 13,
+    fontSize: fontSize.md,
   },
 });

@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 
-import { CalenderIcon, HomeIcon } from '../../../../styles/icons';
-
-import { COLORS } from '../component/styles/color';
+import { CalenderIcon } from '../../../../styles/icons';
+import { COLORS } from './styles/color';
+import { fontSize, fontWeight, ms, radii, spacing } from '../../../theme';
 
 const SectionHeader = () => {
   return (
@@ -11,7 +11,7 @@ const SectionHeader = () => {
       <Text style={styles.title}>Tasks</Text>
 
       <TouchableOpacity style={styles.button}>
-        <CalenderIcon width={18} height={18} />
+        <CalenderIcon width={ms(18)} height={ms(18)} />
 
         <Text style={styles.month}>December</Text>
       </TouchableOpacity>
@@ -23,8 +23,8 @@ export default SectionHeader;
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 28,
-    marginBottom: 16,
+    marginTop: spacing['3xl'],
+    marginBottom: spacing.xl,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -32,23 +32,23 @@ const styles = StyleSheet.create({
 
   title: {
     color: COLORS.black,
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.extrabold,
   },
 
   button: {
     backgroundColor: COLORS.white,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingHorizontal: ms(14),
+    paddingVertical: spacing.md,
+    borderRadius: radii.xl,
     flexDirection: 'row',
     alignItems: 'center',
   },
 
   month: {
-    marginLeft: 8,
+    marginLeft: spacing.md,
     color: COLORS.gray,
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
   },
 });

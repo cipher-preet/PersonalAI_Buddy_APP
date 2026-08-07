@@ -10,7 +10,7 @@ import { useAppSelector } from '../store/hooks';
 
 export type AuthStackParamList = {
   Login: undefined;
-  Otp: { phone: string };
+  Otp: { phone: string; username: string };
   OnboardingProfession: undefined;
   OnboardingUsage: undefined;
   OnboardingSource: undefined;

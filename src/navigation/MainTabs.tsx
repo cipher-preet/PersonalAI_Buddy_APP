@@ -16,7 +16,6 @@ import Home from '../screens/HomeScreen/Home';
 import {
   HomeIcon,
   NotesIcon,
-  ReminderIcon,
   ProfileIcon,
   TaskIcons,
   AIChatIcons,
@@ -26,6 +25,16 @@ import TaskScreen from '../screens/TasksScreen/TaskScreen';
 import ProfileScreen from '../screens/ProfileScreen/ProfileScreen';
 import BuddyScreen from '../screens/BuddyScreen/BuddyScreen';
 import PlansScreen from '../screens/PlansScreen/PlansScreen';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  mvs,
+  radii,
+  shadows,
+  spacing,
+} from '../theme';
 
 const Tab = createBottomTabNavigator();
 
@@ -61,7 +70,7 @@ const TabItem = ({
     }).start();
   }
 
-  const scale = progress.interpolate({
+  const animScale = progress.interpolate({
     inputRange: [0, 1],
     outputRange: [0.88, 1],
   });
@@ -86,6 +95,9 @@ const TabItem = ({
     outputRange: [4, 0],
   });
 
+  const activeColor = colors.tabActive;
+  const inactiveColor = colors.tabInactive;
+
   return (
     <TouchableOpacity
       accessibilityRole="button"
@@ -99,7 +111,7 @@ const TabItem = ({
         style={[
           styles.itemContainer,
           {
-            transform: [{ scale }, { translateY }],
+            transform: [{ scale: animScale }, { translateY }],
           },
         ]}
       >
@@ -115,9 +127,9 @@ const TabItem = ({
 
         <View style={styles.iconArea}>
           <Icon
-            width={26}
-            height={26}
-            color={isFocused ? '#3563FF' : '#7E8795'}
+            width={ms(26)}
+            height={ms(26)}
+            color={isFocused ? activeColor : inactiveColor}
           />
         </View>
 
@@ -126,8 +138,8 @@ const TabItem = ({
             styles.label,
             {
               opacity: labelOpacity,
-              color: isFocused ? '#3563FF' : '#7E8795',
-              fontWeight: isFocused ? '700' : '600',
+              color: isFocused ? activeColor : inactiveColor,
+              fontWeight: isFocused ? fontWeight.bold : fontWeight.semibold,
             },
           ]}
         >
@@ -243,24 +255,16 @@ const MainTabs = () => {
 const styles = StyleSheet.create({
   tabBar: {
     position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: Platform.OS === 'ios' ? 24 : 16,
-    height: 80,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 30,
+    left: spacing['2xl'],
+    right: spacing['2xl'],
+    bottom: Platform.OS === 'ios' ? mvs(24) : mvs(16),
+    height: ms(80),
+    backgroundColor: colors.white,
+    borderRadius: radii.tabBar,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    shadowColor: '#162B75',
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 24,
+    paddingHorizontal: spacing.lg,
+    ...shadows.elevated,
   },
 
   tabButton: {
@@ -270,36 +274,36 @@ const styles = StyleSheet.create({
   },
 
   itemContainer: {
-    width: 68,
-    height: 64,
+    width: ms(68),
+    height: ms(64),
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   pill: {
     position: 'absolute',
-    top: 2,
-    width: 58,
-    height: 42,
-    borderRadius: 16,
-    backgroundColor: '#EEF3FF',
+    top: ms(2),
+    width: ms(58),
+    height: ms(42),
+    borderRadius: radii.lg,
+    backgroundColor: colors.tabPill,
   },
 
   iconArea: {
-    width: 58,
-    height: 40,
+    width: ms(58),
+    height: ms(40),
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   label: {
-    fontSize: 12,
+    fontSize: fontSize.sm,
     letterSpacing: 0.2,
-    marginTop: 3,
+    marginTop: ms(3),
     textAlign: 'center',
     includeFontPadding: false,
-    color: '#1E293B',
-    fontWeight: '600',
+    color: colors.text,
+    fontWeight: fontWeight.semibold,
   },
 });
 

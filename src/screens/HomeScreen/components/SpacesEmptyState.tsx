@@ -2,6 +2,16 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { AddSpace, MySpcaes } from '../../../../styles/icons';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  mvs,
+  radii,
+  shadows,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   onCreatePress: () => void;
@@ -12,7 +22,7 @@ const SpacesEmptyState = ({ onCreatePress }: Props) => {
     <View style={styles.container}>
       <View style={styles.iconRing}>
         <View style={styles.iconInner}>
-          <MySpcaes width={28} height={28} color="#4338CA" />
+          <MySpcaes width={ms(28)} height={ms(28)} color={colors.primary} />
         </View>
       </View>
 
@@ -28,12 +38,16 @@ const SpacesEmptyState = ({ onCreatePress }: Props) => {
         style={styles.buttonWrap}
       >
         <LinearGradient
-          colors={['#8B5CF6', '#7C3AED', '#4338CA']}
+          colors={[
+            colors.primaryPurple,
+            colors.primaryPurpleDark,
+            colors.primary,
+          ]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={styles.button}
         >
-          <AddSpace width={16} height={16} color="#FFFFFF" />
+          <AddSpace width={ms(16)} height={ms(16)} color={colors.white} />
           <Text style={styles.buttonText}>Create your first space</Text>
         </LinearGradient>
       </TouchableOpacity>
@@ -45,82 +59,78 @@ export default SpacesEmptyState;
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 12,
-    paddingVertical: 32,
-    paddingHorizontal: 24,
+    marginTop: spacing.xl,
+    paddingVertical: spacing['5xl'],
+    paddingHorizontal: spacing['4xl'],
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    backgroundColor: colors.white,
+    borderRadius: radii['3xl'],
     borderWidth: 1,
-    borderColor: '#EEF2FF',
+    borderColor: colors.primaryLight,
     borderStyle: 'dashed',
-    shadowColor: '#64748B',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 12,
-    elevation: 2,
+    ...shadows.soft,
   },
 
   iconRing: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: '#F5F3FF',
+    width: ms(72),
+    height: ms(72),
+    borderRadius: ms(36),
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 18,
+    marginBottom: mvs(18),
   },
 
   iconInner: {
-    width: 52,
-    height: 52,
-    borderRadius: 18,
-    backgroundColor: '#EEF2FF',
+    width: ms(52),
+    height: ms(52),
+    borderRadius: ms(18),
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   title: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: '#1E2432',
+    fontSize: ms(17),
+    fontWeight: fontWeight.extrabold,
+    color: colors.text,
     letterSpacing: -0.3,
-    marginBottom: 8,
+    marginBottom: spacing.md,
   },
 
   subtitle: {
-    fontSize: 13,
-    lineHeight: 20,
-    fontWeight: '500',
-    color: '#64748B',
+    fontSize: fontSize.md,
+    lineHeight: ms(20),
+    fontWeight: fontWeight.medium,
+    color: colors.subText,
     textAlign: 'center',
-    marginBottom: 22,
-    paddingHorizontal: 8,
+    marginBottom: mvs(22),
+    paddingHorizontal: spacing.md,
   },
 
   buttonWrap: {
-    borderRadius: 16,
+    borderRadius: radii.lg,
     overflow: 'hidden',
-    shadowColor: '#6D28D9',
-    shadowOffset: { width: 0, height: 6 },
+    shadowColor: colors.primaryPurpleDark,
+    shadowOffset: { width: 0, height: ms(6) },
     shadowOpacity: 0.2,
-    shadowRadius: 10,
+    shadowRadius: ms(10),
     elevation: 3,
   },
 
   button: {
-    height: 48,
-    paddingHorizontal: 20,
+    height: mvs(48),
+    paddingHorizontal: spacing['3xl'],
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    borderRadius: 16,
+    gap: spacing.md,
+    borderRadius: radii.lg,
   },
 
   buttonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+    color: colors.white,
   },
 });

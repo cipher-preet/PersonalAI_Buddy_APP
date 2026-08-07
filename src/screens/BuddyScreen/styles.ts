@@ -1,23 +1,32 @@
 import { StyleSheet } from 'react-native';
+import {
+  colors,
+  ms,
+  spacing,
+  radii,
+  fontSize,
+  fontWeight,
+  shadows,
+} from '../../theme';
 
 export const COLORS = {
-  background: '#F7F7FB',
-  gradientStart: '#F9F7FF',
-  gradientMid: '#EFF3FF',
-  gradientEnd: '#FFFFFF',
-  white: '#FFFFFF',
-  primary: '#4338CA',
-  primaryPurple: '#8B5CF6',
-  primaryLight: '#EEF2FF',
-  primarySoft: '#6366F1',
-  text: '#111827',
-  subText: '#64748B',
-  muted: '#94A3B8',
-  border: '#E5E7EB',
-  userBubble: '#4338CA',
-  aiBubble: '#FFFFFF',
-  inputBg: '#FFFFFF',
-  chipBg: '#FFFFFF',
+  background: colors.background,
+  gradientStart: colors.gradientStart,
+  gradientMid: colors.gradientMid,
+  gradientEnd: colors.gradientEnd,
+  white: colors.white,
+  primary: colors.primary,
+  primaryPurple: colors.primaryPurple,
+  primaryLight: colors.primaryLight,
+  primarySoft: colors.primaryPurple,
+  text: colors.text,
+  subText: colors.subText,
+  muted: colors.muted,
+  border: colors.borderLight,
+  userBubble: colors.userBubble,
+  aiBubble: colors.aiBubble,
+  inputBg: colors.white,
+  chipBg: colors.chipBg,
 };
 
 export const styles = StyleSheet.create({
@@ -31,90 +40,87 @@ export const styles = StyleSheet.create({
 
   chatArea: {
     flex: 1,
+  },
+
+  listWrap: {
+    flex: 1,
     position: 'relative',
   },
 
   inputBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
     backgroundColor: 'transparent',
   },
 
   listContent: {
-    paddingHorizontal: 18,
-    paddingTop: 6,
-    paddingBottom: 12,
+    paddingHorizontal: spacing['2xl'],
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xl,
     flexGrow: 1,
   },
 
   heroCard: {
-    marginBottom: 20,
+    marginBottom: spacing['3xl'],
     backgroundColor: COLORS.white,
-    borderRadius: 22,
-    padding: 20,
+    borderRadius: radii['2xl'],
+    padding: spacing['3xl'],
     borderWidth: 1,
-    borderColor: '#EEF2FF',
-    shadowColor: '#64748B',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 18,
-    elevation: 3,
+    borderColor: colors.primaryLight,
+    ...shadows.card,
   },
 
   heroBadge: {
     alignSelf: 'flex-start',
     backgroundColor: COLORS.primaryLight,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    marginBottom: 12,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.pill,
+    marginBottom: spacing.xl,
   },
 
   heroBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
     color: COLORS.primary,
   },
 
   emptyState: {
     flex: 1,
     justifyContent: 'center',
-    paddingBottom: 8,
+    paddingBottom: spacing.md,
   },
 
   emptyTitle: {
-    fontSize: 24,
-    fontWeight: '800',
+    fontSize: fontSize['4xl'],
+    fontWeight: fontWeight.extrabold,
     color: COLORS.text,
-    lineHeight: 32,
+    lineHeight: ms(32),
     letterSpacing: -0.4,
   },
 
   emptySubtitle: {
-    marginTop: 8,
-    fontSize: 14,
-    lineHeight: 22,
+    marginTop: spacing.md,
+    fontSize: fontSize.base,
+    lineHeight: ms(22),
     color: COLORS.subText,
   },
 
   suggestionsTitle: {
-    marginTop: 22,
-    marginBottom: 12,
-    fontSize: 13,
-    fontWeight: '700',
+    marginTop: ms(22),
+    marginBottom: spacing.xl,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.bold,
     color: COLORS.text,
   },
 
   suggestionsWrap: {
-    gap: 10,
+    gap: spacing.lg,
   },
 
   suggestionChip: {
     backgroundColor: COLORS.chipBg,
-    borderRadius: 16,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.xl,
     borderWidth: 1,
     borderColor: COLORS.border,
     flexDirection: 'row',
@@ -122,44 +128,44 @@ export const styles = StyleSheet.create({
   },
 
   suggestionDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: ms(8),
+    height: ms(8),
+    borderRadius: ms(4),
     backgroundColor: COLORS.primaryPurple,
-    marginRight: 10,
+    marginRight: spacing.lg,
   },
 
   suggestionText: {
     flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
     color: COLORS.text,
   },
 
   dateSeparator: {
     alignSelf: 'center',
-    marginBottom: 4,
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 999,
+    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.pill,
     backgroundColor: '#ECEFF5',
   },
 
   dateSeparatorText: {
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
     color: COLORS.subText,
     letterSpacing: 0.2,
   },
 
   loadingFooter: {
-    paddingTop: 14,
+    paddingTop: spacing.xl,
     alignItems: 'center',
   },
 
   typingFooter: {
-    paddingTop: 4,
-    paddingBottom: 4,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.xs,
   },
 
   suggestionChipDisabled: {

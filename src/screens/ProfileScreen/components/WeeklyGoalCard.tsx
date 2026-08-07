@@ -2,6 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 import { COLORS } from '../styles/colors';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  spacing,
+} from '../../../theme';
 
 const WeeklyGoalCard = () => {
   return (
@@ -37,64 +45,64 @@ export default WeeklyGoalCard;
 const styles = StyleSheet.create({
   container: {
     backgroundColor: COLORS.white,
-    borderRadius: 20,
-    padding: 18,
+    borderRadius: radii.xl,
+    padding: spacing['2xl'],
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 18,
+    marginBottom: spacing['2xl'],
     borderWidth: 1,
-    borderColor: '#EEF2FF',
-    shadowColor: '#64748B',
-    shadowOffset: { width: 0, height: 6 },
+    borderColor: colors.primaryLight,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: ms(6) },
     shadowOpacity: 0.05,
-    shadowRadius: 14,
+    shadowRadius: ms(14),
     elevation: 2,
   },
 
   content: {
     flex: 1,
-    paddingRight: 12,
+    paddingRight: spacing.xl,
   },
 
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 6,
+    gap: spacing.md,
+    marginBottom: spacing.sm,
   },
 
   title: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
     color: COLORS.text,
   },
 
   streakPill: {
     backgroundColor: COLORS.lightPurple,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 999,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.pill,
   },
 
   streakText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: ms(10),
+    fontWeight: fontWeight.bold,
     color: COLORS.primary,
   },
 
   subTitle: {
-    fontSize: 12,
+    fontSize: fontSize.sm,
     color: COLORS.subText,
-    lineHeight: 18,
-    marginBottom: 12,
+    lineHeight: ms(18),
+    marginBottom: spacing.xl,
   },
 
   progressBar: {
     width: '100%',
-    height: 7,
-    backgroundColor: '#EEF2FF',
-    borderRadius: 999,
+    height: ms(7),
+    backgroundColor: colors.primaryLight,
+    borderRadius: radii.pill,
     overflow: 'hidden',
   },
 
@@ -102,20 +110,20 @@ const styles = StyleSheet.create({
     width: '88%',
     height: '100%',
     backgroundColor: COLORS.primary,
-    borderRadius: 999,
+    borderRadius: radii.pill,
   },
 
   progressLabel: {
-    marginTop: 8,
-    fontSize: 11,
-    fontWeight: '600',
+    marginTop: spacing.md,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
     color: COLORS.muted,
   },
 
   circle: {
-    width: 62,
-    height: 62,
-    borderRadius: 31,
+    width: ms(62),
+    height: ms(62),
+    borderRadius: ms(31),
     borderWidth: 4,
     borderColor: COLORS.primary,
     justifyContent: 'center',
@@ -124,8 +132,8 @@ const styles = StyleSheet.create({
   },
 
   percent: {
-    fontWeight: '800',
-    fontSize: 14,
+    fontWeight: fontWeight.extrabold,
+    fontSize: fontSize.base,
     color: COLORS.primary,
   },
 });

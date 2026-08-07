@@ -2,12 +2,18 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import {
-  CalenderIcon,
-  LinkArrow,
-} from '../../../../styles/icons';
-import { COLORS } from '../component/styles/color';
+import { CalenderIcon, LinkArrow } from '../../../../styles/icons';
+import { COLORS } from './styles/color';
 import { TaskItem } from '../types/task';
+import {
+  fontSize,
+  fontWeight,
+  ms,
+  mvs,
+  radii,
+  shadows,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   item: TaskItem;
@@ -17,8 +23,8 @@ type Props = {
   onDelete?: () => void;
 };
 
-const TrashIcon = ({ color = '#EF4444' }: { color?: string }) => (
-  <Svg width={15} height={15} viewBox="0 0 24 24" fill="none">
+const TrashIcon = ({ color = COLORS.errorDark }: { color?: string }) => (
+  <Svg width={ms(15)} height={ms(15)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM8 12h8"
       stroke={color}
@@ -58,7 +64,11 @@ const TaskCard = ({
             </View>
 
             <View style={styles.datePill}>
-              <CalenderIcon width={13} height={13} color="#64748B" />
+              <CalenderIcon
+                width={ms(13)}
+                height={ms(13)}
+                color={COLORS.subText}
+              />
               <Text numberOfLines={1} style={styles.dateText}>
                 {item.createdAt}
               </Text>
@@ -111,7 +121,11 @@ const TaskCard = ({
               </TouchableOpacity>
 
               <View style={styles.arrowButton}>
-                <LinkArrow width={14} height={14} color={COLORS.black} />
+                <LinkArrow
+                  width={ms(14)}
+                  height={ms(14)}
+                  color={COLORS.black}
+                />
               </View>
             </View>
           </View>
@@ -139,25 +153,18 @@ export default TaskCard;
 
 const styles = StyleSheet.create({
   shadowWrap: {
-    marginBottom: 14,
-    borderRadius: 18,
+    marginBottom: spacing.xl,
+    borderRadius: radii.xl,
     backgroundColor: COLORS.white,
-    shadowColor: '#64748B',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 2,
+    ...shadows.soft,
   },
 
   container: {
-    minHeight: 146,
+    minHeight: mvs(146),
     backgroundColor: COLORS.white,
-    borderRadius: 18,
+    borderRadius: radii.xl,
     borderWidth: 1,
-    borderColor: '#EEF2FF',
+    borderColor: COLORS.primaryLight,
     overflow: 'hidden',
     flexDirection: 'row',
   },
@@ -167,26 +174,26 @@ const styles = StyleSheet.create({
   },
 
   statusRail: {
-    width: 5,
-    backgroundColor: '#8B5CF6',
+    width: ms(5),
+    backgroundColor: COLORS.primary,
   },
 
   doneRail: {
-    backgroundColor: '#22C55E',
+    backgroundColor: COLORS.successBright,
   },
 
   content: {
     flex: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingHorizontal: ms(14),
+    paddingVertical: ms(14),
   },
 
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
-    gap: 10,
+    marginBottom: spacing.xl,
+    gap: spacing.lg,
   },
 
   headerRow: {
@@ -195,44 +202,44 @@ const styles = StyleSheet.create({
   },
 
   statusDot: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: ms(22),
+    height: ms(22),
+    borderRadius: ms(11),
     borderWidth: 2,
-    borderColor: '#C4B5FD',
+    borderColor: COLORS.borderFocus,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 1,
-    marginRight: 10,
-    backgroundColor: '#FFFFFF',
+    marginTop: ms(1),
+    marginRight: spacing.lg,
+    backgroundColor: COLORS.white,
   },
 
   doneDot: {
-    borderColor: '#22C55E',
-    backgroundColor: '#22C55E',
+    borderColor: COLORS.successBright,
+    backgroundColor: COLORS.successBright,
   },
 
   statusDotInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FFFFFF',
+    width: ms(8),
+    height: ms(8),
+    borderRadius: ms(4),
+    backgroundColor: COLORS.white,
   },
 
   titleBlock: {
     flex: 1,
-    paddingRight: 10,
+    paddingRight: spacing.lg,
   },
 
   title: {
     color: COLORS.black,
-    fontWeight: '800',
-    fontSize: 15,
-    lineHeight: 21,
+    fontWeight: fontWeight.extrabold,
+    fontSize: fontSize.lg,
+    lineHeight: ms(21),
   },
 
   completedTitle: {
-    color: '#6B7280',
+    color: COLORS.muted,
     textDecorationLine: 'line-through',
   },
 
@@ -241,30 +248,30 @@ const styles = StyleSheet.create({
   },
 
   subtitle: {
-    marginTop: 5,
-    color: '#64748B',
-    fontSize: 12,
-    lineHeight: 18,
-    fontWeight: '500',
+    marginTop: ms(5),
+    color: COLORS.subText,
+    fontSize: fontSize.sm,
+    lineHeight: ms(18),
+    fontWeight: fontWeight.medium,
   },
 
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 7,
+    gap: ms(7),
     flexShrink: 0,
   },
 
   deleteButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#FFFFFF',
+    width: ms(30),
+    height: ms(30),
+    borderRadius: ms(15),
+    backgroundColor: COLORS.white,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.border,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#64748B',
+    shadowColor: COLORS.shadow,
     shadowOffset: {
       width: 0,
       height: 2,
@@ -275,48 +282,48 @@ const styles = StyleSheet.create({
   },
 
   arrowButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    backgroundColor: '#F8FAFC',
+    width: ms(30),
+    height: ms(30),
+    borderRadius: radii.sm,
+    backgroundColor: COLORS.inputBg,
     borderWidth: 1,
-    borderColor: '#EEF2FF',
+    borderColor: COLORS.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   datePill: {
-    maxWidth: 138,
-    minHeight: 30,
+    maxWidth: ms(138),
+    minHeight: ms(30),
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 9,
-    borderRadius: 999,
-    backgroundColor: '#F8FAFC',
+    paddingHorizontal: ms(9),
+    borderRadius: radii.pill,
+    backgroundColor: COLORS.inputBg,
     borderWidth: 1,
-    borderColor: '#EEF2FF',
-    gap: 6,
+    borderColor: COLORS.primaryLight,
+    gap: spacing.sm,
   },
 
   dateText: {
-    color: '#64748B',
-    fontSize: 11,
-    fontWeight: '700',
+    color: COLORS.subText,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
   },
 
   footerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 7,
-    marginTop: 12,
-    paddingLeft: 32,
+    gap: ms(7),
+    marginTop: spacing.xl,
+    paddingLeft: ms(32),
   },
 
   badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.pill,
   },
 
   pendingBadge: {
@@ -328,8 +335,8 @@ const styles = StyleSheet.create({
   },
 
   badgeText: {
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.extrabold,
   },
 
   pendingText: {
@@ -341,29 +348,29 @@ const styles = StyleSheet.create({
   },
 
   priorityBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.pill,
     backgroundColor: COLORS.purpleLight,
   },
 
   priorityText: {
     color: COLORS.primaryDark,
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.extrabold,
   },
 
   projectBadge: {
-    maxWidth: 132,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: '#F1F5F9',
+    maxWidth: ms(132),
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.pill,
+    backgroundColor: COLORS.lightGray,
   },
 
   projectText: {
-    color: '#475569',
-    fontSize: 11,
-    fontWeight: '800',
+    color: COLORS.textSecondary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.extrabold,
   },
 });

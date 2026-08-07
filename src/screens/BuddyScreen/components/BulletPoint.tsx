@@ -1,6 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { COLORS } from '../styles';
+import {
+  fontSize,
+  fontWeight,
+  ms,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   text: string;
@@ -20,23 +26,23 @@ export default BulletPoint;
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    marginTop: 10,
+    marginTop: spacing.lg,
   },
 
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: ms(6),
+    height: ms(6),
+    borderRadius: ms(3),
     backgroundColor: COLORS.primarySoft,
-    marginTop: 8,
-    marginRight: 10,
+    marginTop: spacing.md,
+    marginRight: spacing.lg,
   },
 
   text: {
     flex: 1,
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: fontSize.base,
+    lineHeight: ms(22),
     color: COLORS.text,
-    fontWeight: '500',
+    fontWeight: fontWeight.medium,
   },
 });

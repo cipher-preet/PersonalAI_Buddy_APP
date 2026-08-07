@@ -8,6 +8,12 @@ import {
   NotesIcon,
 } from '../../../../styles/icons';
 import { COLORS } from './styles/color';
+import {
+  fontSize,
+  fontWeight,
+  ms,
+  spacing,
+} from '../../../theme';
 
 const stats = [
   { id: 'total', label: 'Notes', value: '86', icon: 'notes' },
@@ -18,18 +24,19 @@ const stats = [
 
 const renderIcon = (icon: string) => {
   const iconColor = COLORS.icon;
+  const size = ms(15);
 
   switch (icon) {
     case 'notes':
-      return <NotesIcon width={15} height={15} color={iconColor} />;
+      return <NotesIcon width={size} height={size} color={iconColor} />;
     case 'calendar':
-      return <CalenderIcon width={15} height={15} color={iconColor} />;
+      return <CalenderIcon width={size} height={size} color={iconColor} />;
     case 'saved':
-      return <DoubleTick width={15} height={15} color={iconColor} />;
+      return <DoubleTick width={size} height={size} color={iconColor} />;
     case 'shared':
-      return <MySpcaes width={15} height={15} color={iconColor} />;
+      return <MySpcaes width={size} height={size} color={iconColor} />;
     default:
-      return <NotesIcon width={15} height={15} color={iconColor} />;
+      return <NotesIcon width={size} height={size} color={iconColor} />;
   }
 };
 
@@ -57,17 +64,17 @@ export default NoteStatsGrid;
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginTop: 16,
+    marginTop: spacing['2xl'],
   },
 
   card: {
     flexDirection: 'row',
     backgroundColor: COLORS.white,
-    borderRadius: 18,
+    borderRadius: ms(18),
     borderWidth: 1,
     borderColor: COLORS.border,
-    paddingVertical: 16,
-    paddingHorizontal: 4,
+    paddingVertical: spacing['2xl'],
+    paddingHorizontal: spacing.xs,
   },
 
   statItem: {
@@ -79,37 +86,37 @@ const styles = StyleSheet.create({
   divider: {
     width: 1,
     backgroundColor: COLORS.border,
-    marginVertical: 4,
+    marginVertical: spacing.xs,
   },
 
   statContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 4,
+    paddingHorizontal: spacing.xs,
   },
 
   iconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
+    width: ms(28),
+    height: ms(28),
+    borderRadius: ms(8),
     backgroundColor: COLORS.lightGray,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
+    marginBottom: spacing.md,
   },
 
   value: {
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: fontSize['3xl'],
+    fontWeight: fontWeight.extrabold,
     color: COLORS.black,
-    lineHeight: 24,
+    lineHeight: ms(24),
   },
 
   label: {
-    marginTop: 2,
-    fontSize: 11,
-    fontWeight: '600',
+    marginTop: spacing.xxs,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
     color: COLORS.gray,
     textAlign: 'center',
   },

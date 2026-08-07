@@ -2,6 +2,15 @@ import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import ChevronRightIcon from '../../../../../styles/icons/GreatorThan';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  mvs,
+  radii,
+  spacing,
+} from '../../../../theme';
 
 type ActionItem = {
   id: string;
@@ -31,7 +40,11 @@ const SpaceActionList = ({ actions, title = 'Actions' }: Props) => {
               style={styles.primaryWrap}
             >
               <LinearGradient
-                colors={['#8B5CF6', '#7C3AED', '#4338CA']}
+                colors={[
+                  colors.primaryPurple,
+                  colors.primaryPurpleDark,
+                  colors.primary,
+                ]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.primaryButton}
@@ -57,7 +70,11 @@ const SpaceActionList = ({ actions, title = 'Actions' }: Props) => {
               <View style={styles.iconBox}>{action.icon}</View>
               <Text style={styles.rowLabel}>{action.label}</Text>
             </View>
-            <ChevronRightIcon width={16} height={16} color="#C7C7CC" />
+            <ChevronRightIcon
+              width={ms(16)}
+              height={ms(16)}
+              color={colors.muted}
+            />
           </TouchableOpacity>
         );
       })}
@@ -70,17 +87,17 @@ export default SpaceActionList;
 
 const styles = StyleSheet.create({
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1E2432',
-    marginBottom: 10,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    marginBottom: spacing.lg,
   },
 
   group: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    backgroundColor: colors.white,
+    borderRadius: radii.lg,
     borderWidth: 1,
-    borderColor: '#EEF2FF',
+    borderColor: colors.primaryLight,
     overflow: 'hidden',
   },
 
@@ -88,55 +105,55 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    paddingHorizontal: ms(14),
+    paddingVertical: spacing.xl,
   },
 
   rowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
+    borderBottomColor: colors.border,
   },
 
   rowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: spacing.lg,
   },
 
   iconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: '#F5F3FF',
+    width: ms(32),
+    height: ms(32),
+    borderRadius: radii.sm,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   rowLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#1E2432',
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
   },
 
   primaryWrap: {
-    margin: 10,
-    marginTop: 4,
-    borderRadius: 14,
+    margin: spacing.lg,
+    marginTop: spacing.xs,
+    borderRadius: ms(14),
     overflow: 'hidden',
   },
 
   primaryButton: {
-    height: 46,
+    height: mvs(46),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    borderRadius: 14,
+    gap: spacing.md,
+    borderRadius: ms(14),
   },
 
   primaryText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+    color: colors.white,
   },
 });

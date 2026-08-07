@@ -3,6 +3,14 @@ import { View, Text, StyleSheet } from 'react-native';
 
 import BulletPoint from './BulletPoint';
 import { COLORS } from '../styles';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   text?: string;
@@ -30,38 +38,38 @@ export default AIMessage;
 
 const styles = StyleSheet.create({
   row: {
-    marginTop: 8,
+    marginTop: spacing.md,
     alignItems: 'flex-start',
   },
 
   bubble: {
     maxWidth: '88%',
     backgroundColor: COLORS.aiBubble,
-    paddingHorizontal: 16,
-    paddingVertical: 13,
-    borderRadius: 20,
-    borderBottomLeftRadius: 6,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: ms(13),
+    borderRadius: radii.xl,
+    borderBottomLeftRadius: radii.xs,
     borderWidth: 1,
-    borderColor: '#EEF2FF',
-    shadowColor: '#64748B',
-    shadowOffset: { width: 0, height: 4 },
+    borderColor: colors.primaryLight,
+    shadowColor: colors.shadow,
+    shadowOffset: { width: 0, height: ms(4) },
     shadowOpacity: 0.05,
-    shadowRadius: 10,
+    shadowRadius: ms(10),
     elevation: 2,
   },
 
   text: {
-    fontSize: 15,
-    lineHeight: 22,
+    fontSize: fontSize.lg,
+    lineHeight: ms(22),
     color: COLORS.text,
-    fontWeight: '500',
-    marginBottom: 2,
+    fontWeight: fontWeight.medium,
+    marginBottom: spacing.xxs,
   },
 
   time: {
-    marginTop: 8,
-    fontSize: 10,
+    marginTop: spacing.md,
+    fontSize: ms(10),
     color: COLORS.muted,
-    fontWeight: '600',
+    fontWeight: fontWeight.semibold,
   },
 });

@@ -1,12 +1,14 @@
 import React from 'react';
-import {
-  View,
-  TouchableOpacity,
-  Text,
-  StyleSheet,
-} from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 
-import ActionButton from '../components/ActionButton'
+import ActionButton from '../components/ActionButton';
+import {
+  colors,
+  fontSize,
+  ms,
+  radii,
+  spacing,
+} from '../../../theme';
 
 const ChatActions = () => {
   return (
@@ -28,23 +30,23 @@ export default ChatActions;
 
 const styles = StyleSheet.create({
   moreButton: {
-    width: 52,
-    height: 38,
-    borderRadius: 20,
-    backgroundColor: '#FFFFFF',
+    width: ms(52),
+    height: ms(38),
+    borderRadius: radii.xl,
+    backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 18,
+    marginTop: spacing['2xl'],
   },
 
   moreText: {
-    fontSize: 18,
-    color: '#6B7280',
+    fontSize: fontSize['2xl'],
+    color: colors.subText,
   },
 
   row: {
-    marginTop: 18,
+    marginTop: spacing['2xl'],
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.xl,
   },
 });

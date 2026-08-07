@@ -18,6 +18,14 @@ import Svg, { Path } from 'react-native-svg';
 
 import { COLORS } from './styles/color';
 import type { TaskFilter } from '../types/filter';
+import {
+  fontSize,
+  fontWeight,
+  layout,
+  ms,
+  mvs,
+  spacing,
+} from '../../../theme';
 
 type Props = {
   visible: boolean;
@@ -27,7 +35,7 @@ type Props = {
 };
 
 const CheckIcon = () => (
-  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+  <Svg width={ms(16)} height={ms(16)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M20 6 9 17l-5-5"
       stroke={COLORS.primaryDark}
@@ -145,20 +153,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(15, 23, 42, 0.18)',
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
-    paddingTop: 118,
-    paddingRight: 20,
+    paddingTop: mvs(118),
+    paddingRight: layout.screenPadding,
   },
 
   menu: {
-    width: 248,
-    borderRadius: 18,
+    width: ms(248),
+    borderRadius: ms(18),
     backgroundColor: COLORS.white,
-    paddingHorizontal: 12,
-    paddingTop: 14,
-    paddingBottom: 10,
+    paddingHorizontal: spacing.xl,
+    paddingTop: ms(14),
+    paddingBottom: spacing.lg,
     borderWidth: 1,
     borderColor: COLORS.border,
-    shadowColor: '#7C3AED',
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.12,
     shadowRadius: 24,
@@ -166,22 +174,22 @@ const styles = StyleSheet.create({
   },
 
   menuTitle: {
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.extrabold,
     color: COLORS.gray,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    marginBottom: 8,
-    paddingHorizontal: 4,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.xs,
   },
 
   option: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 14,
-    paddingHorizontal: 10,
-    paddingVertical: 11,
-    marginBottom: 4,
+    borderRadius: ms(14),
+    paddingHorizontal: spacing.lg,
+    paddingVertical: ms(11),
+    marginBottom: spacing.xs,
   },
 
   optionActive: {
@@ -190,12 +198,12 @@ const styles = StyleSheet.create({
 
   optionTextWrap: {
     flex: 1,
-    paddingRight: 8,
+    paddingRight: spacing.md,
   },
 
   optionLabel: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
     color: COLORS.black,
   },
 
@@ -204,21 +212,21 @@ const styles = StyleSheet.create({
   },
 
   optionDescription: {
-    marginTop: 2,
-    fontSize: 11,
-    lineHeight: 15,
-    fontWeight: '500',
+    marginTop: spacing.xxs,
+    fontSize: fontSize.xs,
+    lineHeight: ms(15),
+    fontWeight: fontWeight.medium,
     color: COLORS.gray,
   },
 
   checkWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: ms(24),
+    height: ms(24),
+    borderRadius: ms(12),
     backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: '#E9D5FF',
+    borderColor: COLORS.borderFocus,
   },
 });

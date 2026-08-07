@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 
 import { COLORS } from './styles/color';
+import { fontSize, fontWeight, spacing } from '../../../theme';
 
 const SectionHeader = () => {
   return (
@@ -15,13 +16,13 @@ export default SectionHeader;
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 20,
-    marginBottom: 12,
+    marginTop: spacing['3xl'],
+    marginBottom: spacing.xl,
   },
 
   title: {
     color: COLORS.black,
-    fontSize: 18,
-    fontWeight: '800',
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.extrabold,
   },
 });

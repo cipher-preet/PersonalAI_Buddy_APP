@@ -21,24 +21,62 @@ import {
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { useToast } from '../../../../store/context/ToastContext';
 import { useAppSelector } from '../../../../store/hooks';
 import { useCreateSpaceMutation } from '../../../../store/api/home';
+import UpgradePlanPromptModal from '../../../../components/UpgradePlanPromptModal';
+import { isPlanLimitError } from '../../../../utils/planLimitError';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  mvs,
+  radii,
+  shadows,
+  spacing,
+} from '../../../../theme';
 
-const KEYBOARD_BUTTON_GAP = 32;
+const KEYBOARD_BUTTON_GAP = ms(32);
+const MIN_SPACE_NAME_LENGTH = 3;
+
+const getCreateSpaceErrorMessage = (error: any) => {
+  const message = error?.data?.message || error?.message;
+
+  return typeof message === 'string' ? message : '';
+};
 
 const CreateSpaceBottomSheet = forwardRef((_props: any, ref: any) => {
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const userId = useAppSelector(state => state.auth.userId) ?? '';
   const { showToast } = useToast();
   const [spaceName, setSpaceName] = useState('');
+  const [spaceNameError, setSpaceNameError] = useState('');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [createSpace, { isLoading }] = useCreateSpaceMutation();
+
+  const showPlanLimitPrompt = useCallback(() => {
+    Keyboard.dismiss();
+    setTimeout(() => {
+      setShowUpgradePrompt(true);
+    }, Platform.OS === 'ios' ? 250 : 120);
+  }, []);
 
   const handleClose = useCallback(() => {
     ref?.current?.dismiss();
   }, [ref]);
+
+  const handleSpaceNameChange = (value: string) => {
+    setSpaceName(value);
+
+    if (spaceNameError) {
+      setSpaceNameError('');
+    }
+  };
 
   const renderBackdrop = useCallback(
     (props: any) => (
@@ -90,13 +128,20 @@ const CreateSpaceBottomSheet = forwardRef((_props: any, ref: any) => {
 
   const handleCreate = async () => {
     const trimmedName = spaceName.trim();
+
     if (!trimmedName) {
-      showToast({
-        message: 'Space name is required',
-        type: 'error',
-      });
+      setSpaceNameError('Enter a space name to continue.');
       return;
     }
+
+    if (trimmedName.length < MIN_SPACE_NAME_LENGTH) {
+      setSpaceNameError(
+        `Space name must be at least ${MIN_SPACE_NAME_LENGTH} characters.`,
+      );
+      return;
+    }
+
+    setSpaceNameError('');
 
     try {
       const response = await createSpace({
@@ -106,7 +151,7 @@ const CreateSpaceBottomSheet = forwardRef((_props: any, ref: any) => {
 
       if (response?.success) {
         showToast({
-          message: response.data || 'Space created successfully',
+          message: response.data?.message || 'Space created successfully',
           type: 'success',
         });
         setSpaceName('');
@@ -118,7 +163,19 @@ const CreateSpaceBottomSheet = forwardRef((_props: any, ref: any) => {
           type: 'error',
         });
       }
-    } catch (error) {
+    } catch (error: any) {
+      if (isPlanLimitError(error)) {
+        showPlanLimitPrompt();
+        return;
+      }
+
+      const errorMessage = getCreateSpaceErrorMessage(error);
+
+      if (errorMessage) {
+        setSpaceNameError(errorMessage);
+        return;
+      }
+
       showToast({
         message: 'Create space failed. Please try again.',
         type: 'error',
@@ -130,10 +187,11 @@ const CreateSpaceBottomSheet = forwardRef((_props: any, ref: any) => {
   const bottomPadding =
     keyboardHeight > 0
       ? keyboardHeight - insets.bottom + KEYBOARD_BUTTON_GAP
-      : 8;
+      : spacing.md;
 
   return (
-    <BottomSheetModal
+    <>
+      <BottomSheetModal
       ref={ref}
       enableDynamicSizing
       enablePanDownToClose
@@ -147,6 +205,7 @@ const CreateSpaceBottomSheet = forwardRef((_props: any, ref: any) => {
       onDismiss={() => {
         setIsSheetOpen(false);
         setSpaceName('');
+        setSpaceNameError('');
         setKeyboardHeight(0);
       }}
     >
@@ -170,14 +229,24 @@ const CreateSpaceBottomSheet = forwardRef((_props: any, ref: any) => {
         <View style={styles.inputContainer}>
           <BottomSheetTextInput
             value={spaceName}
-            onChangeText={setSpaceName}
+            onChangeText={handleSpaceNameChange}
             placeholder="Enter space name"
-            placeholderTextColor="#8E8E93"
-            style={styles.input}
+            placeholderTextColor={colors.muted}
+            style={[styles.input, spaceNameError && styles.inputError]}
             autoFocus={isSheetOpen}
             returnKeyType="done"
             onSubmitEditing={handleCreate}
           />
+          {spaceNameError ? (
+            <View style={styles.errorRow}>
+              <Text style={styles.errorIcon}>!</Text>
+              <Text style={styles.errorText}>{spaceNameError}</Text>
+            </View>
+          ) : (
+            <Text style={styles.helperText}>
+              Use at least {MIN_SPACE_NAME_LENGTH} characters.
+            </Text>
+          )}
         </View>
 
         <TouchableOpacity
@@ -193,8 +262,20 @@ const CreateSpaceBottomSheet = forwardRef((_props: any, ref: any) => {
             {isLoading ? 'Creating...' : 'Create Space'}
           </Text>
         </TouchableOpacity>
+
       </BottomSheetView>
-    </BottomSheetModal>
+      </BottomSheetModal>
+
+      <UpgradePlanPromptModal
+        visible={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+        onUpgrade={() => {
+          setShowUpgradePrompt(false);
+          ref?.current?.dismiss();
+          navigation.navigate('Plans');
+        }}
+      />
+    </>
   );
 });
 
@@ -202,90 +283,125 @@ export default CreateSpaceBottomSheet;
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    backgroundColor: colors.white,
+    borderTopLeftRadius: ms(32),
+    borderTopRightRadius: ms(32),
   },
 
   indicator: {
-    backgroundColor: '#CBD5E1',
-    width: 70,
-    height: 6,
-    borderRadius: 999,
+    backgroundColor: colors.muted,
+    width: ms(70),
+    height: ms(6),
+    borderRadius: radii.pill,
   },
 
   container: {
-    paddingHorizontal: 22,
-    paddingTop: 6,
+    paddingHorizontal: ms(22),
+    paddingTop: spacing.sm,
   },
 
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: spacing.md,
   },
 
   closeButton: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: ms(34),
+    height: ms(34),
+    borderRadius: ms(17),
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: colors.lightGray,
   },
 
   closeIcon: {
-    fontSize: 22,
-    lineHeight: 24,
-    color: '#6B7280',
-    fontWeight: '500',
-    marginTop: -1,
+    fontSize: ms(22),
+    lineHeight: ms(24),
+    color: colors.subText,
+    fontWeight: fontWeight.medium,
+    marginTop: -ms(1),
   },
 
   title: {
     flex: 1,
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#111827',
-    paddingRight: 12,
+    fontSize: fontSize['4xl'],
+    fontWeight: fontWeight.bold,
+    color: colors.black,
+    paddingRight: spacing.xl,
   },
 
   subtitle: {
-    fontSize: 14,
-    color: '#475569',
-    marginBottom: 20,
+    fontSize: fontSize.base,
+    color: colors.textSecondary,
+    marginBottom: spacing['3xl'],
   },
 
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: spacing['3xl'],
   },
 
   input: {
-    height: 56,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    backgroundColor: '#F7F8FD',
+    height: mvs(56),
+    borderRadius: ms(18),
+    paddingHorizontal: spacing['2xl'],
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    color: '#111827',
-    fontSize: 16,
+    borderColor: colors.borderLight,
+    color: colors.black,
+    fontSize: fontSize.xl,
+  },
+
+  inputError: {
+    borderColor: colors.error,
+    backgroundColor: '#FFF7F7',
+  },
+
+  helperText: {
+    marginTop: spacing.sm,
+    marginLeft: spacing.md,
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+  },
+
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+
+  errorIcon: {
+    width: ms(18),
+    height: ms(18),
+    borderRadius: ms(9),
+    marginRight: spacing.sm,
+    overflow: 'hidden',
+    textAlign: 'center',
+    lineHeight: ms(18),
+    color: colors.white,
+    backgroundColor: colors.error,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.extrabold,
+  },
+
+  errorText: {
+    flex: 1,
+    color: colors.error,
+    fontSize: fontSize.sm,
+    lineHeight: ms(18),
+    fontWeight: fontWeight.bold,
   },
 
   button: {
-    height: 56,
-    borderRadius: 18,
-    backgroundColor: '#4338CA',
+    height: mvs(56),
+    borderRadius: ms(18),
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#4338CA',
-    shadowOffset: {
-      width: 0,
-      height: 10,
-    },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 5,
+    ...shadows.primary,
   },
 
   buttonDisabled: {
@@ -293,12 +409,12 @@ const styles = StyleSheet.create({
   },
 
   buttonKeyboardOpen: {
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
 
   buttonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    color: colors.white,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
   },
 });

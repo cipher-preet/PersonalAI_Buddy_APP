@@ -1,6 +1,14 @@
 import React from 'react';
 
 import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  spacing,
+} from '../../../../theme';
 
 const SpaceCard = ({ item, selected, onPress }: any) => {
   return (
@@ -29,62 +37,51 @@ export default SpaceCard;
 const styles = StyleSheet.create({
   card: {
     width: '100%',
-
     flexDirection: 'row',
     alignItems: 'center',
-
-    backgroundColor: '#FFFFFF',
-
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-
-    marginBottom: 12,
-
-    borderRadius: 18,
-
+    backgroundColor: colors.white,
+    paddingVertical: ms(14),
+    paddingHorizontal: spacing['2xl'],
+    marginBottom: spacing.xl,
+    borderRadius: ms(18),
     borderWidth: 1,
-    borderColor: '#ECEFF3',
+    borderColor: colors.border,
   },
 
   selectedCard: {
-    borderColor: '#6366F1',
-    backgroundColor: '#F5F7FF',
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
   },
 
   circle: {
-    width: 18,
-    height: 18,
-    borderRadius: 18,
-
-    borderWidth: 1.8,
-    borderColor: '#CBD5E1',
-
-    marginTop: 2,
+    width: ms(18),
+    height: ms(18),
+    borderRadius: radii.pill,
+    borderWidth: ms(1.8),
+    borderColor: colors.muted,
+    marginTop: spacing.xxs,
   },
 
   selectedCircle: {
-    backgroundColor: '#6366F1',
-    borderColor: '#6366F1',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
 
   content: {
     flex: 1,
-    marginLeft: 12,
+    marginLeft: spacing.xl,
   },
 
   title: {
-    fontSize: 15,
-    fontWeight: '600',
-
-    color: '#111827',
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.semibold,
+    color: colors.black,
   },
 
   description: {
-    marginTop: 4,
-
-    fontSize: 13,
-    lineHeight: 18,
-
-    color: '#6B7280',
+    marginTop: spacing.xs,
+    fontSize: fontSize.md,
+    lineHeight: ms(18),
+    color: colors.subText,
   },
 });
