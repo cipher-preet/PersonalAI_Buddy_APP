@@ -1,2 +1,2 @@
 export const GOOGLE_WEB_CLIENT_ID =
-  '347650876893-386cj9701mh5lfmi3u4pltjpv9i4i3iu.apps.googleusercontent.com';
+  '27391913291-ott0lfupt07spmr0eq517gc8tpc51ds8.apps.googleusercontent.com';

@@ -1,0 +1,63 @@
+{
+  "project_info": {
+    "project_number": "27391913291",
+    "project_id": "mybuddy-61b02",
+    "storage_bucket": "mybuddy-61b02.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:27391913291:android:5f7147eae80533a0e3ccce",
+        "android_client_info": {
+          "package_name": "com.aiassistantapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "27391913291-2v4i5usmptiqpcvbep4nfc81584d1fkr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aiassistantapp",
+            "certificate_hash": "7e1f54d84fc4315b9c6484175a5d91dd6069a013"
+          }
+        },
+        {
+          "client_id": "27391913291-77653hnq0a3ks76pmfc1k9esrvv74cao.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aiassistantapp",
+            "certificate_hash": "1ae6664237f356a1ee4a29269e0207b695d65541"
+          }
+        },
+        {
+          "client_id": "27391913291-s5nn75sao5ol2ddr8i23ebfl3r2vm40f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.aiassistantapp",
+            "certificate_hash": "681d08d626ac9bd6a596a4777146a6eb9b17e240"
+          }
+        },
+        {
+          "client_id": "27391913291-ott0lfupt07spmr0eq517gc8tpc51ds8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyBdwK9zhziTCgtoh-s7RMlNzgeZZED28"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "27391913291-ott0lfupt07spmr0eq517gc8tpc51ds8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
