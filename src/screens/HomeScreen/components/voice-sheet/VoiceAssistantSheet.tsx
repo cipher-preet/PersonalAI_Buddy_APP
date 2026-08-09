@@ -30,6 +30,7 @@ import {
   useGetUserSpacesQuery,
   useStartListningMutation,
 } from '../../../../store/api/home';
+import { requestVoiceListeningPermissions } from '../../../../services/voiceRecorderService';
 import UpgradePlanPromptModal from '../../../../components/UpgradePlanPromptModal';
 import { isPlanLimitError } from '../../../../utils/planLimitError';
 import SpaceCard from './SpaceCard';
@@ -183,6 +184,8 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
         }
 
         try {
+          await requestVoiceListeningPermissions();
+
           const res = await startListning({
             spaceId: selectedSpace._id,
             isListning: true,
@@ -197,8 +200,15 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
               type: 'error',
             });
           }
-        } catch (err) {
-          showToast({ message: 'Start failed. Try again.', type: 'error' });
+        } catch (err: any) {
+          showToast({
+            message:
+              err?.message === 'Microphone permission denied.' ||
+              err?.message === 'Notification permission denied.'
+                ? err.message
+                : 'Start failed. Try again.',
+            type: 'error',
+          });
           console.log('startListning error:', err);
         }
       };

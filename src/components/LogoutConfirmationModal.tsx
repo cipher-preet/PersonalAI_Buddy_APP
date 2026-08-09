@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  ActivityIndicator,
   Modal,
   Pressable,
   StyleSheet,
@@ -19,6 +20,7 @@ import {
 
 type Props = {
   visible: boolean;
+  loading?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -42,7 +44,12 @@ const LogoutIcon = () => (
   </Svg>
 );
 
-const LogoutConfirmationModal = ({ visible, onCancel, onConfirm }: Props) => {
+const LogoutConfirmationModal = ({
+  visible,
+  loading = false,
+  onCancel,
+  onConfirm,
+}: Props) => {
   return (
     <Modal
       visible={visible}
@@ -51,7 +58,10 @@ const LogoutConfirmationModal = ({ visible, onCancel, onConfirm }: Props) => {
       statusBarTranslucent
       onRequestClose={onCancel}
     >
-      <Pressable style={styles.backdrop} onPress={onCancel}>
+      <Pressable
+        style={styles.backdrop}
+        onPress={loading ? undefined : onCancel}
+      >
         <Pressable style={styles.dialog}>
           <View style={styles.headerRow}>
             <View style={styles.iconWrap}>
@@ -67,18 +77,24 @@ const LogoutConfirmationModal = ({ visible, onCancel, onConfirm }: Props) => {
           <View style={styles.actions}>
             <TouchableOpacity
               activeOpacity={0.78}
-              style={styles.cancelButton}
+              style={[styles.cancelButton, loading && styles.disabledButton]}
               onPress={onCancel}
+              disabled={loading}
             >
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               activeOpacity={0.78}
-              style={styles.confirmButton}
+              style={[styles.confirmButton, loading && styles.disabledButton]}
               onPress={onConfirm}
+              disabled={loading}
             >
-              <Text style={styles.confirmText}>Log out</Text>
+              {loading ? (
+                <ActivityIndicator size="small" color={colors.white} />
+              ) : (
+                <Text style={styles.confirmText}>Log out</Text>
+              )}
             </TouchableOpacity>
           </View>
         </Pressable>
@@ -167,6 +183,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
+  },
+
+  disabledButton: {
+    opacity: 0.72,
   },
 
   cancelText: {

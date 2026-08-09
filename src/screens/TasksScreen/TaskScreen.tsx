@@ -35,9 +35,11 @@ import { COLORS } from './component/styles/color';
 import { TaskItem } from './types/task';
 import type { TaskFilter } from './types/filter';
 import { useAppSelector } from '../../store/hooks';
+import { useToast } from '../../store/context/ToastContext';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import {
   StagedTaskCard,
+  useDeleteStagedTaskMutation,
   useGetStagedTasksBySpaceQuery,
   useGetUserSpacesQuery,
 } from '../../store/api/home';
@@ -71,6 +73,9 @@ const TaskScreen = () => {
   const [taskFilter, setTaskFilter] = useState<TaskFilter>('newest');
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const userId = useAppSelector(state => state.auth.userId) ?? '';
+  const { showToast } = useToast();
+  const [deleteStagedTask, { isLoading: isDeletingTask }] =
+    useDeleteStagedTaskMutation();
 
   const {
     data: spacesData,
@@ -230,28 +235,54 @@ const TaskScreen = () => {
     [],
   );
 
-  const handleConfirmDeleteTask = useCallback(() => {
+  const getApiErrorMessage = (error: any, fallback: string) =>
+    error?.data?.message || error?.message || fallback;
+
+  const handleConfirmDeleteTask = useCallback(async () => {
     if (!taskPendingDelete) {
       return;
     }
 
-    setLoadedTasks(prev =>
-      prev.filter(task => task.id !== taskPendingDelete.id),
-    );
+    try {
+      const response = await deleteStagedTask({
+        taskId: taskPendingDelete.id,
+      }).unwrap();
 
-    setTaskCompletionOverrides(prev => {
-      const next = { ...prev };
-      delete next[taskPendingDelete.id];
-      return next;
-    });
+      setLoadedTasks(prev =>
+        prev.filter(task => task.id !== taskPendingDelete.id),
+      );
 
-    if (selectedTask?.id === taskPendingDelete.id) {
-      taskSheetRef.current?.dismiss();
-      setSelectedTask(null);
+      setTaskCompletionOverrides(prev => {
+        const next = { ...prev };
+        delete next[taskPendingDelete.id];
+        return next;
+      });
+
+      if (selectedTask?.id === taskPendingDelete.id) {
+        taskSheetRef.current?.dismiss();
+        setSelectedTask(null);
+      }
+
+      showToast({
+        message:
+          response?.data?.message ||
+          response?.message ||
+          'Task deleted successfully.',
+        type: 'success',
+      });
+      setTaskPendingDelete(null);
+    } catch (error: any) {
+      showToast({
+        message: getApiErrorMessage(error, 'Unable to delete task.'),
+        type: 'error',
+      });
     }
-
-    setTaskPendingDelete(null);
-  }, [selectedTask, taskPendingDelete]);
+  }, [
+    deleteStagedTask,
+    selectedTask,
+    showToast,
+    taskPendingDelete,
+  ]);
 
   const doneTasksCount = loadedTasks.filter(task => isTaskDone(task)).length;
 
@@ -448,6 +479,7 @@ const TaskScreen = () => {
         visible={Boolean(taskPendingDelete)}
         itemType="task"
         itemTitle={taskPendingDelete?.title}
+        loading={isDeletingTask}
         onCancel={() => setTaskPendingDelete(null)}
         onConfirm={handleConfirmDeleteTask}
       />

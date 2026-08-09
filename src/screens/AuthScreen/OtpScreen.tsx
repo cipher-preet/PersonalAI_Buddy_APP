@@ -76,7 +76,7 @@ const OtpScreen = ({ navigation, route }: Props) => {
           token: result.token,
           isNewUser: result.isNewUser,
           phone,
-          name: result.name ?? username,
+          name: result.name ?? username ?? 'Buddy User',
           avatar: result.avatar,
         }),
       );

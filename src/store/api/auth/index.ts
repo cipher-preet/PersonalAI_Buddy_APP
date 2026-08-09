@@ -37,6 +37,13 @@ export type GoogleAuthResponse = {
   avatar?: string;
 };
 
+export type CheckPhoneResponse = {
+  exists: boolean;
+  phone: string | number;
+  name?: string;
+  hasCompletedOnboarding?: boolean;
+};
+
 export type AuthUserProfile = {
   userId: string;
   phone?: string | number;
@@ -58,6 +65,19 @@ export type UpdateProfileRequest = {
   phone?: string;
 };
 
+export type DeleteAccountResponse = {
+  message?: string;
+  deleted?: {
+    spaces?: number;
+    notes?: number;
+    tasks?: number;
+  };
+};
+
+export type LogoutResponse = {
+  message?: string;
+};
+
 export const authApi = baseApi.injectEndpoints({
   endpoints: builder => ({
     checkAuth: builder.query<CheckAuthResponse, void>({
@@ -77,9 +97,18 @@ export const authApi = baseApi.injectEndpoints({
       transformResponse: response => unwrapApiData<{ message?: string }>(response),
     }),
 
+    checkPhone: builder.mutation<CheckPhoneResponse, { phone: string }>({
+      query: body => ({
+        url: 'auth/check-phone',
+        method: 'POST',
+        body,
+      }),
+      transformResponse: response => unwrapApiData<CheckPhoneResponse>(response),
+    }),
+
     verifyOtp: builder.mutation<
       OtpVerifyResponse,
-      { phone: string; otp: string; username: string }
+      { phone: string; otp: string; username?: string }
     >({
       query: body => ({
         url: 'auth/verify-otp',
@@ -116,6 +145,26 @@ export const authApi = baseApi.injectEndpoints({
       transformResponse: response => unwrapApiData<AuthUserProfile>(response),
     }),
 
+    deleteAccount: builder.mutation<
+      DeleteAccountResponse,
+      { confirmation: string }
+    >({
+      query: body => ({
+        url: 'auth/me',
+        method: 'DELETE',
+        body,
+      }),
+      transformResponse: response => unwrapApiData<DeleteAccountResponse>(response),
+    }),
+
+    logoutUser: builder.mutation<LogoutResponse, void>({
+      query: () => ({
+        url: 'auth/logout',
+        method: 'POST',
+      }),
+      transformResponse: response => unwrapApiData<LogoutResponse>(response),
+    }),
+
     completeOnboarding: builder.mutation<
       { message?: string },
       {
@@ -148,10 +197,13 @@ export const authApi = baseApi.injectEndpoints({
 export const {
   useCheckAuthQuery,
   useSendOtpMutation,
+  useCheckPhoneMutation,
   useVerifyOtpMutation,
   useGoogleLoginMutation,
   useUpdateProfileMutation,
   useUpdateProfileAvatarMutation,
+  useDeleteAccountMutation,
+  useLogoutUserMutation,
   useCompleteOnboardingMutation,
   useLoginMutation,
 } = authApi;

@@ -1,5 +1,12 @@
 import React from 'react';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import {
   colors,
   fontSize,
@@ -24,8 +31,22 @@ type Props = {
   tags?: string[];
 
   color?: string;
+  isDeleting?: boolean;
   onPress?: () => void;
+  onDelete?: () => void;
 };
+
+const TrashIcon = ({ color = colors.errorDark }: { color?: string }) => (
+  <Svg width={ms(15)} height={ms(15)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM8 12h8"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 const SpaceCard = ({
   title,
@@ -33,14 +54,17 @@ const SpaceCard = ({
   icon,
   badgeText,
   color,
+  isDeleting = false,
   time,
   onPress,
+  onDelete,
 }: Props) => {
   return (
     <TouchableOpacity
       activeOpacity={0.88}
-      style={styles.card}
+      style={[styles.card, isDeleting && styles.cardDeleting]}
       onPress={onPress}
+      disabled={isDeleting}
     >
       <View style={styles.leftSection}>
         <View
@@ -79,8 +103,27 @@ const SpaceCard = ({
         </View>
       </View>
 
-      <View style={styles.arrowButton}>
-        <Text style={styles.arrow}>›</Text>
+      <View style={styles.actions}>
+        <TouchableOpacity
+          activeOpacity={0.75}
+          style={[styles.deleteButton, isDeleting && styles.deleteButtonBusy]}
+          onPress={event => {
+            event.stopPropagation();
+            onDelete?.();
+          }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          disabled={isDeleting}
+        >
+          {isDeleting ? (
+            <ActivityIndicator size="small" color={colors.errorDark} />
+          ) : (
+            <TrashIcon />
+          )}
+        </TouchableOpacity>
+
+        <View style={styles.arrowButton}>
+          <Text style={styles.arrow}>›</Text>
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -175,6 +218,41 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semibold,
   },
 
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(7),
+    marginLeft: spacing.lg,
+  },
+
+  cardDeleting: {
+    opacity: 0.72,
+  },
+
+  deleteButton: {
+    width: ms(30),
+    height: ms(30),
+    borderRadius: ms(15),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    shadowColor: colors.shadow,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 5,
+    elevation: 1,
+  },
+
+  deleteButtonBusy: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+  },
+
   arrowButton: {
     width: ms(32),
     height: ms(32),
@@ -182,7 +260,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.inputBg,
-    marginLeft: spacing.lg,
   },
 
   arrow: {

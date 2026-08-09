@@ -26,6 +26,7 @@ import { AuthStackParamList } from '../../navigation/AuthStack';
 import { useAppDispatch } from '../../store/hooks';
 import { loginSuccess } from '../../store/slices/authSlice';
 import {
+  useCheckPhoneMutation,
   useGoogleLoginMutation,
   useSendOtpMutation,
 } from '../../store/api/auth';
@@ -37,48 +38,43 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 const LoginScreen = ({ navigation }: Props) => {
   const dispatch = useAppDispatch();
   const { showToast } = useToast();
-  const usernameInputRef = useRef<TextInput>(null);
   const phoneInputRef = useRef<TextInput>(null);
-  const [username, setUsername] = useState('');
   const [phone, setPhone] = useState('');
-  const [focusedField, setFocusedField] = useState<'username' | 'phone' | null>(
-    null,
-  );
+  const [focusedField, setFocusedField] = useState<'phone' | null>(null);
   const [sendOtp, { isLoading: isSendingOtp }] = useSendOtpMutation();
+  const [checkPhone, { isLoading: isCheckingPhone }] = useCheckPhoneMutation();
   const [googleLogin, { isLoading: isGoogleLoading }] = useGoogleLoginMutation();
   const [isGoogleBusy, setIsGoogleBusy] = useState(false);
 
-  const trimmedUsername = username.trim();
   const cleanedPhone = phone.replace(/\D/g, '');
-  const isUsernameValid = trimmedUsername.length >= 2;
   const isPhoneValid = cleanedPhone.length >= 10;
-  const canContinue = isUsernameValid && isPhoneValid;
-  const loading = isSendingOtp || isGoogleLoading || isGoogleBusy;
+  const canContinue = isPhoneValid;
+  const loading =
+    isSendingOtp || isCheckingPhone || isGoogleLoading || isGoogleBusy;
 
   const getApiErrorMessage = (error: any, fallback: string) =>
     error?.data?.message || error?.message || fallback;
 
   const handleContinue = async () => {
-    if (!isUsernameValid) {
-      showToast({ message: 'Enter your username', type: 'error' });
-      return;
-    }
-
     if (!isPhoneValid) {
       showToast({ message: 'Enter a valid mobile number', type: 'error' });
       return;
     }
 
     try {
+      const phoneStatus = await checkPhone({ phone: cleanedPhone }).unwrap();
+
+      if (!phoneStatus.exists) {
+        navigation.navigate('Username', { phone: cleanedPhone });
+        return;
+      }
+
       await sendOtp({ phone: cleanedPhone }).unwrap();
       showToast({ message: 'OTP sent to your number', type: 'success' });
-      navigation.navigate('Otp', {
-        phone: cleanedPhone,
-        username: trimmedUsername,
-      });
-    } catch {
+      navigation.navigate('Otp', { phone: cleanedPhone });
+    } catch (error: any) {
       showToast({
-        message: 'Unable to send OTP. Please try again.',
+        message: getApiErrorMessage(error, 'Unable to continue. Please try again.'),
         type: 'error',
       });
     }
@@ -136,33 +132,6 @@ const LoginScreen = ({ navigation }: Props) => {
       </View>
 
       <View style={styles.card}>
-        <Text style={styles.sectionLabel}>Username</Text>
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => usernameInputRef.current?.focus()}
-          style={[
-            styles.textField,
-            focusedField === 'username' && styles.textFieldFocused,
-          ]}
-        >
-          <TextInput
-            ref={usernameInputRef}
-            value={username}
-            onChangeText={setUsername}
-            placeholder="What should we call you?"
-            placeholderTextColor={AUTH_COLORS.muted}
-            autoCapitalize="words"
-            autoCorrect={false}
-            textContentType="name"
-            returnKeyType="next"
-            blurOnSubmit={false}
-            style={styles.textInput}
-            onFocus={() => setFocusedField('username')}
-            onBlur={() => setFocusedField(null)}
-            onSubmitEditing={() => phoneInputRef.current?.focus()}
-          />
-        </TouchableOpacity>
-
         <Text style={styles.sectionLabel}>Mobile number</Text>
         <View
           style={[
@@ -206,7 +175,7 @@ const LoginScreen = ({ navigation }: Props) => {
             end={{ x: 1, y: 0 }}
             style={styles.primaryButton}
           >
-            {isSendingOtp ? (
+            {isSendingOtp || isCheckingPhone ? (
               <ActivityIndicator color={AUTH_COLORS.white} />
             ) : (
               <Text style={styles.primaryButtonText}>Continue</Text>
@@ -293,26 +262,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
 
-  textField: {
-    height: ms(56),
-    borderRadius: radii.lg,
-    backgroundColor: AUTH_COLORS.inputBg,
-    borderWidth: 1.5,
-    borderColor: AUTH_COLORS.border,
-    marginBottom: ms(18),
-    justifyContent: 'center',
-  },
-
-  textFieldFocused: {
-    borderColor: AUTH_COLORS.borderFocus,
-    backgroundColor: AUTH_COLORS.white,
-    shadowColor: AUTH_COLORS.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.12,
-    shadowRadius: ms(10),
-    elevation: 2,
-  },
-
   phoneField: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -356,14 +305,6 @@ const styles = StyleSheet.create({
     width: ms(1),
     height: ms(28),
     backgroundColor: AUTH_COLORS.border,
-  },
-
-  textInput: {
-    minHeight: ms(54),
-    paddingHorizontal: spacing.xl + spacing.xxs,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.medium,
-    color: AUTH_COLORS.text,
   },
 
   phoneInput: {

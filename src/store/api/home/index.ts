@@ -13,6 +13,29 @@ interface CreateSpaceResponse {
   };
 }
 
+interface DeleteSpaceResponse {
+  success: boolean;
+  message?: string;
+  data: {
+    message?: string;
+    data?: {
+      deletedSpaceId?: string;
+    };
+  };
+}
+
+interface DeleteStagedItemResponse {
+  success: boolean;
+  message?: string;
+  data: {
+    message?: string;
+    data?: {
+      deletedNoteId?: string;
+      deletedTaskId?: string;
+    };
+  };
+}
+
 interface StartLIstningResponse {
   success: boolean;
   data: any;
@@ -187,6 +210,15 @@ export const homeApi = baseApi.injectEndpoints({
       invalidatesTags: ['Spaces'],
     }),
 
+    deleteSpace: builder.mutation<DeleteSpaceResponse, { spaceId: string }>({
+      query: data => ({
+        url: 'home/delete-space',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Spaces'],
+    }),
+
     startListning: builder.mutation<
       StartLIstningResponse,
       StartLIstningPayload
@@ -297,6 +329,18 @@ export const homeApi = baseApi.injectEndpoints({
       providesTags: ['Spaces'],
     }),
 
+    deleteStagedNote: builder.mutation<
+      DeleteStagedItemResponse,
+      { noteId: string }
+    >({
+      query: data => ({
+        url: 'home/delete-staged-note',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Spaces'],
+    }),
+
     getStagedTasksBySpace: builder.query<
       GetStagedTasksBySpaceResponse,
       GetStagedTasksBySpaceArgs
@@ -313,11 +357,26 @@ export const homeApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Spaces'],
     }),
+
+    deleteStagedTask: builder.mutation<
+      DeleteStagedItemResponse,
+      { taskId: string }
+    >({
+      query: data => ({
+        url: 'home/delete-staged-task',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Spaces'],
+    }),
   }),
 });
 
 export const {
   useCreateSpaceMutation,
+  useDeleteSpaceMutation,
+  useDeleteStagedNoteMutation,
+  useDeleteStagedTaskMutation,
   useGetUserSpacesQuery,
   useStartListningMutation,
   useGetUserActiveSpaceQuery,

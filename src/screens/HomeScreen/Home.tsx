@@ -22,6 +22,7 @@ import {
   MySpcaes,
 } from '../../../styles/icons';
 import VoiceAssistantSheet from './components/voice-sheet/VoiceAssistantSheet';
+import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 
 import { useToast } from '../../store/context/ToastContext';
 import { useAppSelector } from '../../store/hooks';
@@ -35,6 +36,7 @@ import {
   SpaceStats,
   useGetSpaceStatsQuery,
   useStartListningMutation,
+  useDeleteSpaceMutation,
   useGetUserActiveSpaceQuery,
   useGetUserSpacesQuery,
 } from '../../store/api/home';
@@ -120,6 +122,10 @@ const Home = () => {
   const [isUploadingVoice, setIsUploadingVoice] = useState(false);
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
+  const [spacePendingDelete, setSpacePendingDelete] = useState<Space | null>(
+    null,
+  );
+  const [deletingSpaceId, setDeletingSpaceId] = useState('');
   const [selectedSpaceColor, setSelectedSpaceColor] = useState<string>(
     colors.primaryPurple,
   );
@@ -128,6 +134,8 @@ const Home = () => {
   const userId = useAppSelector(state => state.auth.userId) ?? '';
   const { showToast } = useToast();
   const [startListning] = useStartListningMutation();
+  const [deleteSpace, { isLoading: isDeletingSpace }] =
+    useDeleteSpaceMutation();
   const { data: activeSpaceData, isFetching: isFetchingActiveSpace } =
     useGetUserActiveSpaceQuery({ userId }, { skip: !userId });
   const { data: spacesData, isFetching: isFetchingSpaces } =
@@ -396,6 +404,63 @@ const Home = () => {
     });
   };
 
+  const handleConfirmDeleteSpace = async () => {
+    if (!spacePendingDelete) {
+      return;
+    }
+
+    if (isDeletingSpace) {
+      return;
+    }
+
+    const deletingActiveRecording =
+      recordingContextRef.current?.spaceId === spacePendingDelete._id ||
+      activeSpace?._id === spacePendingDelete._id;
+
+    if (deletingActiveRecording) {
+      showToast({
+        message: 'Stop listening before deleting this space.',
+        type: 'error',
+      });
+      setSpacePendingDelete(null);
+      return;
+    }
+
+    try {
+      setDeletingSpaceId(spacePendingDelete._id);
+
+      const response = await deleteSpace({
+        spaceId: spacePendingDelete._id,
+      }).unwrap();
+
+      setSpaces(prev =>
+        prev.filter(space => space._id !== spacePendingDelete._id),
+      );
+
+      if (selectedSpace?._id === spacePendingDelete._id) {
+        spaceDetailSheetRef.current?.dismiss();
+        setSelectedSpace(null);
+      }
+
+      showToast({
+        message:
+          response?.data?.message ||
+          response?.message ||
+          'Space deleted successfully.',
+        type: 'success',
+      });
+      setSpacePendingDelete(null);
+    } catch (error: any) {
+      showToast({
+        message:
+          error?.data?.message || error?.message || 'Unable to delete space.',
+        type: 'error',
+      });
+    } finally {
+      setDeletingSpaceId('');
+    }
+  };
+
   const handleNavigateNotes = () => {
     if (!selectedSpace?._id) {
       return;
@@ -531,7 +596,9 @@ const Home = () => {
                   />
                 }
                 color={getSpaceColor(item._id)}
+                isDeleting={deletingSpaceId === item._id}
                 onPress={() => openSpaceDetail(item)}
+                onDelete={() => setSpacePendingDelete(item)}
               />
             ))
           )}
@@ -562,6 +629,19 @@ const Home = () => {
             </TouchableOpacity>
           ) : null}
         </ScrollView>
+
+        <DeleteConfirmationModal
+          visible={Boolean(spacePendingDelete)}
+          itemType="space"
+          itemTitle={spacePendingDelete?.spacename}
+          loading={isDeletingSpace}
+          onCancel={() => {
+            if (!isDeletingSpace) {
+              setSpacePendingDelete(null);
+            }
+          }}
+          onConfirm={handleConfirmDeleteSpace}
+        />
       </SafeAreaView>
     </LinearGradient>
   );

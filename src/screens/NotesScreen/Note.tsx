@@ -35,9 +35,11 @@ import { COLORS } from './component/styles/color';
 import { NoteItem } from './types/note';
 import type { NoteSortOrder } from './types/sort';
 import { useAppSelector } from '../../store/hooks';
+import { useToast } from '../../store/context/ToastContext';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import {
   StagedNoteCard,
+  useDeleteStagedNoteMutation,
   useGetNoteWorkspacesQuery,
   useGetStagedNotesBySpaceQuery,
   useLazyGetStagedNoteByIdQuery,
@@ -251,6 +253,9 @@ const Notes = () => {
   const [sortOrder, setSortOrder] = useState<NoteSortOrder>('newest');
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const userId = useAppSelector(state => state.auth.userId) ?? '';
+  const { showToast } = useToast();
+  const [deleteStagedNote, { isLoading: isDeletingNote }] =
+    useDeleteStagedNoteMutation();
   const [
     getStagedNoteById,
     {
@@ -392,23 +397,49 @@ const Notes = () => {
     getStagedNoteById({ noteId: selectedNoteId });
   }, [getStagedNoteById, selectedNoteId]);
 
-  const handleConfirmDeleteNote = useCallback(() => {
+  const getApiErrorMessage = (error: any, fallback: string) =>
+    error?.data?.message || error?.message || fallback;
+
+  const handleConfirmDeleteNote = useCallback(async () => {
     if (!notePendingDelete) {
       return;
     }
 
-    setLoadedNotes(prev =>
-      prev.filter(note => note.id !== notePendingDelete.id),
-    );
+    try {
+      const response = await deleteStagedNote({
+        noteId: notePendingDelete.id,
+      }).unwrap();
 
-    if (selectedNoteId === notePendingDelete.id) {
-      noteSheetRef.current?.dismiss();
-      setSelectedNote(null);
-      setSelectedNoteId('');
+      setLoadedNotes(prev =>
+        prev.filter(note => note.id !== notePendingDelete.id),
+      );
+
+      if (selectedNoteId === notePendingDelete.id) {
+        noteSheetRef.current?.dismiss();
+        setSelectedNote(null);
+        setSelectedNoteId('');
+      }
+
+      showToast({
+        message:
+          response?.data?.message ||
+          response?.message ||
+          'Note deleted successfully.',
+        type: 'success',
+      });
+      setNotePendingDelete(null);
+    } catch (error: any) {
+      showToast({
+        message: getApiErrorMessage(error, 'Unable to delete note.'),
+        type: 'error',
+      });
     }
-
-    setNotePendingDelete(null);
-  }, [notePendingDelete, selectedNoteId]);
+  }, [
+    deleteStagedNote,
+    notePendingDelete,
+    selectedNoteId,
+    showToast,
+  ]);
 
   const handleLoadMoreNotes = useCallback(() => {
     if (!nextNotesCursor || isLoadingMoreNotes) {
@@ -646,6 +677,7 @@ const Notes = () => {
         visible={Boolean(notePendingDelete)}
         itemType="note"
         itemTitle={notePendingDelete?.title}
+        loading={isDeletingNote}
         onCancel={() => setNotePendingDelete(null)}
         onConfirm={handleConfirmDeleteNote}
       />

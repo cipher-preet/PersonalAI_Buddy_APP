@@ -217,6 +217,21 @@ export const requestListeningNotificationPermission = async () => {
   return status === PermissionsAndroid.RESULTS.GRANTED;
 };
 
+export const requestVoiceListeningPermissions = async () => {
+  const hasMicrophonePermission = await requestMicrophonePermission();
+
+  if (!hasMicrophonePermission) {
+    throw new Error('Microphone permission denied.');
+  }
+
+  const hasNotificationPermission =
+    await requestListeningNotificationPermission();
+
+  if (!hasNotificationPermission) {
+    throw new Error('Notification permission denied.');
+  }
+};
+
 export const startBackgroundListeningNotification = async ({
   spaceName,
 }: {

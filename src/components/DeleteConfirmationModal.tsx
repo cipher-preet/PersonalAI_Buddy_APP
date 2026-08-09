@@ -1,5 +1,6 @@
 import React from 'react';
 import {
+  ActivityIndicator,
   Modal,
   Pressable,
   StyleSheet,
@@ -19,8 +20,9 @@ import {
 
 type Props = {
   visible: boolean;
-  itemType: 'note' | 'task';
+  itemType: 'note' | 'task' | 'space';
   itemTitle?: string;
+  loading?: boolean;
   onCancel: () => void;
   onConfirm: () => void;
 };
@@ -41,10 +43,12 @@ const DeleteConfirmationModal = ({
   visible,
   itemType,
   itemTitle,
+  loading = false,
   onCancel,
   onConfirm,
 }: Props) => {
-  const label = itemType === 'task' ? 'task' : 'note';
+  const label =
+    itemType === 'task' ? 'task' : itemType === 'space' ? 'space' : 'note';
   const title = `Delete ${label}?`;
   const trimmedTitle = itemTitle?.trim();
 
@@ -56,7 +60,10 @@ const DeleteConfirmationModal = ({
       statusBarTranslucent
       onRequestClose={onCancel}
     >
-      <Pressable style={styles.backdrop} onPress={onCancel}>
+      <Pressable
+        style={styles.backdrop}
+        onPress={loading ? undefined : onCancel}
+      >
         <Pressable style={styles.dialog}>
           <View style={styles.headerRow}>
             <View style={styles.iconWrap}>
@@ -74,18 +81,24 @@ const DeleteConfirmationModal = ({
           <View style={styles.actions}>
             <TouchableOpacity
               activeOpacity={0.78}
-              style={styles.cancelButton}
+              style={[styles.cancelButton, loading && styles.disabledButton]}
               onPress={onCancel}
+              disabled={loading}
             >
               <Text style={styles.cancelText}>Cancel</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               activeOpacity={0.78}
-              style={styles.deleteButton}
+              style={[styles.deleteButton, loading && styles.disabledButton]}
               onPress={onConfirm}
+              disabled={loading}
             >
-              <Text style={styles.deleteText}>Delete</Text>
+              {loading ? (
+                <ActivityIndicator size="small" color={colors.white} />
+              ) : (
+                <Text style={styles.deleteText}>Delete</Text>
+              )}
             </TouchableOpacity>
           </View>
         </Pressable>
@@ -182,6 +195,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
+  },
+
+  disabledButton: {
+    opacity: 0.72,
   },
 
   cancelText: {

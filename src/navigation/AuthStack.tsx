@@ -3,6 +3,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import LoginScreen from '../screens/AuthScreen/LoginScreen';
 import OtpScreen from '../screens/AuthScreen/OtpScreen';
+import UsernameScreen from '../screens/AuthScreen/UsernameScreen';
 import OnboardingProfessionScreen from '../screens/AuthScreen/OnboardingProfessionScreen';
 import OnboardingUsageScreen from '../screens/AuthScreen/OnboardingUsageScreen';
 import OnboardingSourceScreen from '../screens/AuthScreen/OnboardingSourceScreen';
@@ -10,7 +11,8 @@ import { useAppSelector } from '../store/hooks';
 
 export type AuthStackParamList = {
   Login: undefined;
-  Otp: { phone: string; username: string };
+  Username: { phone: string };
+  Otp: { phone: string; username?: string };
   OnboardingProfession: undefined;
   OnboardingUsage: undefined;
   OnboardingSource: undefined;
@@ -38,6 +40,7 @@ const AuthStack = () => {
       }}
     >
       <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Username" component={UsernameScreen} />
       <Stack.Screen name="Otp" component={OtpScreen} />
       <Stack.Screen
         name="OnboardingProfession"
