@@ -3,7 +3,7 @@ import { GOOGLE_WEB_CLIENT_ID } from './authConfig';
 
 export const configureGoogleSignIn = () => {
   GoogleSignin.configure({
-    webClientId: GOOGLE_WEB_CLIENT_ID,
+    webClientId: GOOGLE_WEB_CLIENT_ID.trim(),
     offlineAccess: false,
   });
 };

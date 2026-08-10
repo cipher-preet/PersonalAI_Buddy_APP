@@ -42,6 +42,7 @@ import {
 } from '../../store/api/home';
 import {
   endListeningSession,
+  requestVoiceListeningPermissions,
   startBackgroundListeningNotification,
   startListeningSession,
   startVoiceRecordingWithSilenceDetection,
@@ -250,10 +251,14 @@ const Home = () => {
         spaceId: voiceSpace._id,
         mode,
       };
+
+      await requestVoiceListeningPermissions();
+
       await startListeningSession({
         userId: userId,
         spaceId: voiceSpace._id,
       });
+
       await startBackgroundListeningNotification({
         spaceName: voiceSpace.spacename,
       });

@@ -224,12 +224,9 @@ export const requestVoiceListeningPermissions = async () => {
     throw new Error('Microphone permission denied.');
   }
 
-  const hasNotificationPermission =
-    await requestListeningNotificationPermission();
-
-  if (!hasNotificationPermission) {
-    throw new Error('Notification permission denied.');
-  }
+  await requestListeningNotificationPermission().catch(error => {
+    console.log('Notification permission request failed:', error);
+  });
 };
 
 export const startBackgroundListeningNotification = async ({
@@ -241,11 +238,9 @@ export const startBackgroundListeningNotification = async ({
     return;
   }
 
-  const hasPermission = await requestListeningNotificationPermission();
-
-  if (!hasPermission) {
-    throw new Error('Notification permission denied.');
-  }
+  await requestListeningNotificationPermission().catch(error => {
+    console.log('Notification permission request failed:', error);
+  });
 
   if (!BuddyListeningService) {
     throw new Error(
