@@ -191,7 +191,7 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
             title={space.spacename}
             description={space.description}
             createdAt={formatDate(space.createdAt)}
-            isListening={space.isListining}
+            isListening={space.isListning}
             accentColor={accentColor}
             onClose={handleClose}
           />

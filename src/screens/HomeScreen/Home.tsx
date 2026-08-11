@@ -41,10 +41,8 @@ import {
   useGetUserSpacesQuery,
 } from '../../store/api/home';
 import {
-  endListeningSession,
   requestVoiceListeningPermissions,
   startBackgroundListeningNotification,
-  startListeningSession,
   startVoiceRecordingWithSilenceDetection,
   stopBackgroundListeningNotification,
   stopVoiceRecording,
@@ -254,11 +252,6 @@ const Home = () => {
 
       await requestVoiceListeningPermissions();
 
-      await startListeningSession({
-        userId: userId,
-        spaceId: voiceSpace._id,
-      });
-
       await startBackgroundListeningNotification({
         spaceName: voiceSpace.spacename,
       });
@@ -291,10 +284,6 @@ const Home = () => {
         console.log('Unable to stop listening notification:', serviceError);
       });
       try {
-        await endListeningSession({
-          userId: userId,
-          spaceId: voiceSpace._id,
-        });
         await startListning({
           spaceId: voiceSpace._id,
           isListning: false,
@@ -315,7 +304,7 @@ const Home = () => {
       ? activeSpaceData.data[0]
       : null;
 
-  const isUserListening = activeSpace?.isListining === true;
+  const isUserListening = activeSpace?.isListning === true;
   const isVoiceActive = isListening || isUserListening;
 
   /**
@@ -340,13 +329,8 @@ const Home = () => {
           type: 'success',
         });
 
-        await enqueueRecordedVoiceUpload(recording.path);
-        await uploadQueueRef.current.catch(() => undefined);
+        void enqueueRecordedVoiceUpload(recording.path);
 
-        await endListeningSession({
-          userId: userId,
-          spaceId: recordingContext.spaceId,
-        });
         const res = await startListning({
           spaceId: recordingContext.spaceId,
           isListning: false,
@@ -369,10 +353,6 @@ const Home = () => {
       if (activeSpace?._id) {
         await stopBackgroundListeningNotification().catch(serviceError => {
           console.log('Unable to stop listening notification:', serviceError);
-        });
-        await endListeningSession({
-          userId: userId,
-          spaceId: activeSpace._id,
         });
         const res = await startListning({
           spaceId: activeSpace._id,

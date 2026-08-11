@@ -1,6 +1,6 @@
 export const API_URLS = {
-  appApiBase: 'https://buddy-node-backend-710178903619.asia-south1.run.app/api/v1',
-  // appApiBase: 'https://9426-2401-4900-1c71-7246-75f9-eddc-f00a-4ed5.ngrok-free.app/api/v1',
+  // appApiBase: 'https://buddy-node-backend-710178903619.asia-south1.run.app/api/v1',
+  appApiBase: 'https://8ef7-223-178-210-23.ngrok-free.app/api/v1',
 
   // FastAPI AI_Orchestration server.
   // Run locally with:

@@ -37,8 +37,10 @@ const AUDIO_FILE_EXTENSION = 'm4a';
 const AUDIO_MIME_TYPE = 'audio/mp4';
 const SPEECH_API_URL = BUDDY_ENDPOINTS.speechBase;
 const VOICE_MESSAGE_URL = `${SPEECH_API_URL}/transcripting`;
-const START_LISTENING_SESSION_URL = `${SPEECH_API_URL}/listening/start`;
-const END_LISTENING_SESSION_URL = `${SPEECH_API_URL}/listening/end`;
+const VOICE_UPLOAD_TIMEOUT_MS = 60000;
+const VOICE_UPLOAD_RETRY_DELAY_MS = 30000;
+const VOICE_UPLOAD_MAX_ATTEMPTS = 3;
+const RETRYABLE_UPLOAD_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 const androidNotificationPermission =
   'android.permission.POST_NOTIFICATIONS' as Permission;
 
@@ -75,11 +77,6 @@ export interface UploadVoiceMessageResponse {
   success?: boolean;
   message?: string;
   data?: unknown;
-}
-
-export interface ListeningSessionParams {
-  userId: string;
-  spaceId: string;
 }
 
 const androidRecordPermission: Permission =
@@ -122,6 +119,20 @@ const getAudioSet = (): AudioSet => ({
   AVFormatIDKeyIOS: 'aac',
   AVNumberOfChannelsKeyIOS: 1,
 });
+
+const delay = (durationMs: number) =>
+  new Promise<void>(resolve => setTimeout(resolve, durationMs));
+
+const shouldRetryVoiceUpload = (error: unknown) => {
+  const axiosError = error as AxiosError;
+  const status = axiosError.response?.status;
+
+  return (
+    axiosError.code === 'ECONNABORTED' ||
+    axiosError.code === 'ERR_NETWORK' ||
+    (typeof status === 'number' && RETRYABLE_UPLOAD_STATUSES.has(status))
+  );
+};
 
 const startTempRecording = async (
   audioSet: AudioSet,
@@ -414,58 +425,81 @@ export const uploadVoiceMessage = async ({
 }: UploadVoiceMessageParams): Promise<UploadVoiceMessageResponse> => {
   const RNFS = getRNFS();
   const uploadPaths = filePaths?.length ? filePaths : filePath ? [filePath] : [];
-  const formData = new FormData();
 
   if (uploadPaths.length === 0) {
     throw new Error('No voice recording file found to upload.');
   }
 
-  formData.append('user_id', userId);
-  formData.append('space_id', spaceId);
-  for (const [index, path] of uploadPaths.entries()) {
-    const exists = await RNFS.exists(path);
+  const createFormData = async () => {
+    const formData = new FormData();
 
-    if (!exists) {
-      throw new Error(`Voice recording file does not exist: ${path}`);
+    formData.append('user_id', userId);
+    formData.append('space_id', spaceId);
+
+    for (const [index, path] of uploadPaths.entries()) {
+      const exists = await RNFS.exists(path);
+
+      if (!exists) {
+        throw new Error(`Voice recording file does not exist: ${path}`);
+      }
+
+      const stat = await RNFS.stat(path);
+      console.log('Uploading voice file:', {
+        url: VOICE_MESSAGE_URL,
+        path,
+        size: stat.size,
+        userId,
+        spaceId,
+      });
+
+      formData.append('file', {
+        uri: ensureFileUri(path),
+        name: `voice-message-${index + 1}.${AUDIO_FILE_EXTENSION}`,
+        type: AUDIO_MIME_TYPE,
+      } as unknown as Blob);
     }
 
-    const stat = await RNFS.stat(path);
-    console.log('Uploading voice file:', {
-      url: VOICE_MESSAGE_URL,
-      path,
-      size: stat.size,
-      userId,
-      spaceId,
-    });
-
-    formData.append('file', {
-      uri: ensureFileUri(path),
-      name: `voice-message-${index + 1}.${AUDIO_FILE_EXTENSION}`,
-      type: AUDIO_MIME_TYPE,
-    } as unknown as Blob);
-  }
+    return formData;
+  };
 
   let response;
+  let lastError: unknown;
 
-  try {
-    response = await axios.post<UploadVoiceMessageResponse>(
-      VOICE_MESSAGE_URL,
-      formData,
-      {
-        timeout: 60000,
-      },
-    );
-  } catch (error) {
-    const axiosError = error as AxiosError;
+  for (let attempt = 1; attempt <= VOICE_UPLOAD_MAX_ATTEMPTS; attempt += 1) {
+    try {
+      response = await axios.post<UploadVoiceMessageResponse>(
+        VOICE_MESSAGE_URL,
+        await createFormData(),
+        {
+          timeout: VOICE_UPLOAD_TIMEOUT_MS,
+        },
+      );
+      break;
+    } catch (error) {
+      lastError = error;
+      const axiosError = error as AxiosError;
+      const canRetry =
+        attempt < VOICE_UPLOAD_MAX_ATTEMPTS && shouldRetryVoiceUpload(error);
 
-    console.log('Voice upload failed details:', {
-      message: axiosError.message,
-      code: axiosError.code,
-      status: axiosError.response?.status,
-      response: axiosError.response?.data,
-    });
+      console.log('Voice upload failed details:', {
+        message: axiosError.message,
+        code: axiosError.code,
+        status: axiosError.response?.status,
+        attempt,
+        willRetry: canRetry,
+        response: axiosError.response?.data,
+      });
 
-    throw error;
+      if (!canRetry) {
+        throw error;
+      }
+
+      await delay(VOICE_UPLOAD_RETRY_DELAY_MS);
+    }
+  }
+
+  if (!response) {
+    throw lastError;
   }
 
   for (const path of uploadPaths) {
@@ -474,30 +508,6 @@ export const uploadVoiceMessage = async ({
     }
   }
   console.log('Voice upload response:', response.data);
-
-  return response.data;
-};
-
-export const startListeningSession = async ({
-  userId,
-  spaceId,
-}: ListeningSessionParams) => {
-  const response = await axios.post(START_LISTENING_SESSION_URL, {
-    user_id: userId,
-    space_id: spaceId,
-  });
-
-  return response.data;
-};
-
-export const endListeningSession = async ({
-  userId,
-  spaceId,
-}: ListeningSessionParams) => {
-  const response = await axios.post(END_LISTENING_SESSION_URL, {
-    user_id: userId,
-    space_id: spaceId,
-  });
 
   return response.data;
 };

@@ -51,7 +51,7 @@ export interface Space {
   description: string;
   tasksCount?: number;
   userId: string;
-  isListining: boolean;
+  isListning: boolean;
   createdAt: string;
   updatedAt: string;
   __v: number;
