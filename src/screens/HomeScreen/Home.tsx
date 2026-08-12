@@ -41,13 +41,20 @@ import {
   useGetUserSpacesQuery,
 } from '../../store/api/home';
 import {
+  endListeningSession,
   requestVoiceListeningPermissions,
+  startListeningSession,
   startBackgroundListeningNotification,
   startVoiceRecordingWithSilenceDetection,
   stopBackgroundListeningNotification,
   stopVoiceRecording,
   uploadVoiceMessage,
+  VoiceRecordingResult,
 } from '../../services/voiceRecorderService';
+import {
+  ConversationStatusEvent,
+  subscribeToConversationStatusEvents,
+} from '../../services/conversationStatusEvents';
 import {
   colors,
   fontSize,
@@ -81,6 +88,58 @@ const getSpaceColor = (id: string) => {
   return SPACE_COLORS[hash % SPACE_COLORS.length];
 };
 
+type SpaceProcessingState = {
+  status?: string;
+  extractionRunStatus?: string;
+  conversationId?: string;
+  updatedAt: number;
+};
+
+const TERMINAL_PROCESSING_STATUSES = new Set([
+  'COMPLETED',
+  'PARTIAL',
+  'FAILED',
+  'PUBLISHED',
+]);
+
+const STATUS_LABELS: Record<string, string> = {
+  RECORDING: 'Listening',
+  STOP_REQUESTED: 'Stopping',
+  WAITING_FOR_TRANSCRIPTS: 'Transcribing',
+  READY_FOR_PROCESSING: 'Queued',
+  PROCESSING: 'Processing',
+  VALIDATING: 'Validating',
+  READY_TO_PUBLISH: 'Publishing',
+  PUBLISHED: 'Published',
+  COMPLETED: 'Done',
+  PARTIAL: 'Partial',
+  RETRY_PENDING: 'Retrying',
+  FAILED: 'Failed',
+};
+
+const getStatusLabel = (status?: string) => {
+  if (!status) {
+    return undefined;
+  }
+
+  return STATUS_LABELS[status] || status.replace(/_/g, ' ');
+};
+
+const getPrimaryProcessingStatus = (state?: SpaceProcessingState) =>
+  state?.extractionRunStatus || state?.status;
+
+const isTerminalProcessingStatus = (state?: SpaceProcessingState) => {
+  const primaryStatus = getPrimaryProcessingStatus(state);
+
+  return primaryStatus ? TERMINAL_PROCESSING_STATUSES.has(primaryStatus) : false;
+};
+
+const getSpaceProcessingDescription = (state?: SpaceProcessingState) => {
+  const label = getStatusLabel(getPrimaryProcessingStatus(state));
+
+  return label ? `Current conversation: ${label}` : undefined;
+};
+
 const formatCreatedAt = (createdAt: string) => {
   const date = new Date(createdAt);
 
@@ -103,6 +162,7 @@ type VoiceStartData = {
 type RecordingContext = {
   spaceId: string;
   mode: string;
+  conversationId?: string;
 };
 
 type TabParamList = MainTabParamList;
@@ -116,10 +176,17 @@ const Home = () => {
   const recordingContextRef = useRef<RecordingContext | null>(null);
   const uploadQueueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingVoiceUploadsRef = useRef(0);
+  const selectedSpaceIdRef = useRef<string | null>(null);
+  const processingCleanupTimersRef = useRef<
+    Record<string, ReturnType<typeof setTimeout>>
+  >({});
 
   const [isListening, setIsListening] = useState(false);
   const [isUploadingVoice, setIsUploadingVoice] = useState(false);
   const [spaces, setSpaces] = useState<Space[]>([]);
+  const [spaceProcessing, setSpaceProcessing] = useState<
+    Record<string, SpaceProcessingState>
+  >({});
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
   const [spacePendingDelete, setSpacePendingDelete] = useState<Space | null>(
     null,
@@ -131,21 +198,28 @@ const Home = () => {
   const [cursor, setCursor] = useState('');
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const userId = useAppSelector(state => state.auth.userId) ?? '';
+  const authToken = useAppSelector(state => state.auth.token);
   const { showToast } = useToast();
   const [startListning] = useStartListningMutation();
   const [deleteSpace, { isLoading: isDeletingSpace }] =
     useDeleteSpaceMutation();
-  const { data: activeSpaceData, isFetching: isFetchingActiveSpace } =
-    useGetUserActiveSpaceQuery({ userId }, { skip: !userId });
-  const { data: spacesData, isFetching: isFetchingSpaces } =
-    useGetUserSpacesQuery(
-      {
-        userId,
-        limit: SPACE_PAGE_LIMIT,
-        cursor,
-      },
-      { skip: !userId },
-    );
+  const {
+    data: activeSpaceData,
+    isFetching: isFetchingActiveSpace,
+    refetch: refetchActiveSpace,
+  } = useGetUserActiveSpaceQuery({ userId }, { skip: !userId });
+  const {
+    data: spacesData,
+    isFetching: isFetchingSpaces,
+    refetch: refetchSpaces,
+  } = useGetUserSpacesQuery(
+    {
+      userId,
+      limit: SPACE_PAGE_LIMIT,
+      cursor,
+    },
+    { skip: !userId },
+  );
   const {
     data: selectedSpaceStatsData,
     isFetching: isFetchingSelectedSpaceStats,
@@ -159,6 +233,10 @@ const Home = () => {
     { skip: !userId || !selectedSpace?._id },
   );
   const isInitialSpacesLoading = isFetchingSpaces && spaces.length === 0;
+
+  useEffect(() => {
+    selectedSpaceIdRef.current = selectedSpace?._id || null;
+  }, [selectedSpace?._id]);
 
   useEffect(() => {
     const response = spacesData?.data?.data;
@@ -184,6 +262,84 @@ const Home = () => {
     });
   }, [spacesData, cursor]);
 
+  useEffect(() => {
+    if (!userId) {
+      return undefined;
+    }
+
+    const cleanupProcessingState = (spaceId: string) => {
+      const existingTimer = processingCleanupTimersRef.current[spaceId];
+
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+      }
+
+      processingCleanupTimersRef.current[spaceId] = setTimeout(() => {
+        setSpaceProcessing(prev => {
+          const next = { ...prev };
+          delete next[spaceId];
+          return next;
+        });
+
+        delete processingCleanupTimersRef.current[spaceId];
+      }, 8000);
+    };
+
+    const handleStatusChange = (event: ConversationStatusEvent) => {
+      if (event.userId && event.userId !== userId) {
+        return;
+      }
+
+      if (!event.spaceId) {
+        return;
+      }
+
+      const nextState: SpaceProcessingState = {
+        status: event.status,
+        extractionRunStatus: event.extractionRunStatus,
+        conversationId: event.conversationId,
+        updatedAt: Date.now(),
+      };
+
+      setSpaceProcessing(prev => ({
+        ...prev,
+        [event.spaceId as string]: nextState,
+      }));
+
+      refetchActiveSpace();
+      refetchSpaces();
+
+      if (selectedSpaceIdRef.current === event.spaceId) {
+        refetchSelectedSpaceStats();
+      }
+
+      if (isTerminalProcessingStatus(nextState)) {
+        cleanupProcessingState(event.spaceId);
+      }
+    };
+
+    const unsubscribe = subscribeToConversationStatusEvents({
+      userId,
+      token: authToken,
+      onStatusChange: handleStatusChange,
+      onError: error => {
+        console.log('Conversation status SSE error:', error);
+      },
+    });
+
+    return () => {
+      unsubscribe();
+      Object.values(processingCleanupTimersRef.current).forEach(clearTimeout);
+      processingCleanupTimersRef.current = {};
+    };
+  }, [
+    authToken,
+    refetchActiveSpace,
+    refetchSelectedSpaceStats,
+    refetchSpaces,
+    userId,
+  ]);
+
   const updateUploadingState = (delta: number) => {
     pendingVoiceUploadsRef.current = Math.max(
       0,
@@ -192,7 +348,7 @@ const Home = () => {
     setIsUploadingVoice(pendingVoiceUploadsRef.current > 0);
   };
 
-  const enqueueRecordedVoiceUpload = (filePath: string) => {
+  const enqueueRecordedVoiceUpload = (recording: VoiceRecordingResult) => {
     const recordingContext = recordingContextRef.current;
 
     if (!recordingContext) {
@@ -202,7 +358,8 @@ const Home = () => {
 
     updateUploadingState(1);
     console.log('Voice upload queued:', {
-      filePath,
+      filePath: recording.path,
+      durationMs: recording.durationMs,
       spaceId: recordingContext.spaceId,
       mode: recordingContext.mode,
     });
@@ -215,7 +372,8 @@ const Home = () => {
             userId: userId,
             spaceId: recordingContext.spaceId,
             mode: recordingContext.mode,
-            filePath,
+            filePath: recording.path,
+            fileDurationMs: recording.durationMs,
           });
 
           showToast({ message: 'Voice message uploaded.', type: 'success' });
@@ -256,20 +414,31 @@ const Home = () => {
         spaceName: voiceSpace.spacename,
       });
 
+      const listeningSession = await startListeningSession({
+        userId,
+        spaceId: voiceSpace._id,
+      });
+
+      recordingContextRef.current = {
+        spaceId: voiceSpace._id,
+        mode,
+        conversationId: listeningSession.data?.conversation_id,
+      };
+
       await startVoiceRecordingWithSilenceDetection({
         onSegmentReady: async recording => {
           showToast({
             message: 'Sending voice chunk...',
             type: 'success',
           });
-          await enqueueRecordedVoiceUpload(recording.path);
+          await enqueueRecordedVoiceUpload(recording);
         },
         onSilenceDetected: async recording => {
           showToast({
             message: 'Sending voice chunk...',
             type: 'success',
           });
-          await enqueueRecordedVoiceUpload(recording.path);
+          await enqueueRecordedVoiceUpload(recording);
         },
         stopOnSilence: false,
       });
@@ -278,11 +447,20 @@ const Home = () => {
       showToast({ message: 'Recording started. Speak now.', type: 'success' });
     } catch (error) {
       console.log('START ERROR:', error);
+      const failedContext = recordingContextRef.current;
       recordingContextRef.current = null;
       setIsListening(false);
       await stopBackgroundListeningNotification().catch(serviceError => {
         console.log('Unable to stop listening notification:', serviceError);
       });
+      if (failedContext?.spaceId) {
+        await endListeningSession({
+          userId,
+          spaceId: failedContext.spaceId,
+        }).catch(serviceError => {
+          console.log('Unable to end failed listening session:', serviceError);
+        });
+      }
       try {
         await startListning({
           spaceId: voiceSpace._id,
@@ -329,7 +507,15 @@ const Home = () => {
           type: 'success',
         });
 
-        void enqueueRecordedVoiceUpload(recording.path);
+        const finalUpload = enqueueRecordedVoiceUpload(recording);
+        await finalUpload.catch(uploadError => {
+          console.log('Final voice upload failed before stop:', uploadError);
+        });
+
+        await endListeningSession({
+          userId,
+          spaceId: recordingContext.spaceId,
+        });
 
         const res = await startListning({
           spaceId: recordingContext.spaceId,
@@ -353,6 +539,12 @@ const Home = () => {
       if (activeSpace?._id) {
         await stopBackgroundListeningNotification().catch(serviceError => {
           console.log('Unable to stop listening notification:', serviceError);
+        });
+        await endListeningSession({
+          userId,
+          spaceId: activeSpace._id,
+        }).catch(serviceError => {
+          console.log('Unable to end listening session:', serviceError);
         });
         const res = await startListning({
           spaceId: activeSpace._id,
@@ -565,27 +757,38 @@ const Home = () => {
           ) : spaces.length === 0 ? (
             <SpacesEmptyState onCreatePress={openSpaceSheet} />
           ) : (
-            spaces.map(item => (
-              <SpaceCard
-                key={item._id}
-                title={item.spacename}
-                description={
-                  item.description || formatCreatedAt(item.createdAt)
-                }
-                time={formatCreatedAt(item.createdAt)}
-                icon={
-                  <MySpcaes
-                    width={ms(18)}
-                    height={ms(18)}
-                    color={colors.black}
-                  />
-                }
-                color={getSpaceColor(item._id)}
-                isDeleting={deletingSpaceId === item._id}
-                onPress={() => openSpaceDetail(item)}
-                onDelete={() => setSpacePendingDelete(item)}
-              />
-            ))
+            spaces.map(item => {
+              const processingState = spaceProcessing[item._id];
+              const processingDescription =
+                getSpaceProcessingDescription(processingState);
+
+              return (
+                <SpaceCard
+                  key={item._id}
+                  title={item.spacename}
+                  description={
+                    processingDescription ||
+                    item.description ||
+                    formatCreatedAt(item.createdAt)
+                  }
+                  badgeText={getStatusLabel(
+                    getPrimaryProcessingStatus(processingState),
+                  )}
+                  time={formatCreatedAt(item.createdAt)}
+                  icon={
+                    <MySpcaes
+                      width={ms(18)}
+                      height={ms(18)}
+                      color={colors.black}
+                    />
+                  }
+                  color={getSpaceColor(item._id)}
+                  isDeleting={deletingSpaceId === item._id}
+                  onPress={() => openSpaceDetail(item)}
+                  onDelete={() => setSpacePendingDelete(item)}
+                />
+              );
+            })
           )}
 
           {spaces.length > 0 && nextCursor ? (

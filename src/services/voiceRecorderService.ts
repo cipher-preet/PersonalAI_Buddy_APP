@@ -32,11 +32,14 @@ const { BuddyListeningService } = NativeModules as {
 const audioRecorderPlayer = AudioRecorderPlayer;
 const SILENCE_THRESHOLD_DB = -30;
 const SILENCE_DURATION_MS = 2000;
-const MAX_RECORDING_SEGMENT_MS = 30000;
+const MAX_RECORDING_SEGMENT_MS = 20000;
+const MAX_UPLOAD_SEGMENT_MS = 25000;
 const AUDIO_FILE_EXTENSION = 'm4a';
 const AUDIO_MIME_TYPE = 'audio/mp4';
 const SPEECH_API_URL = BUDDY_ENDPOINTS.speechBase;
 const VOICE_MESSAGE_URL = `${SPEECH_API_URL}/transcripting`;
+const LISTENING_START_URL = `${SPEECH_API_URL}/listening/start`;
+const LISTENING_END_URL = `${SPEECH_API_URL}/listening/end`;
 const VOICE_UPLOAD_TIMEOUT_MS = 60000;
 const VOICE_UPLOAD_RETRY_DELAY_MS = 30000;
 const VOICE_UPLOAD_MAX_ATTEMPTS = 3;
@@ -50,12 +53,14 @@ let recordingStartedAt: number | null = null;
 let isStopping = false;
 let isRotatingSegment = false;
 let isContinuousRecordingActive = false;
+let segmentRotationTimer: ReturnType<typeof setTimeout> | null = null;
 
 export type VoiceMode = string;
 
 export interface VoiceRecordingResult {
   path: string;
   fileUri: string;
+  durationMs: number;
 }
 
 export interface StartVoiceRecordingOptions {
@@ -70,6 +75,7 @@ export interface UploadVoiceMessageParams {
   spaceId: string;
   mode?: VoiceMode;
   filePath?: string;
+  fileDurationMs?: number;
   filePaths?: string[];
 }
 
@@ -77,6 +83,18 @@ export interface UploadVoiceMessageResponse {
   success?: boolean;
   message?: string;
   data?: unknown;
+}
+
+export interface ListeningSessionResponse {
+  success?: boolean;
+  message?: string;
+  data?: {
+    user_id?: string;
+    space_id?: string;
+    conversation_id?: string;
+    status?: string;
+    [key: string]: unknown;
+  };
 }
 
 const androidRecordPermission: Permission =
@@ -123,6 +141,15 @@ const getAudioSet = (): AudioSet => ({
 const delay = (durationMs: number) =>
   new Promise<void>(resolve => setTimeout(resolve, durationMs));
 
+const clearSegmentRotationTimer = () => {
+  if (!segmentRotationTimer) {
+    return;
+  }
+
+  clearTimeout(segmentRotationTimer);
+  segmentRotationTimer = null;
+};
+
 const shouldRetryVoiceUpload = (error: unknown) => {
   const axiosError = error as AxiosError;
   const status = axiosError.response?.status;
@@ -147,6 +174,7 @@ const startTempRecording = async (
   return {
     path,
     fileUri: ensureFileUri(path),
+    durationMs: 0,
   };
 };
 
@@ -158,6 +186,9 @@ const finalizeCurrentRecording = async (
   }
 
   const recordingPath = currentRecordingPath;
+  const durationMs = recordingStartedAt ? Date.now() - recordingStartedAt : 0;
+
+  clearSegmentRotationTimer();
 
   await audioRecorderPlayer.stopRecorder();
 
@@ -172,6 +203,7 @@ const finalizeCurrentRecording = async (
   return {
     path: recordingPath,
     fileUri: ensureFileUri(recordingPath),
+    durationMs,
   };
 };
 
@@ -284,6 +316,7 @@ export const stopVoiceRecording = async (): Promise<VoiceRecordingResult> => {
     return {
       path: currentRecordingPath,
       fileUri: ensureFileUri(currentRecordingPath),
+      durationMs: recordingStartedAt ? Date.now() - recordingStartedAt : 0,
     };
   }
 
@@ -293,6 +326,7 @@ export const stopVoiceRecording = async (): Promise<VoiceRecordingResult> => {
   try {
     return await finalizeCurrentRecording(true);
   } finally {
+    clearSegmentRotationTimer();
     isStopping = false;
     isRotatingSegment = false;
   }
@@ -318,6 +352,51 @@ export const startVoiceRecordingWithSilenceDetection = async ({
   const firstRecording = await startTempRecording(audioSet);
   isContinuousRecordingActive = true;
 
+  const rotateCurrentSegment = async (
+    reason: 'duration' | 'timer',
+    durationMs?: number,
+  ) => {
+    if (
+      isStopping ||
+      isRotatingSegment ||
+      !isContinuousRecordingActive ||
+      !currentRecordingPath
+    ) {
+      return;
+    }
+
+    isRotatingSegment = true;
+
+    try {
+      const completedRecording = await finalizeCurrentRecording(false);
+      console.log('Max voice segment duration reached. Uploading chunk:', {
+        path: completedRecording.path,
+        durationMs: durationMs ?? completedRecording.durationMs,
+        reason,
+      });
+
+      if (isContinuousRecordingActive) {
+        await startTempRecording(audioSet);
+        scheduleMaxSegmentRotation();
+      }
+
+      await onSegmentReady?.(completedRecording);
+    } catch (error) {
+      console.log('Voice recording max duration rotation failed:', error);
+    } finally {
+      isRotatingSegment = false;
+    }
+  };
+
+  const scheduleMaxSegmentRotation = () => {
+    clearSegmentRotationTimer();
+    segmentRotationTimer = setTimeout(() => {
+      rotateCurrentSegment('timer');
+    }, MAX_RECORDING_SEGMENT_MS);
+  };
+
+  scheduleMaxSegmentRotation();
+
   audioRecorderPlayer.addRecordBackListener((event: RecordBackType) => {
     const metering = event.currentMetering;
 
@@ -337,28 +416,7 @@ export const startVoiceRecordingWithSilenceDetection = async ({
       !isRotatingSegment &&
       isContinuousRecordingActive
     ) {
-      isRotatingSegment = true;
-
-      (async () => {
-        try {
-          const completedRecording = await finalizeCurrentRecording(false);
-          console.log('Max voice segment duration reached. Uploading chunk:', {
-            path: completedRecording.path,
-            durationMs: segmentDuration,
-          });
-
-          if (isContinuousRecordingActive) {
-            await startTempRecording(audioSet);
-          }
-
-          await onSegmentReady?.(completedRecording);
-        } catch (error) {
-          console.log('Voice recording max duration rotation failed:', error);
-        } finally {
-          isRotatingSegment = false;
-        }
-      })();
-
+      rotateCurrentSegment('duration', segmentDuration);
       return;
     }
 
@@ -404,6 +462,7 @@ export const startVoiceRecordingWithSilenceDetection = async ({
         }
 
         await startTempRecording(audioSet);
+        scheduleMaxSegmentRotation();
 
         await onSilenceDetected?.(completedRecording);
       } catch (error) {
@@ -417,14 +476,62 @@ export const startVoiceRecordingWithSilenceDetection = async ({
   return firstRecording;
 };
 
+export const startListeningSession = async ({
+  userId,
+  spaceId,
+}: {
+  userId: string;
+  spaceId: string;
+}): Promise<ListeningSessionResponse> => {
+  const response = await axios.post<ListeningSessionResponse>(
+    LISTENING_START_URL,
+    {
+      userId,
+      spaceId,
+    },
+    {
+      timeout: VOICE_UPLOAD_TIMEOUT_MS,
+    },
+  );
+
+  console.log('Listening session start response:', response.data);
+
+  return response.data;
+};
+
+export const endListeningSession = async ({
+  userId,
+  spaceId,
+}: {
+  userId: string;
+  spaceId: string;
+}): Promise<ListeningSessionResponse> => {
+  const response = await axios.post<ListeningSessionResponse>(
+    LISTENING_END_URL,
+    {
+      userId,
+      spaceId,
+    },
+    {
+      timeout: VOICE_UPLOAD_TIMEOUT_MS,
+    },
+  );
+
+  console.log('Listening session end response:', response.data);
+
+  return response.data;
+};
+
 export const uploadVoiceMessage = async ({
   userId,
   spaceId,
   filePath,
+  fileDurationMs,
   filePaths,
 }: UploadVoiceMessageParams): Promise<UploadVoiceMessageResponse> => {
   const RNFS = getRNFS();
   const uploadPaths = filePaths?.length ? filePaths : filePath ? [filePath] : [];
+  const uploadDurations = filePaths?.length ? [] : [fileDurationMs];
 
   if (uploadPaths.length === 0) {
     throw new Error('No voice recording file found to upload.');
@@ -437,6 +544,22 @@ export const uploadVoiceMessage = async ({
     formData.append('space_id', spaceId);
 
     for (const [index, path] of uploadPaths.entries()) {
+      const durationMs = uploadDurations[index];
+
+      if (typeof durationMs === 'number' && durationMs > MAX_UPLOAD_SEGMENT_MS) {
+        if (await RNFS.exists(path)) {
+          await RNFS.unlink(path);
+        }
+
+        throw new Error(
+          `Voice chunk is too long (${Math.round(
+            durationMs / 1000,
+          )}s). Please keep chunks under ${Math.round(
+            MAX_UPLOAD_SEGMENT_MS / 1000,
+          )}s.`,
+        );
+      }
+
       const exists = await RNFS.exists(path);
 
       if (!exists) {
@@ -448,6 +571,7 @@ export const uploadVoiceMessage = async ({
         url: VOICE_MESSAGE_URL,
         path,
         size: stat.size,
+        durationMs,
         userId,
         spaceId,
       });
