@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { COLORS } from '../styles';
 import {
   colors,
   fontSize,
@@ -20,7 +19,7 @@ const UserMessage = ({ text, time }: Props) => {
   return (
     <View style={styles.row}>
       <LinearGradient
-        colors={[COLORS.primarySoft, COLORS.primary]}
+        colors={[colors.primary, colors.primaryDark]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.bubble}
@@ -36,34 +35,29 @@ export default UserMessage;
 
 const styles = StyleSheet.create({
   row: {
-    marginTop: spacing.md,
+    marginTop: spacing.xl,
     alignItems: 'flex-end',
   },
 
   bubble: {
-    maxWidth: '84%',
+    maxWidth: '82%',
     paddingHorizontal: spacing['2xl'],
     paddingVertical: spacing.xl,
     borderRadius: radii.xl,
-    borderBottomRightRadius: radii.xs,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: ms(6) },
-    shadowOpacity: 0.16,
-    shadowRadius: ms(12),
-    elevation: 3,
+    borderBottomRightRadius: radii.sm,
   },
 
   text: {
-    fontSize: fontSize.lg,
+    fontSize: fontSize.base,
     lineHeight: ms(22),
-    color: COLORS.white,
+    color: colors.white,
     fontWeight: fontWeight.medium,
   },
 
   time: {
     marginTop: spacing.sm,
-    fontSize: ms(10),
-    color: 'rgba(255, 255, 255, 0.78)',
+    fontSize: fontSize.xs,
+    color: 'rgba(255, 255, 255, 0.72)',
     fontWeight: fontWeight.semibold,
     alignSelf: 'flex-end',
   },

@@ -21,16 +21,17 @@ export default ProfileHeader;
 
 const styles = StyleSheet.create({
   container: {
-    height: layout.iconButton,
+    minHeight: layout.iconButton,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.md,
   },
 
   title: {
     fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.extrabold,
+    fontWeight: fontWeight.bold,
     color: colors.text,
-    lineHeight: ms(22),
+    lineHeight: ms(26),
+    letterSpacing: -0.3,
   },
 });

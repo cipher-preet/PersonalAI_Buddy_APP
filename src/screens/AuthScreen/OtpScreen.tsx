@@ -6,22 +6,21 @@ import {
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import Svg, { Path } from 'react-native-svg';
 
 import AuthLayout from './components/AuthLayout';
 import AuthBrandMark from './components/AuthBrandMark';
-import AuthHeaderBar from './components/AuthHeaderBar';
 import OtpInputBoxes from './components/OtpInputBoxes';
-import { AUTH_COLORS } from './styles/colors';
 import {
+  colors,
   fontSize,
   fontWeight,
-  layout,
   ms,
   mvs,
   radii,
   spacing,
+  layout
 } from '../../theme';
 import { AuthStackParamList } from '../../navigation/AuthStack';
 import { useAppDispatch } from '../../store/hooks';
@@ -33,6 +32,18 @@ import {
 import { useToast } from '../../store/context/ToastContext';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Otp'>;
+
+const BackIcon = () => (
+  <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M15 6l-6 6 6 6"
+      stroke={colors.text}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 const OtpScreen = ({ navigation, route }: Props) => {
   const { phone, username } = route.params;
@@ -53,7 +64,7 @@ const OtpScreen = ({ navigation, route }: Props) => {
     return () => clearInterval(interval);
   }, []);
 
-  const maskedPhone = `+91 ${phone.slice(0, 2)} •••• ${phone.slice(-4)}`;
+  const maskedPhone = `+91 ${phone.slice(0, 2)}••••${phone.slice(-4)}`;
   const isComplete = otp.length === 4;
   const loading = isLoading || isResending;
 
@@ -123,76 +134,81 @@ const OtpScreen = ({ navigation, route }: Props) => {
   };
 
   return (
-    <AuthLayout scrollable>
-      <AuthHeaderBar
-        title="Verification"
-        onBack={() => navigation.goBack()}
-      />
+    <AuthLayout
+      scrollable
+      variant="white"
+      contentStyle={styles.layoutContent}
+    >
+      <TouchableOpacity
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.75}
+        style={styles.backButton}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <BackIcon />
+      </TouchableOpacity>
 
       <View style={styles.hero}>
         <AuthBrandMark size="md" />
-        <Text style={styles.title}>Enter verification code</Text>
+        <Text style={styles.title}>Verification</Text>
         <Text style={styles.subtitle}>
-          We sent a 4-digit code to your mobile number
+          Enter the 4-digit code we sent to your mobile number.
         </Text>
 
-        <View style={styles.phoneBadge}>
+        <View style={styles.phoneRow}>
           <Text style={styles.phoneText}>{maskedPhone}</Text>
-          <TouchableOpacity onPress={() => navigation.goBack()} activeOpacity={0.7}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            activeOpacity={0.7}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
             <Text style={styles.changeLink}>Change</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      <View style={styles.card}>
-        <OtpInputBoxes value={otp} onChange={setOtp} />
+      <Text style={styles.fieldLabel}>One-time password</Text>
+      <OtpInputBoxes value={otp} onChange={setOtp} />
 
-        <View style={styles.timerRow}>
-          {timer > 0 ? (
-            <View style={styles.timerPill}>
-              <Text style={styles.timerText}>
-                Resend in 0:{timer.toString().padStart(2, '0')}
-              </Text>
-            </View>
-          ) : (
-            <TouchableOpacity
-              onPress={handleResend}
-              disabled={isResending}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.resendLink}>Resend code</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <TouchableOpacity
-          onPress={handleVerify}
-          disabled={!isComplete || loading}
-          activeOpacity={0.9}
-          style={styles.ctaWrap}
-        >
-          <LinearGradient
-            colors={
-              isComplete
-                ? [AUTH_COLORS.primaryPurple, AUTH_COLORS.primaryMid, AUTH_COLORS.primary]
-                : ['#C4B5FD', '#A78BFA', AUTH_COLORS.borderFocus]
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.primaryButton}
+      <View style={styles.timerRow}>
+        {timer > 0 ? (
+          <Text style={styles.timerText}>
+            Resend code in{' '}
+            <Text style={styles.timerValue}>
+              0:{timer.toString().padStart(2, '0')}
+            </Text>
+          </Text>
+        ) : (
+          <TouchableOpacity
+            onPress={handleResend}
+            disabled={isResending}
+            activeOpacity={0.7}
           >
-            {loading ? (
-              <ActivityIndicator color={AUTH_COLORS.white} />
-            ) : (
-              <Text style={styles.primaryButtonText}>Verify & Continue</Text>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
+            <Text style={styles.resendLink}>Resend code</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
-      <Text style={styles.hint}>
-        Didn't receive the code? Check your SMS inbox or try resending after the
-        timer ends.
+      <TouchableOpacity
+        onPress={handleVerify}
+        disabled={!isComplete || loading}
+        activeOpacity={0.9}
+        style={[
+          styles.primaryButton,
+          isComplete && !loading && styles.primaryButtonReady,
+          (!isComplete || loading) && styles.primaryButtonDisabled,
+        ]}
+      >
+        {loading ? (
+          <ActivityIndicator color={colors.white} />
+        ) : (
+          <Text style={styles.primaryButtonText}>Verify & Continue</Text>
+        )}
+      </TouchableOpacity>
+
+      <Text style={styles.footer}>
+        Didn't get the code? Check your SMS inbox or wait for the timer to
+        finish, then resend.
       </Text>
     </AuthLayout>
   );
@@ -201,131 +217,128 @@ const OtpScreen = ({ navigation, route }: Props) => {
 export default OtpScreen;
 
 const styles = StyleSheet.create({
+  layoutContent: {
+    justifyContent: 'flex-start',
+    paddingTop: mvs(8),
+  },
+
+  backButton: {
+    width: ms(40),
+    height: ms(40),
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xl,
+  },
+
   hero: {
     alignItems: 'center',
-    paddingTop: mvs(8),
-    paddingBottom: mvs(24),
+    marginBottom: spacing['4xl'],
   },
 
   title: {
-    fontSize: ms(26),
+    marginTop: spacing['2xl'],
+    fontSize: fontSize['4xl'],
     fontWeight: fontWeight.extrabold,
-    color: AUTH_COLORS.text,
+    color: colors.text,
     textAlign: 'center',
-    letterSpacing: -0.6,
-    lineHeight: ms(32),
+    letterSpacing: -0.7,
   },
 
   subtitle: {
     marginTop: spacing.md,
-    fontSize: fontSize.lg,
+    fontSize: fontSize.base,
     lineHeight: ms(22),
-    color: AUTH_COLORS.subText,
+    color: colors.subText,
     textAlign: 'center',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.md,
+    fontWeight: fontWeight.medium,
   },
 
-  phoneBadge: {
+  phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: ms(18),
-    paddingHorizontal: spacing['2xl'],
-    paddingVertical: spacing.lg,
-    borderRadius: radii.xl,
-    backgroundColor: AUTH_COLORS.primarySoft,
-    borderWidth: 1,
-    borderColor: '#E0E7FF',
-    gap: spacing.xl,
+    marginTop: spacing.xl,
+    gap: spacing.md,
   },
 
   phoneText: {
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
-    color: AUTH_COLORS.textSecondary,
-    letterSpacing: 0.3,
+    color: colors.textSecondary,
+    letterSpacing: 0.2,
   },
 
   changeLink: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
-    color: AUTH_COLORS.primary,
+    color: colors.primary,
   },
 
-  card: {
-    backgroundColor: AUTH_COLORS.white,
-    borderRadius: radii['3xl'],
-    paddingVertical: ms(22),
-    paddingHorizontal: spacing['2xl'],
-    borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
-    shadowColor: AUTH_COLORS.shadow,
-    shadowOffset: { width: 0, height: ms(12) },
-    shadowOpacity: 0.08,
-    shadowRadius: ms(24),
-    elevation: 4,
-    alignItems: 'center',
+  fieldLabel: {
+    marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.subText,
   },
 
   timerRow: {
     alignItems: 'center',
-    alignSelf: 'stretch',
     marginTop: spacing['3xl'],
-    marginBottom: ms(22),
-    minHeight: ms(32),
+    marginBottom: spacing['3xl'],
+    minHeight: ms(24),
     justifyContent: 'center',
-  },
-
-  timerPill: {
-    paddingHorizontal: spacing.xl + spacing.xxs,
-    paddingVertical: spacing.sm,
-    borderRadius: ms(14),
-    backgroundColor: AUTH_COLORS.inputBg,
   },
 
   timerText: {
     fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-    color: AUTH_COLORS.subText,
+    fontWeight: fontWeight.medium,
+    color: colors.subText,
+  },
+
+  timerValue: {
+    fontWeight: fontWeight.bold,
+    color: colors.text,
   },
 
   resendLink: {
     fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
-    color: AUTH_COLORS.primary,
-  },
-
-  ctaWrap: {
-    borderRadius: ms(28),
-    overflow: 'hidden',
-    alignSelf: 'stretch',
-    marginHorizontal: spacing.sm,
-    shadowColor: AUTH_COLORS.primaryPurpleDark,
-    shadowOffset: { width: 0, height: ms(6) },
-    shadowOpacity: 0.25,
-    shadowRadius: ms(12),
-    elevation: 4,
+    color: colors.primary,
   },
 
   primaryButton: {
-    height: ms(56),
+    height: layout.buttonHeight,
+    borderRadius: radii.lg,
+    backgroundColor: colors.primaryDark,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: ms(28),
+  },
+
+  primaryButtonReady: {
+    backgroundColor: colors.primary,
+  },
+
+  primaryButtonDisabled: {
+    opacity: 0.45,
   },
 
   primaryButtonText: {
-    color: AUTH_COLORS.white,
-    fontSize: fontSize.xl,
+    color: colors.white,
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
-    letterSpacing: -0.2,
   },
 
-  hint: {
-    marginTop: spacing['3xl'],
+  footer: {
+    marginTop: spacing['5xl'],
     fontSize: fontSize.sm,
-    lineHeight: ms(18),
-    color: AUTH_COLORS.muted,
+    lineHeight: ms(20),
+    color: colors.muted,
     textAlign: 'center',
-    paddingHorizontal: layout.screenPadding,
+    paddingHorizontal: spacing.sm,
   },
 });

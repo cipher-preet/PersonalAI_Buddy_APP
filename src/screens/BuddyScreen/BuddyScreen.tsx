@@ -3,7 +3,6 @@ import {
   FlatList,
   Keyboard,
   Platform,
-  Pressable,
   Text,
   TextInput,
   View,
@@ -17,10 +16,12 @@ import {
 import Header from './components/Header';
 import UserMessage from './components/UserMessage';
 import AIMessage from './components/AIMessage';
-import BottomInput from './components/BottomInput';
+import BottomInput, { INPUT_BAR_HEIGHT } from './components/BottomInput';
 import ChatHistoryDrawer from './components/ChatHistoryDrawer';
 import TypingIndicator from './components/TypingIndicator';
 import ScrollToBottomButton from './components/ScrollToBottomButton';
+import BuddyLanding from './components/BuddyLanding';
+import NewChatFab from './components/NewChatFab';
 import { COLORS, styles } from './styles';
 import type { ChatMessage, ChatSession } from './types';
 import {
@@ -41,6 +42,7 @@ const SUGGESTIONS = [
   'Summarize my day',
   'Plan my tasks for tomorrow',
   'Help me prepare for a meeting',
+  'What should I focus on next?',
 ];
 
 const formatTime = () =>
@@ -117,15 +119,6 @@ const mapMessageDto = (message: ChatMessageDto, index: number): ChatMessage => (
   time: '',
 });
 
-const createLocalPendingSession = (): ChatSession => ({
-  id: `pending-${Date.now()}`,
-  title: 'New conversation',
-  preview: 'Start chatting with Buddy...',
-  updatedAt: new Date(),
-  messageCount: 0,
-  messages: [],
-});
-
 const mergeSessions = (
   current: ChatSession[],
   incoming: ChatSession[],
@@ -151,6 +144,7 @@ const BuddyScreen = () => {
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const inputRef = useRef<TextInput>(null);
   const userId = useAppSelector(state => state.auth.userId);
+  const userName = useAppSelector(state => state.auth.name);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [input, setInput] = useState('');
@@ -468,7 +462,9 @@ const BuddyScreen = () => {
 
   const handleSuggestionPress = (suggestion: string) => {
     setInput(suggestion);
-    inputRef.current?.focus();
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 180);
   };
 
   const handleInputFocus = () => {
@@ -516,49 +512,17 @@ const BuddyScreen = () => {
     }
   };
 
-  const handleNewChat = async () => {
-    if (!userId) {
-      setSessionsError('Please log in again to continue.');
-      return;
-    }
-    const pendingSession = createLocalPendingSession();
-    setSessions(prev => mergeSessions(prev, [pendingSession]));
-    setActiveSessionId(pendingSession.id);
+  const handleNewChat = () => {
+    Keyboard.dismiss();
     setHistoryVisible(false);
+    setActiveSessionId(null);
     setInput('');
+    setActiveChatLoading(false);
+    setShowScrollToBottom(false);
     setSessionsError(null);
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 320);
-
-    try {
-      const response = await createChatSession({ userId }).unwrap();
-      const newSession = mapSessionDto(response.data);
-      setSessions(prev =>
-        mergeSessions(
-          prev.filter(session => session.id !== pendingSession.id),
-          [newSession],
-        ),
-      );
-      setActiveSessionId(newSession.id);
-    } catch (error) {
-      try {
-        const recoveredSession = await recoverLatestSession();
-        if (recoveredSession) {
-          setSessions(prev =>
-            prev.filter(session => session.id !== pendingSession.id),
-          );
-          setActiveSessionId(recoveredSession.id);
-          return;
-        }
-      } catch {
-        // Fall through to the original create error.
-      }
-      setSessions(prev =>
-        prev.filter(session => session.id !== pendingSession.id),
-      );
-      setSessionsError(getErrorMessage(error));
-    }
+    setSessions(prev =>
+      prev.filter(session => !session.id.startsWith('pending-')),
+    );
   };
 
   const handleLoadMoreSessions = async () => {
@@ -608,42 +572,20 @@ const BuddyScreen = () => {
     );
   };
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <View style={styles.heroCard}>
-        <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeText}>AI Assistant</Text>
-        </View>
-        <Text style={styles.emptyTitle}>How can I help you today?</Text>
-        <Text style={styles.emptySubtitle}>
-          Ask Buddy to plan your day, summarize notes, or prepare for meetings.
-        </Text>
-      </View>
+  const sessionsLoadingInitial =
+    !!userId &&
+    !initialSessionsLoaded &&
+    !sessionsTimedOut &&
+    (sessionsLoading || sessionsFetching);
 
-      <Text style={styles.suggestionsTitle}>Quick prompts</Text>
-      <View style={styles.suggestionsWrap}>
-        {SUGGESTIONS.map(suggestion => (
-          <Pressable
-            key={suggestion}
-            style={[
-              styles.suggestionChip,
-              sendingMessage && styles.suggestionChipDisabled,
-            ]}
-            onPress={() => handleSuggestionPress(suggestion)}
-            disabled={sendingMessage}
-          >
-            <View style={styles.suggestionDot} />
-            <Text style={styles.suggestionText}>{suggestion}</Text>
-          </Pressable>
-        ))}
-      </View>
-    </View>
-  );
+  const showLanding = messages.length === 0;
 
   const keyboardOpen = keyboardHeight > 0;
   const inputSafeBottom = keyboardOpen
     ? keyboardHeight + KEYBOARD_INPUT_GAP
     : Math.max(insets.bottom, spacing.xl);
+
+  const fabBottom = inputSafeBottom + INPUT_BAR_HEIGHT + spacing.sm;
 
   return (
     <LinearGradient
@@ -659,48 +601,62 @@ const BuddyScreen = () => {
       style={styles.gradient}
     >
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-        <Header onHistoryPress={handleOpenHistory} />
+        <Header
+          onHistoryPress={handleOpenHistory}
+          showTitle={!showLanding}
+        />
 
         <View style={styles.chatArea}>
-          <View style={styles.listWrap}>
-            <FlatList
-              ref={listRef}
-              data={messages}
-              keyExtractor={item => item.id}
-              renderItem={renderMessage}
-              contentContainerStyle={[
-                styles.listContent,
-                { paddingBottom: spacing['2xl'] },
-              ]}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              keyboardDismissMode="interactive"
-              ListEmptyComponent={renderEmptyState}
-              ListFooterComponent={
-                activeChatLoading || sendingMessage ? (
-                  <View style={styles.typingFooter}>
-                    <TypingIndicator />
-                  </View>
-                ) : null
-              }
-              ListHeaderComponent={
-                messages.length > 0 ? (
-                  <View style={styles.dateSeparator}>
-                    <Text style={styles.dateSeparatorText}>Today</Text>
-                  </View>
-                ) : null
-              }
-              onContentSizeChange={handleContentSizeChange}
-              onScroll={handleListScroll}
-              scrollEventThrottle={16}
+          {showLanding ? (
+            <BuddyLanding
+              userName={userName}
+              suggestions={SUGGESTIONS}
+              sessions={sessions}
+              loadingSessions={sessionsLoadingInitial}
+              onSuggestionPress={handleSuggestionPress}
+              onSeeAllHistory={handleOpenHistory}
+              onSelectSession={handleSelectSession}
             />
+          ) : (
+            <View style={styles.listWrap}>
+              <FlatList
+                ref={listRef}
+                data={messages}
+                keyExtractor={item => item.id}
+                renderItem={renderMessage}
+                contentContainerStyle={[
+                  styles.listContent,
+                  { paddingBottom: spacing['2xl'] + ms(56) },
+                ]}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="interactive"
+                ListFooterComponent={
+                  activeChatLoading || sendingMessage ? (
+                    <View style={styles.typingFooter}>
+                      <TypingIndicator />
+                    </View>
+                  ) : null
+                }
+                ListHeaderComponent={
+                  messages.length > 0 ? (
+                    <View style={styles.dateSeparator}>
+                      <Text style={styles.dateSeparatorText}>Today</Text>
+                    </View>
+                  ) : null
+                }
+                onContentSizeChange={handleContentSizeChange}
+                onScroll={handleListScroll}
+                scrollEventThrottle={16}
+              />
 
-            <ScrollToBottomButton
-              visible={showScrollToBottom}
-              bottom={spacing.xl}
-              onPress={handleScrollToBottomPress}
-            />
-          </View>
+              <ScrollToBottomButton
+                visible={showScrollToBottom}
+                bottom={spacing.xl}
+                onPress={handleScrollToBottomPress}
+              />
+            </View>
+          )}
 
           <View style={[styles.inputBar, { paddingBottom: inputSafeBottom }]}>
             <BottomInput
@@ -713,18 +669,15 @@ const BuddyScreen = () => {
             />
           </View>
         </View>
+
+        <NewChatFab onPress={handleNewChat} bottom={fabBottom} />
       </SafeAreaView>
 
       <ChatHistoryDrawer
         visible={historyVisible}
         sessions={sessions}
         activeSessionId={activeSessionId || ''}
-        loading={
-          !!userId &&
-          !initialSessionsLoaded &&
-          !sessionsTimedOut &&
-          (sessionsLoading || sessionsFetching)
-        }
+        loading={sessionsLoadingInitial}
         loadingMore={loadingMoreSessions}
         creating={creatingChat}
         error={sessionsError}

@@ -6,6 +6,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
@@ -19,7 +20,6 @@ import {
   layout,
   ms,
   radii,
-  shadows,
   spacing,
 } from '../../theme';
 import { useToast } from '../../store/context/ToastContext';
@@ -82,12 +82,48 @@ const fallbackPlans: Plan[] = [
   },
 ];
 
-const CheckIcon = ({ accent = false }: { accent?: boolean }) => (
-  <View style={[styles.checkIconWrap, accent && styles.checkIconAccent]}>
+const CloseIcon = () => (
+  <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M6 6l12 12M18 6 6 18"
+      stroke={colors.textSecondary}
+      strokeWidth={2.2}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
+const CheckIcon = () => (
+  <View style={styles.featureIcon}>
+    <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="m5 12 4 4L19 6"
+        stroke={colors.primary}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  </View>
+);
+
+const SparkFeatureIcon = () => (
+  <View style={styles.featureIcon}>
+    <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 2.5 13.6 8.4 19.5 10 13.6 11.6 12 17.5 10.4 11.6 4.5 10 10.4 8.4 12 2.5Z"
+        fill={colors.primary}
+      />
+    </Svg>
+  </View>
+);
+
+const SelectedCheck = () => (
+  <View style={styles.selectedCheck}>
     <Svg width={ms(12)} height={ms(12)} viewBox="0 0 24 24" fill="none">
       <Path
         d="m5 12 4 4L19 6"
-        stroke={accent ? colors.white : colors.primary}
+        stroke={colors.white}
         strokeWidth={2.8}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -96,47 +132,10 @@ const CheckIcon = ({ accent = false }: { accent?: boolean }) => (
   </View>
 );
 
-const BackIcon = () => (
-  <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M15 18 9 12l6-6"
-      stroke={colors.text}
-      strokeWidth={2.2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const ShieldIcon = () => (
-  <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6l-7-3Z"
-      stroke={colors.subText}
-      strokeWidth={1.8}
-      strokeLinejoin="round"
-    />
-    <Path
-      d="m9.5 12 1.8 1.8L15 10"
-      stroke={colors.subText}
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const SparkIcon = () => (
-  <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M12 2.5 13.6 8.4 19.5 10 13.6 11.6 12 17.5 10.4 11.6 4.5 10 10.4 8.4 12 2.5Z"
-      fill={colors.white}
-    />
-  </Svg>
-);
-
 const PlansScreen = () => {
   const navigation = useNavigation();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 360;
   const userId = useAppSelector(state => state.auth.userId) ?? '';
   const name = useAppSelector(state => state.auth.name);
   const email = useAppSelector(state => state.auth.email);
@@ -145,8 +144,11 @@ const PlansScreen = () => {
   const [selectedPlanId, setSelectedPlanId] = useState<PlanCode>('pro');
   const hasSyncedCurrentPlan = useRef(false);
   const { data: plansData, isFetching: isFetchingPlans } = useGetPlansQuery();
-  const { data: planStatus, isFetching: isFetchingPlanStatus, refetch: refetchPlanStatus } =
-    useGetPlanStatusQuery({ userId }, { skip: !userId });
+  const {
+    data: planStatus,
+    isFetching: isFetchingPlanStatus,
+    refetch: refetchPlanStatus,
+  } = useGetPlanStatusQuery({ userId }, { skip: !userId });
   const [activateFreePlan, { isLoading: isActivatingFree }] =
     useActivateFreePlanMutation();
   const [createPaymentOrder, { isLoading: isCreatingOrder }] =
@@ -166,8 +168,8 @@ const PlansScreen = () => {
       price:
         plan.amount === 0
           ? 'Free'
-          : `${plan.currency} ${Math.round(plan.amount / 100)}`,
-      cadence: plan.interval === 'forever' ? 'forever' : 'per month',
+          : `₹${Math.round(plan.amount / 100)}`,
+      cadence: plan.interval === 'forever' ? 'forever' : 'month',
       description: plan.description,
       features: plan.features,
       recommended: plan.code === 'pro',
@@ -195,23 +197,13 @@ const PlansScreen = () => {
     hasSyncedCurrentPlan.current = true;
   }, [currentPlanCode]);
 
-  const isBusy =
-    isActivatingFree ||
-    isCreatingOrder ||
-    isVerifyingPayment;
-  const ctaLabel =
-    currentPlanCode === selectedPlan.id
-      ? 'Current Plan'
-      : isBusy
-        ? 'Please wait...'
-        : selectedPlan.ctaLabel;
-
-  const priceHint =
-    selectedPlan.id === 'free'
-      ? 'No charge · Switch anytime'
-      : `${selectedPlan.price}/month · Cancel anytime`;
-
-  const displayPriceHint = priceHint.replace(/Â·/g, '.');
+  const isBusy = isActivatingFree || isCreatingOrder || isVerifyingPayment;
+  const isCurrentPlan = currentPlanCode === selectedPlan.id;
+  const ctaLabel = isCurrentPlan
+    ? 'Current Plan'
+    : isBusy
+      ? 'Please wait...'
+      : selectedPlan.ctaLabel;
 
   const handlePlanAction = async () => {
     if (!userId || !selectedPlan) {
@@ -304,11 +296,19 @@ const PlansScreen = () => {
     }
   };
 
+  const renderFeatureIcon = (feature: string, index: number) => {
+    const isVoice = /voice|ai/i.test(feature);
+    if (isVoice || index === 1) {
+      return <SparkFeatureIcon />;
+    }
+    return <CheckIcon />;
+  };
+
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={[colors.gradientStart, colors.gradientMid, colors.white]}
-        locations={[0, 0.55, 1]}
+        colors={['#FBF7FF', '#F3EEFF', colors.white, colors.white]}
+        locations={[0, 0.28, 0.62, 1]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -316,168 +316,158 @@ const PlansScreen = () => {
         <View style={styles.headerBar}>
           <TouchableOpacity
             activeOpacity={0.78}
-            style={styles.backButton}
+            style={styles.closeButton}
             onPress={() => navigation.goBack()}
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel="Close"
           >
-            <BackIcon />
+            <CloseIcon />
           </TouchableOpacity>
-
-          <View style={styles.headerCenter}>
-            <Text style={styles.headerTitle}>Choose your plan</Text>
-          </View>
-
-          <View style={styles.headerSpacer} />
         </View>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
+          bounces
         >
           <View style={styles.hero}>
-            <View style={styles.heroBadge}>
-              <SparkIcon />
-              <Text style={styles.heroBadgeText}>Upgrade</Text>
-            </View>
-            <Text style={styles.heroTitle}>Unlock more from Buddy</Text>
-            <Text style={styles.heroSubtitle}>
-              Pick the plan that fits your workflow. Upgrade anytime for
-              unlimited memory and priority AI.
+            <Text
+              style={[styles.heroTitle, isCompact && styles.heroTitleCompact]}
+            >
+              Unlock your{' '}
+              <Text style={styles.heroTitleAccent}>Pro</Text>
+              ductivity
             </Text>
           </View>
 
           {isLoadingInitialPlan ? (
-            <View style={styles.planLoaderCard}>
+            <View style={styles.loaderCard}>
               <ActivityIndicator color={colors.primary} />
-              <Text style={styles.planLoaderTitle}>Loading your plan</Text>
-              <Text style={styles.planLoaderText}>
+              <Text style={styles.loaderTitle}>Loading your plan</Text>
+              <Text style={styles.loaderText}>
                 Checking your current subscription...
               </Text>
             </View>
           ) : (
-            <View style={styles.plansList}>
-              {plans.map(plan => {
-              const selected = plan.id === selectedPlanId;
-              const isPro = Boolean(plan.recommended);
-              const isCurrent = currentPlanCode === plan.id;
+            <>
+              <View style={styles.planToggle}>
+                {plans.map(plan => {
+                  const selected = plan.id === selectedPlanId;
+                  const isCurrent = currentPlanCode === plan.id;
+                  const label =
+                    plan.id === 'pro' ? 'Buddy Pro' : `${plan.name} plan`;
 
-              return (
-                <TouchableOpacity
-                  key={plan.id}
-                  activeOpacity={0.9}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  accessibilityLabel={`${plan.name} plan, ${plan.price} ${plan.cadence}`}
-                  onPress={() => setSelectedPlanId(plan.id)}
-                  style={[
-                    styles.planCard,
-                    styles.planCardWithRadio,
-                    selected && styles.planCardSelected,
-                    isPro && selected && styles.planCardProSelected,
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.radioOuter,
-                      selected && styles.radioOuterSelected,
-                    ]}
-                  >
-                    {selected ? <View style={styles.radioInner} /> : null}
-                  </View>
-
-                  {isPro || isCurrent ? (
-                    <View style={styles.badgeRow}>
-                      {isPro ? (
-                        <View style={styles.popularBadge}>
-                          <Text style={styles.popularBadgeText}>
-                            Most popular
-                          </Text>
-                        </View>
-                      ) : null}
-                      {isCurrent ? (
-                        <View style={styles.currentBadge}>
-                          <Text style={styles.currentBadgeText}>Current</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  ) : null}
-
-                  <View style={styles.planCardTop}>
-                    <View style={styles.planIdentity}>
-                      <View style={styles.planNameRow}>
-                        <Text
-                          style={[
-                            styles.planName,
-                            selected && styles.planNameSelected,
-                          ]}
-                        >
-                          {plan.name}
-                        </Text>
-                        {isPro ? (
-                          <View style={styles.proPill}>
-                            <Text style={styles.proPillText}>PRO</Text>
-                          </View>
-                        ) : null}
-                      </View>
-                      <Text style={styles.planDescription} numberOfLines={2}>
-                        {plan.description}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.priceBlock}>
-                    <Text
+                  return (
+                    <TouchableOpacity
+                      key={plan.id}
+                      activeOpacity={0.85}
                       style={[
-                        styles.price,
-                        selected && styles.priceSelected,
+                        styles.planToggleItem,
+                        selected && styles.planToggleItemSelected,
                       ]}
+                      onPress={() => setSelectedPlanId(plan.id)}
+                      accessibilityRole="tab"
+                      accessibilityState={{ selected }}
                     >
-                      {plan.price}
-                    </Text>
-                    <Text style={styles.cadence}>/{plan.cadence}</Text>
-                  </View>
+                      <Text
+                        style={[
+                          styles.planToggleText,
+                          selected && styles.planToggleTextSelected,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {label}
+                      </Text>
+                      {isCurrent ? (
+                        <View style={styles.currentDot} />
+                      ) : null}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
 
-                  <View style={styles.divider} />
-
-                  <View style={styles.featureList}>
-                    {plan.features.map(feature => (
-                      <View key={feature} style={styles.featureRow}>
-                        <CheckIcon accent={selected && isPro} />
-                        <Text
-                          style={[
-                            styles.featureText,
-                            selected && styles.featureTextSelected,
-                          ]}
-                        >
-                          {feature}
-                        </Text>
-                      </View>
-                    ))}
+              <View style={styles.featureList}>
+                {selectedPlan.features.map((feature, index) => (
+                  <View key={feature} style={styles.featureRow}>
+                    {renderFeatureIcon(feature, index)}
+                    <Text style={styles.featureText}>{feature}</Text>
                   </View>
-                </TouchableOpacity>
-              );
-              })}
-            </View>
+                ))}
+              </View>
+
+              <View style={styles.squiggleWrap}>
+                <View style={styles.squiggle} />
+              </View>
+
+              <Text style={styles.moreHint}>
+                {selectedPlan.description}
+              </Text>
+            </>
           )}
-
-          {isFetchingPlans && !isLoadingInitialPlan ? (
-            <Text style={styles.loadingText}>Loading latest plans...</Text>
-          ) : null}
-
-          <View style={styles.trustRow}>
-            <ShieldIcon />
-            <Text style={styles.trustText}>
-              Secure checkout · Cancel anytime · Instant access
-            </Text>
-          </View>
         </ScrollView>
 
         <SafeAreaView edges={['bottom']} style={styles.bottomSafe}>
-          <View style={styles.bottomBar}>
-            <View style={styles.bottomSummary}>
-              <Text style={styles.bottomPlanName}>{selectedPlan.name}</Text>
-              <Text style={styles.bottomPriceHint}>{displayPriceHint}</Text>
+          <View style={styles.bottomPanel}>
+            <View
+              style={[
+                styles.priceCardsRow,
+                isCompact && styles.priceCardsColumn,
+              ]}
+            >
+              {plans.map(plan => {
+                const selected = plan.id === selectedPlanId;
+                const priceLabel =
+                  plan.id === 'free' ? 'Free' : plan.price;
+                const cadenceLabel =
+                  plan.id === 'free' ? '/forever' : `/${plan.cadence}`;
+
+                return (
+                  <TouchableOpacity
+                    key={`price-${plan.id}`}
+                    activeOpacity={0.88}
+                    style={[
+                      styles.priceCard,
+                      selected && styles.priceCardSelected,
+                      isCompact && styles.priceCardFull,
+                    ]}
+                    onPress={() => setSelectedPlanId(plan.id)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected }}
+                  >
+                    <View style={styles.priceCardTop}>
+                      <Text
+                        style={[
+                          styles.priceCardLabel,
+                          selected && styles.priceCardLabelSelected,
+                        ]}
+                      >
+                        {plan.id === 'pro' ? 'Pro' : 'Starter'}
+                        {plan.recommended ? (
+                          <Text style={styles.saveBadge}> · Popular</Text>
+                        ) : null}
+                      </Text>
+                      {selected ? (
+                        <SelectedCheck />
+                      ) : (
+                        <View style={styles.radioEmpty} />
+                      )}
+                    </View>
+
+                    <View style={styles.priceValueRow}>
+                      <Text
+                        style={[
+                          styles.priceValue,
+                          selected && styles.priceValueSelected,
+                          isCompact && styles.priceValueCompact,
+                        ]}
+                      >
+                        {priceLabel}
+                      </Text>
+                      <Text style={styles.priceCadence}>{cadenceLabel}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             <TouchableOpacity
@@ -486,21 +476,24 @@ const PlansScreen = () => {
               accessibilityRole="button"
               accessibilityLabel={ctaLabel}
               onPress={handlePlanAction}
-              disabled={isBusy}
+              disabled={isBusy || isLoadingInitialPlan}
             >
-              <LinearGradient
-                colors={
-                  selectedPlan.recommended
-                    ? [colors.primary, colors.primaryMid]
-                    : [colors.accent, colors.accentCyan]
-                }
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.ctaGradient}
-              >
+              {isBusy ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
                 <Text style={styles.ctaText}>{ctaLabel}</Text>
-              </LinearGradient>
+              )}
             </TouchableOpacity>
+
+            <Text style={styles.footerHint}>
+              {isCurrentPlan
+                ? 'This is your active plan'
+                : 'Secure checkout · Cancel anytime · Instant access'}
+            </Text>
+
+            {isFetchingPlans && !isLoadingInitialPlan ? (
+              <Text style={styles.loadingText}>Refreshing plans...</Text>
+            ) : null}
           </View>
         </SafeAreaView>
       </SafeAreaView>
@@ -513,7 +506,7 @@ export default PlansScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
   },
 
   safeArea: {
@@ -521,113 +514,70 @@ const styles = StyleSheet.create({
   },
 
   headerBar: {
-    minHeight: layout.iconButton,
     paddingHorizontal: layout.screenPadding,
-    paddingVertical: spacing.sm,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
   },
 
-  backButton: {
-    width: layout.iconButtonSm,
-    height: layout.iconButtonSm,
-    borderRadius: radii.pill,
+  closeButton: {
+    width: ms(36),
+    height: ms(36),
+    borderRadius: ms(18),
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-
-  headerCenter: {
-    flex: 1,
-    alignItems: 'center',
-  },
-
-  headerTitle: {
-    color: colors.text,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    letterSpacing: -0.2,
-  },
-
-  headerSpacer: {
-    width: layout.iconButtonSm,
+    backgroundColor: '#F1F5F9',
   },
 
   content: {
     paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.xl,
-    paddingBottom: ms(140),
+    paddingTop: spacing.md,
+    paddingBottom: spacing['4xl'],
+    flexGrow: 1,
   },
 
   hero: {
-    marginBottom: spacing['4xl'],
-  },
-
-  heroBadge: {
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.pill,
-    backgroundColor: colors.primary,
-    marginBottom: spacing.xl,
-  },
-
-  heroBadgeText: {
-    color: colors.white,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
+    marginBottom: spacing['3xl'],
+    paddingHorizontal: spacing.md,
   },
 
   heroTitle: {
     color: colors.text,
-    fontSize: fontSize['5xl'],
+    fontSize: ms(30),
     fontWeight: fontWeight.extrabold,
-    letterSpacing: -0.6,
+    letterSpacing: -0.8,
+    lineHeight: ms(38),
+    textAlign: 'center',
+  },
+
+  heroTitleCompact: {
+    fontSize: ms(26),
     lineHeight: ms(34),
-    marginBottom: spacing.md,
   },
 
-  heroSubtitle: {
-    color: colors.subText,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.medium,
-    lineHeight: ms(22),
-    maxWidth: ms(320),
+  heroTitleAccent: {
+    color: colors.primaryMid,
   },
 
-  plansList: {
-    gap: spacing['2xl'],
-  },
-
-  planLoaderCard: {
-    minHeight: ms(184),
-    borderRadius: radii['3xl'],
+  loaderCard: {
+    minHeight: ms(160),
+    borderRadius: radii['2xl'],
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing['4xl'],
-    paddingVertical: spacing['4xl'],
-    ...shadows.soft,
+    padding: spacing['4xl'],
   },
 
-  planLoaderTitle: {
+  loaderTitle: {
     color: colors.text,
     fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
     marginTop: spacing.lg,
   },
 
-  planLoaderText: {
+  loaderText: {
     color: colors.subText,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
@@ -635,223 +585,237 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  planCard: {
+  planToggle: {
+    flexDirection: 'row',
     backgroundColor: colors.white,
-    borderRadius: radii['3xl'],
-    padding: spacing['4xl'],
-    borderWidth: 1.5,
+    borderRadius: radii.pill,
+    borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.soft,
+    padding: spacing.xs,
+    gap: spacing.xs,
+    marginBottom: spacing['4xl'],
   },
 
-  planCardWithRadio: {
-    position: 'relative',
-    paddingRight: spacing['4xl'] + ms(34),
-  },
-
-  planCardSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.white,
-    ...shadows.card,
-  },
-
-  planCardProSelected: {
-    borderColor: colors.primary,
-    backgroundColor: '#FAFAFF',
-  },
-
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginBottom: spacing.xl,
-  },
-
-  popularBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.primarySoft,
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xs,
-  },
-
-  popularBadgeText: {
-    color: colors.primary,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 0.3,
-  },
-
-  currentBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.primaryLight,
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xs,
-  },
-
-  currentBadgeText: {
-    color: colors.primary,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 0.3,
-  },
-
-  planCardTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: spacing['2xl'],
-  },
-
-  planIdentity: {
+  planToggleItem: {
     flex: 1,
-    gap: spacing.sm,
-  },
-
-  planNameRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-  },
-
-  planName: {
-    color: colors.text,
-    fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.bold,
-    letterSpacing: -0.3,
-  },
-
-  planNameSelected: {
-    color: colors.primary,
-  },
-
-  proPill: {
-    backgroundColor: colors.primarySoft,
-    borderRadius: radii.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xxs,
-  },
-
-  proPillText: {
-    color: colors.primary,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.extrabold,
-    letterSpacing: 0.6,
-  },
-
-  planDescription: {
-    color: colors.subText,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.medium,
-    lineHeight: ms(18),
-  },
-
-  radioOuter: {
-    position: 'absolute',
-    top: spacing['4xl'],
-    right: spacing['4xl'],
-    width: ms(22),
-    height: ms(22),
-    borderRadius: ms(11),
-    borderWidth: 2,
-    borderColor: colors.border,
+    minHeight: ms(42),
+    borderRadius: radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 2,
-  },
-
-  radioOuterSelected: {
-    borderColor: colors.primary,
-  },
-
-  radioInner: {
-    width: ms(12),
-    height: ms(12),
-    borderRadius: ms(6),
-    backgroundColor: colors.primary,
-  },
-
-  priceBlock: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    marginBottom: spacing['2xl'],
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
 
-  price: {
-    color: colors.text,
-    fontSize: ms(36),
-    lineHeight: ms(40),
-    fontWeight: fontWeight.extrabold,
-    letterSpacing: -1,
+  planToggleItemSelected: {
+    backgroundColor: '#EEF0F5',
   },
 
-  priceSelected: {
-    color: colors.primaryDark,
-  },
-
-  cadence: {
-    color: colors.muted,
-    fontSize: fontSize.sm,
+  planToggleText: {
+    color: colors.subText,
+    fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
-    marginLeft: spacing.xs,
-    marginBottom: ms(6),
   },
 
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-    marginBottom: spacing['2xl'],
+  planToggleTextSelected: {
+    color: colors.text,
+    fontWeight: fontWeight.bold,
+  },
+
+  currentDot: {
+    width: ms(6),
+    height: ms(6),
+    borderRadius: ms(3),
+    backgroundColor: colors.success,
   },
 
   featureList: {
-    gap: spacing.xl,
+    gap: spacing['2xl'],
+    paddingHorizontal: spacing.xs,
+    marginBottom: spacing['3xl'],
   },
 
   featureRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+    alignItems: 'flex-start',
+    gap: spacing.xl,
   },
 
-  checkIconWrap: {
-    width: ms(20),
-    height: ms(20),
-    borderRadius: ms(10),
+  featureIcon: {
+    width: ms(28),
+    height: ms(28),
+    borderRadius: ms(14),
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primaryLight,
-  },
-
-  checkIconAccent: {
-    backgroundColor: colors.primary,
+    marginTop: ms(1),
   },
 
   featureText: {
     flex: 1,
-    color: colors.textSecondary,
-    fontSize: fontSize.base,
+    color: colors.text,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.medium,
+    lineHeight: ms(22),
+  },
+
+  squiggleWrap: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+
+  squiggle: {
+    width: ms(72),
+    height: ms(3),
+    borderRadius: radii.pill,
+    backgroundColor: '#E2E8F0',
+  },
+
+  moreHint: {
+    color: colors.subText,
+    fontSize: fontSize.md,
     fontWeight: fontWeight.medium,
     lineHeight: ms(20),
-  },
-
-  featureTextSelected: {
-    color: colors.text,
-    fontWeight: fontWeight.semibold,
-  },
-
-  trustRow: {
-    marginTop: spacing['4xl'],
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
+    textAlign: 'center',
     paddingHorizontal: spacing.xl,
   },
 
-  trustText: {
+  bottomSafe: {
+    backgroundColor: 'transparent',
+  },
+
+  bottomPanel: {
+    marginHorizontal: layout.screenPadding,
+    marginBottom: spacing.md,
+    borderRadius: ms(28),
+    backgroundColor: colors.primarySoft,
+    borderWidth: 1,
+    borderColor: colors.primaryLight,
+    padding: spacing['2xl'],
+    gap: spacing.xl,
+  },
+
+  priceCardsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+
+  priceCardsColumn: {
+    flexDirection: 'column',
+  },
+
+  priceCard: {
+    flex: 1,
+    minHeight: ms(92),
+    borderRadius: radii.xl,
+    backgroundColor: colors.white,
+    borderWidth: 1.5,
+    borderColor: 'transparent',
+    padding: spacing.xl,
+  },
+
+  priceCardFull: {
+    flex: 0,
+    width: '100%',
+  },
+
+  priceCardSelected: {
+    borderColor: colors.primary,
+    backgroundColor: '#F8F7FF',
+  },
+
+  priceCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+
+  priceCardLabel: {
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    flex: 1,
+    paddingRight: spacing.sm,
+  },
+
+  priceCardLabelSelected: {
+    color: colors.primary,
+  },
+
+  saveBadge: {
+    color: colors.primaryMid,
+    fontWeight: fontWeight.bold,
+  },
+
+  radioEmpty: {
+    width: ms(20),
+    height: ms(20),
+    borderRadius: ms(10),
+    borderWidth: 1.5,
+    borderColor: colors.border,
+  },
+
+  selectedCheck: {
+    width: ms(20),
+    height: ms(20),
+    borderRadius: ms(10),
+    backgroundColor: colors.successBright,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  priceValueRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    flexWrap: 'wrap',
+  },
+
+  priceValue: {
+    color: colors.text,
+    fontSize: ms(26),
+    lineHeight: ms(30),
+    fontWeight: fontWeight.extrabold,
+    letterSpacing: -0.6,
+  },
+
+  priceValueCompact: {
+    fontSize: ms(24),
+    lineHeight: ms(28),
+  },
+
+  priceValueSelected: {
+    color: colors.text,
+  },
+
+  priceCadence: {
+    color: colors.muted,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    marginLeft: spacing.xs,
+    marginBottom: ms(4),
+  },
+
+  ctaButton: {
+    minHeight: ms(54),
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing['2xl'],
+  },
+
+  ctaButtonDisabled: {
+    opacity: 0.65,
+  },
+
+  ctaText: {
+    color: colors.white,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+  },
+
+  footerHint: {
     color: colors.subText,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
@@ -859,65 +823,9 @@ const styles = StyleSheet.create({
   },
 
   loadingText: {
-    color: colors.subText,
-    fontSize: fontSize.sm,
+    color: colors.muted,
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
-    marginTop: spacing.xl,
     textAlign: 'center',
-  },
-
-  bottomSafe: {
-    backgroundColor: colors.white,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-  },
-
-  bottomBar: {
-    paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xl,
-    gap: spacing.xl,
-  },
-
-  bottomSummary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-
-  bottomPlanName: {
-    color: colors.text,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
-  },
-
-  bottomPriceHint: {
-    color: colors.subText,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-  },
-
-  ctaButton: {
-    borderRadius: radii.lg,
-    overflow: 'hidden',
-    ...shadows.primary,
-  },
-
-  ctaButtonDisabled: {
-    opacity: 0.65,
-  },
-
-  ctaGradient: {
-    minHeight: ms(54),
-    borderRadius: radii.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  ctaText: {
-    color: colors.white,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 0.2,
   },
 });

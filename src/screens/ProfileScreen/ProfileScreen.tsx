@@ -24,7 +24,9 @@ import {
 
 import ProfileHeader from './components/ProfileHeader';
 import ProfileCard from './components/ProfileCard';
-import ProfileActionGrid from './components/ProfileActionGrid';
+import ProfileActionGrid, {
+  formatMetric,
+} from './components/ProfileActionGrid';
 
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { useGetProfileSummaryQuery } from '../../store/api/home';
@@ -290,12 +292,24 @@ const ProfileScreen = () => {
             planName={currentPlanName}
             isPlanLoading={isFetchingPlanStatus}
             isPlanError={isPlanStatusError}
+            notesCount={formatMetric(
+              profileSummaryData?.data?.notesCount,
+              isFetchingSummary,
+              isSummaryError,
+            )}
+            tasksCount={formatMetric(
+              profileSummaryData?.data?.tasksCount,
+              isFetchingSummary,
+              isSummaryError,
+            )}
+            spacesCount={formatMetric(
+              profileSummaryData?.data?.spacesCount,
+              isFetchingSummary,
+              isSummaryError,
+            )}
             onEditPress={() => setIsEditOpen(true)}
           />
           <ProfileActionGrid
-            summary={profileSummaryData?.data}
-            isLoading={isFetchingSummary}
-            isError={isSummaryError}
             planName={currentPlanName}
             isPlanLoading={isFetchingPlanStatus}
             isPlanError={isPlanStatusError}
@@ -451,7 +465,7 @@ const styles = StyleSheet.create({
 
   content: {
     paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.md,
     paddingBottom: layout.tabBarClearance,
   },
 
@@ -466,7 +480,7 @@ const styles = StyleSheet.create({
     maxHeight: '92%',
     borderRadius: radii['3xl'],
     paddingTop: spacing['3xl'],
-    paddingHorizontal: spacing['3xl'],
+    paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing['2xl'],
     backgroundColor: colors.white,
     borderWidth: 1,

@@ -55,6 +55,12 @@ export const layout = {
   sectionGap: spacing['2xl'],
   /** Gap between list items */
   listGap: spacing.xl,
+  /** Primary CTA / button height */
+  buttonHeight: ms(54),
+  /** Text input field height */
+  inputHeight: ms(56),
+  /** Compact pill / chip control height */
+  chipHeight: ms(36),
   /** Icon button hit target */
   iconButton: ms(44),
   /** Compact icon button */

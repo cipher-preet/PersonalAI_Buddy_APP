@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  ScrollView,
+  FlatList,
+  Platform,
   StyleSheet,
   View,
   Text,
@@ -19,10 +20,8 @@ import SpacesEmptyState from './components/SpacesEmptyState';
 import {
   AddSpace,
   MicIcon,
-  MySpcaes,
 } from '../../../styles/icons';
 import VoiceAssistantSheet from './components/voice-sheet/VoiceAssistantSheet';
-import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 
 import { useToast } from '../../store/context/ToastContext';
 import { useAppSelector } from '../../store/hooks';
@@ -30,11 +29,8 @@ import { useAppSelector } from '../../store/hooks';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { MainTabParamList } from '../../navigation/types';
 import CreateSpaceBottomSheet from './components/addspcesheet/CreateSpaceBottomSheet';
-import SpaceDetailBottomSheet from './components/spacedetail/SpaceDetailBottomSheet';
 import {
   Space,
-  SpaceStats,
-  useGetSpaceStatsQuery,
   useStartListningMutation,
   useDeleteSpaceMutation,
   useGetUserActiveSpaceQuery,
@@ -63,30 +59,11 @@ import {
   ms,
   mvs,
   radii,
-  shadows,
   spacing,
   vSpacing,
 } from '../../theme';
 
 const SPACE_PAGE_LIMIT = 10;
-const SPACE_COLORS = [
-  '#7C4DFF65',
-  '#13D11981',
-  '#9DC3C989',
-  '#A5D11364',
-  '#D113C458',
-  '#BE33175E',
-  '#1A37BB50',
-  '#FF980066',
-];
-
-const getSpaceColor = (id: string) => {
-  const hash = id.split('').reduce((total, char) => {
-    return total + char.charCodeAt(0);
-  }, 0);
-
-  return SPACE_COLORS[hash % SPACE_COLORS.length];
-};
 
 type SpaceProcessingState = {
   status?: string;
@@ -147,11 +124,11 @@ const formatCreatedAt = (createdAt: string) => {
     return '';
   }
 
-  return `Created ${date.toLocaleDateString('en-US', {
-    month: 'short',
+  return date.toLocaleDateString('en-GB', {
     day: 'numeric',
+    month: 'short',
     year: 'numeric',
-  })}`;
+  });
 };
 
 type VoiceStartData = {
@@ -171,12 +148,10 @@ const Home = () => {
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const spaceSheetRef = useRef<BottomSheetModal>(null);
-  const spaceDetailSheetRef = useRef<BottomSheetModal>(null);
 
   const recordingContextRef = useRef<RecordingContext | null>(null);
   const uploadQueueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingVoiceUploadsRef = useRef(0);
-  const selectedSpaceIdRef = useRef<string | null>(null);
   const processingCleanupTimersRef = useRef<
     Record<string, ReturnType<typeof setTimeout>>
   >({});
@@ -187,14 +162,7 @@ const Home = () => {
   const [spaceProcessing, setSpaceProcessing] = useState<
     Record<string, SpaceProcessingState>
   >({});
-  const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
-  const [spacePendingDelete, setSpacePendingDelete] = useState<Space | null>(
-    null,
-  );
   const [deletingSpaceId, setDeletingSpaceId] = useState('');
-  const [selectedSpaceColor, setSelectedSpaceColor] = useState<string>(
-    colors.primaryPurple,
-  );
   const [cursor, setCursor] = useState('');
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const userId = useAppSelector(state => state.auth.userId) ?? '';
@@ -220,23 +188,7 @@ const Home = () => {
     },
     { skip: !userId },
   );
-  const {
-    data: selectedSpaceStatsData,
-    isFetching: isFetchingSelectedSpaceStats,
-    isError: isSelectedSpaceStatsError,
-    refetch: refetchSelectedSpaceStats,
-  } = useGetSpaceStatsQuery(
-    {
-      userId,
-      spaceId: selectedSpace?._id || '',
-    },
-    { skip: !userId || !selectedSpace?._id },
-  );
   const isInitialSpacesLoading = isFetchingSpaces && spaces.length === 0;
-
-  useEffect(() => {
-    selectedSpaceIdRef.current = selectedSpace?._id || null;
-  }, [selectedSpace?._id]);
 
   useEffect(() => {
     const response = spacesData?.data?.data;
@@ -309,10 +261,6 @@ const Home = () => {
       refetchActiveSpace();
       refetchSpaces();
 
-      if (selectedSpaceIdRef.current === event.spaceId) {
-        refetchSelectedSpaceStats();
-      }
-
       if (isTerminalProcessingStatus(nextState)) {
         cleanupProcessingState(event.spaceId);
       }
@@ -335,7 +283,6 @@ const Home = () => {
   }, [
     authToken,
     refetchActiveSpace,
-    refetchSelectedSpaceStats,
     refetchSpaces,
     userId,
   ]);
@@ -489,9 +436,9 @@ const Home = () => {
    * OPEN BOTTOM SHEET
    */
 
-  const openVoiceSheet = () => {
+  const openVoiceSheet = useCallback(() => {
     bottomSheetRef.current?.present();
-  };
+  }, []);
 
   const handleStopListening = async () => {
     const recordingContext = recordingContextRef.current;
@@ -569,94 +516,200 @@ const Home = () => {
     }
   };
 
-  const openSpaceSheet = () => {
+  const openSpaceSheet = useCallback(() => {
     spaceSheetRef.current?.present();
-  };
+  }, []);
 
-  const openSpaceDetail = (space: Space) => {
-    setSelectedSpace(space);
-    setSelectedSpaceColor(getSpaceColor(space._id));
-    requestAnimationFrame(() => {
-      spaceDetailSheetRef.current?.present();
-    });
-  };
-
-  const handleConfirmDeleteSpace = async () => {
-    if (!spacePendingDelete) {
-      return;
-    }
-
-    if (isDeletingSpace) {
-      return;
-    }
-
-    const deletingActiveRecording =
-      recordingContextRef.current?.spaceId === spacePendingDelete._id ||
-      activeSpace?._id === spacePendingDelete._id;
-
-    if (deletingActiveRecording) {
-      showToast({
-        message: 'Stop listening before deleting this space.',
-        type: 'error',
-      });
-      setSpacePendingDelete(null);
-      return;
-    }
-
-    try {
-      setDeletingSpaceId(spacePendingDelete._id);
-
-      const response = await deleteSpace({
-        spaceId: spacePendingDelete._id,
-      }).unwrap();
-
-      setSpaces(prev =>
-        prev.filter(space => space._id !== spacePendingDelete._id),
-      );
-
-      if (selectedSpace?._id === spacePendingDelete._id) {
-        spaceDetailSheetRef.current?.dismiss();
-        setSelectedSpace(null);
+  const handleDeleteSpace = useCallback(
+    async (space: Space) => {
+      if (isDeletingSpace || deletingSpaceId) {
+        return;
       }
 
-      showToast({
-        message:
-          response?.data?.message ||
-          response?.message ||
-          'Space deleted successfully.',
-        type: 'success',
-      });
-      setSpacePendingDelete(null);
-    } catch (error: any) {
-      showToast({
-        message:
-          error?.data?.message || error?.message || 'Unable to delete space.',
-        type: 'error',
-      });
-    } finally {
-      setDeletingSpaceId('');
-    }
-  };
+      const deletingActiveRecording =
+        recordingContextRef.current?.spaceId === space._id ||
+        activeSpace?._id === space._id;
 
-  const handleNavigateNotes = () => {
-    if (!selectedSpace?._id) {
-      return;
-    }
+      if (deletingActiveRecording) {
+        showToast({
+          message: 'Stop listening before deleting this space.',
+          type: 'error',
+        });
+        return;
+      }
 
-    navigation.navigate('Notes', { spaceId: selectedSpace._id });
-  };
+      try {
+        setDeletingSpaceId(space._id);
 
-  const handleNavigateTasks = () => {
-    if (!selectedSpace?._id) {
-      return;
-    }
+        const response = await deleteSpace({
+          spaceId: space._id,
+        }).unwrap();
 
-    navigation.navigate('Tasks', { spaceId: selectedSpace._id });
-  };
+        setSpaces(prev => prev.filter(item => item._id !== space._id));
 
-  const handleAskBuddy = () => {
+        showToast({
+          message:
+            response?.data?.message ||
+            response?.message ||
+            'Space deleted successfully.',
+          type: 'success',
+        });
+      } catch (error: any) {
+        showToast({
+          message:
+            error?.data?.message || error?.message || 'Unable to delete space.',
+          type: 'error',
+        });
+      } finally {
+        setDeletingSpaceId('');
+      }
+    },
+    [activeSpace?._id, deleteSpace, deletingSpaceId, isDeletingSpace, showToast],
+  );
+
+  const handleAskBuddy = useCallback(() => {
     navigation.navigate('AI');
-  };
+  }, [navigation]);
+
+  const renderSpaceItem = useCallback(
+    ({ item }: { item: Space }) => {
+      const processingState = spaceProcessing[item._id];
+      const processingDescription =
+        getSpaceProcessingDescription(processingState);
+
+      return (
+        <SpaceCard
+          spaceId={item._id}
+          title={item.spacename}
+          description={
+            processingDescription ||
+            item.description ||
+            'AI memory workspace for notes and tasks'
+          }
+          badgeText={getStatusLabel(
+            getPrimaryProcessingStatus(processingState),
+          )}
+          time={formatCreatedAt(item.createdAt)}
+          isListening={item.isListning}
+          isDeleting={deletingSpaceId === item._id}
+          onDelete={() => handleDeleteSpace(item)}
+          onOpenNotes={() =>
+            navigation.navigate('Notes', { spaceId: item._id })
+          }
+          onOpenTasks={() =>
+            navigation.navigate('Tasks', { spaceId: item._id })
+          }
+          onAskBuddy={handleAskBuddy}
+        />
+      );
+    },
+    [
+      deletingSpaceId,
+      handleAskBuddy,
+      handleDeleteSpace,
+      navigation,
+      spaceProcessing,
+    ],
+  );
+
+  const keyExtractor = useCallback((item: Space) => item._id, []);
+
+  const listHeader = useMemo(
+    () => (
+      <View>
+        <Header />
+        <View style={styles.topCardsContainer}>
+          <TopCard
+            title="Create Space"
+            subtitle="New AI memory workspace"
+            color={colors.primaryPurple}
+            icon={
+              <AddSpace width={ms(18)} height={ms(18)} color={colors.white} />
+            }
+            onPress={openSpaceSheet}
+          />
+
+          <TopCard
+            title={isVoiceActive ? 'Stop Listening' : 'Start Listening'}
+            subtitle={
+              isUploadingVoice
+                ? 'Uploading voice message...'
+                : isFetchingActiveSpace
+                  ? 'Checking active space...'
+                  : isVoiceActive
+                    ? `In: ${activeSpace?.spacename || 'Space'}`
+                    : 'Buddy is Ready to Listen.'
+            }
+            color={colors.accentCyan}
+            active={isVoiceActive}
+            activeColor={colors.accentCyan}
+            icon={
+              <MicIcon width={ms(18)} height={ms(18)} color={colors.white} />
+            }
+            onPress={() => {
+              if (isVoiceActive) {
+                handleStopListening();
+                return;
+              }
+              openVoiceSheet();
+            }}
+          />
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>My Spaces</Text>
+        </View>
+
+        {isInitialSpacesLoading ? (
+          <View style={styles.spacesLoader}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.spacesLoaderText}>Loading spaces...</Text>
+          </View>
+        ) : null}
+
+        {!isInitialSpacesLoading && spaces.length === 0 ? (
+          <SpacesEmptyState onCreatePress={openSpaceSheet} />
+        ) : null}
+      </View>
+    ),
+    [
+      activeSpace?.spacename,
+      handleStopListening,
+      isFetchingActiveSpace,
+      isInitialSpacesLoading,
+      isUploadingVoice,
+      isVoiceActive,
+      openSpaceSheet,
+      openVoiceSheet,
+      spaces.length,
+    ],
+  );
+
+  const listFooter = useMemo(() => {
+    if (!(spaces.length > 0 && nextCursor)) {
+      return <View style={styles.listFooterSpacer} />;
+    }
+
+    return (
+      <View style={styles.loadMoreWrap}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          disabled={isFetchingSpaces}
+          style={[
+            styles.loadMoreButton,
+            isFetchingSpaces && styles.loadMoreButtonDisabled,
+          ]}
+          onPress={() => setCursor(nextCursor)}
+        >
+          {isFetchingSpaces ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Text style={styles.loadMoreText}>Load more</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+    );
+  }, [isFetchingSpaces, nextCursor, spaces.length]);
 
   return (
     <LinearGradient
@@ -672,163 +725,30 @@ const Home = () => {
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-        <ScrollView
+        <FlatList
+          data={isInitialSpacesLoading || spaces.length === 0 ? [] : spaces}
+          keyExtractor={keyExtractor}
+          renderItem={renderSpaceItem}
+          ListHeaderComponent={listHeader}
+          ListFooterComponent={listFooter}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContainer}
-        >
-          <Header />
-          <View style={styles.topCardsContainer}>
-            <TopCard
-              title="Create Space"
-              subtitle="New AI memory workspace"
-              color={colors.primaryPurple}
-              icon={
-                <AddSpace
-                  width={ms(18)}
-                  height={ms(18)}
-                  color={colors.white}
-                />
-              }
-              onPress={() => {
-                openSpaceSheet();
-              }}
-            />
+          bounces
+          overScrollMode="never"
+          decelerationRate="normal"
+          scrollEventThrottle={16}
+          removeClippedSubviews={Platform.OS === 'android'}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={7}
+          updateCellsBatchingPeriod={50}
+          nestedScrollEnabled
+        />
 
-            <TopCard
-              title={isVoiceActive ? 'Stop Listening' : 'Start Listening'}
-              subtitle={
-                isUploadingVoice
-                  ? 'Uploading voice message...'
-                  : isFetchingActiveSpace
-                  ? 'Checking active space...'
-                  : isVoiceActive
-                  ? `In: ${activeSpace?.spacename || 'Space'}`
-                  : 'Buddy is Ready to Listen.'
-              }
-              color={colors.accentCyan}
-              active={isVoiceActive}
-              activeColor={colors.accentCyan}
-              icon={
-                <MicIcon
-                  width={ms(18)}
-                  height={ms(18)}
-                  color={colors.white}
-                />
-              }
-              onPress={() => {
-                if (isVoiceActive) {
-                  handleStopListening();
-                  return;
-                }
-                openVoiceSheet();
-              }}
-            />
-          </View>
-
-          <CreateSpaceBottomSheet ref={spaceSheetRef} />
-
-          <SpaceDetailBottomSheet
-            ref={spaceDetailSheetRef}
-            space={selectedSpace}
-            accentColor={selectedSpaceColor}
-            stats={selectedSpaceStatsData?.data as SpaceStats | undefined}
-            isStatsLoading={isFetchingSelectedSpaceStats}
-            isStatsError={isSelectedSpaceStatsError}
-            onRetryStats={refetchSelectedSpaceStats}
-            onNavigateNotes={handleNavigateNotes}
-            onNavigateTasks={handleNavigateTasks}
-            onAskBuddy={handleAskBuddy}
-          />
-
-          <VoiceAssistantSheet
-            ref={bottomSheetRef}
-            onStart={handleStartListening}
-          />
-
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>My Spaces</Text>
-          </View>
-
-          {isInitialSpacesLoading ? (
-            <View style={styles.spacesLoader}>
-              <ActivityIndicator size="large" color={colors.primary} />
-              <Text style={styles.spacesLoaderText}>Loading spaces...</Text>
-            </View>
-          ) : spaces.length === 0 ? (
-            <SpacesEmptyState onCreatePress={openSpaceSheet} />
-          ) : (
-            spaces.map(item => {
-              const processingState = spaceProcessing[item._id];
-              const processingDescription =
-                getSpaceProcessingDescription(processingState);
-
-              return (
-                <SpaceCard
-                  key={item._id}
-                  title={item.spacename}
-                  description={
-                    processingDescription ||
-                    item.description ||
-                    formatCreatedAt(item.createdAt)
-                  }
-                  badgeText={getStatusLabel(
-                    getPrimaryProcessingStatus(processingState),
-                  )}
-                  time={formatCreatedAt(item.createdAt)}
-                  icon={
-                    <MySpcaes
-                      width={ms(18)}
-                      height={ms(18)}
-                      color={colors.black}
-                    />
-                  }
-                  color={getSpaceColor(item._id)}
-                  isDeleting={deletingSpaceId === item._id}
-                  onPress={() => openSpaceDetail(item)}
-                  onDelete={() => setSpacePendingDelete(item)}
-                />
-              );
-            })
-          )}
-
-          {spaces.length > 0 && nextCursor ? (
-            <TouchableOpacity
-              activeOpacity={0.8}
-              disabled={isFetchingSpaces}
-              style={[
-                styles.loadMoreButton,
-                isFetchingSpaces && styles.loadMoreButtonDisabled,
-              ]}
-              onPress={() => setCursor(nextCursor)}
-            >
-              {isFetchingSpaces ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : null}
-              <View style={styles.loadMoreTextGroup}>
-                <Text style={styles.loadMoreText}>
-                  {isFetchingSpaces
-                    ? 'Loading more spaces'
-                    : 'Load More Spaces'}
-                </Text>
-                <Text style={styles.loadMoreSubText}>
-                  Continue browsing your workspaces
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ) : null}
-        </ScrollView>
-
-        <DeleteConfirmationModal
-          visible={Boolean(spacePendingDelete)}
-          itemType="space"
-          itemTitle={spacePendingDelete?.spacename}
-          loading={isDeletingSpace}
-          onCancel={() => {
-            if (!isDeletingSpace) {
-              setSpacePendingDelete(null);
-            }
-          }}
-          onConfirm={handleConfirmDeleteSpace}
+        <CreateSpaceBottomSheet ref={spaceSheetRef} />
+        <VoiceAssistantSheet
+          ref={bottomSheetRef}
+          onStart={handleStartListening}
         />
       </SafeAreaView>
     </LinearGradient>
@@ -852,6 +772,38 @@ const styles = StyleSheet.create({
     paddingTop: vSpacing.xl,
     paddingHorizontal: layout.screenPadding,
     paddingBottom: layout.tabBarClearance,
+    flexGrow: 1,
+  },
+
+  listFooterSpacer: {
+    height: spacing.md,
+  },
+
+  loadMoreWrap: {
+    alignItems: 'center',
+    marginTop: spacing['2xl'],
+    marginBottom: spacing.sm,
+  },
+
+  loadMoreButton: {
+    minHeight: ms(36),
+    paddingHorizontal: layout.screenPadding,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+
+  loadMoreButtonDisabled: {
+    opacity: 0.7,
+  },
+
+  loadMoreText: {
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
   },
 
   topCardsContainer: {
@@ -889,40 +841,5 @@ const styles = StyleSheet.create({
     color: colors.subText,
     fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
-  },
-
-  loadMoreButton: {
-    minHeight: mvs(64),
-    borderRadius: radii['2xl'],
-    marginTop: mvs(18),
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    flexDirection: 'row',
-    paddingHorizontal: ms(18),
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.borderFocus,
-    ...shadows.soft,
-  },
-
-  loadMoreButtonDisabled: {
-    opacity: 0.7,
-  },
-
-  loadMoreTextGroup: {
-    marginLeft: spacing.xl,
-  },
-
-  loadMoreText: {
-    color: colors.primary,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
-  },
-
-  loadMoreSubText: {
-    marginTop: ms(3),
-    color: colors.subText,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
   },
 });

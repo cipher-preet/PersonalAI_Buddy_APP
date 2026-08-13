@@ -187,7 +187,7 @@ const styles = StyleSheet.create({
     width: ms(40),
     height: ms(40),
     borderRadius: ms(14),
-    backgroundColor: '#C7D2FE',
+    backgroundColor: colors.brandBorder,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: spacing.sm,

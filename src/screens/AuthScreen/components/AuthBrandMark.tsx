@@ -1,33 +1,26 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import { AUTH_COLORS } from '../styles/colors';
-import { fontSize, fontWeight, ms, radii, spacing } from '../../../theme';
+import { Image, StyleSheet, View } from 'react-native';
+import { colors, ms, radii, spacing } from '../../../theme';
 
 type Props = {
   size?: 'md' | 'lg';
 };
+
+const APP_ICON = require('../../../assets/images/app-icon.png');
 
 const AuthBrandMark = ({ size = 'lg' }: Props) => {
   const isLarge = size === 'lg';
 
   return (
     <View style={[styles.wrapper, isLarge ? styles.wrapperLg : styles.wrapperMd]}>
-      <LinearGradient
-        colors={[
-          AUTH_COLORS.primaryPurple,
-          AUTH_COLORS.primaryMid,
-          AUTH_COLORS.primary,
-        ]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.mark, isLarge ? styles.markLg : styles.markMd]}
-      >
-        <View style={styles.glow} />
-        <Text style={[styles.letter, isLarge ? styles.letterLg : styles.letterMd]}>
-          B
-        </Text>
-      </LinearGradient>
+      <View style={[styles.frame, isLarge ? styles.frameLg : styles.frameMd]}>
+        <Image
+          source={APP_ICON}
+          style={[styles.icon, isLarge ? styles.iconLg : styles.iconMd]}
+          resizeMode="cover"
+          accessibilityLabel="Buddy app icon"
+        />
+      </View>
     </View>
   );
 };
@@ -44,54 +37,45 @@ const styles = StyleSheet.create({
   },
 
   wrapperMd: {
-    marginBottom: spacing['3xl'],
+    marginBottom: 0,
   },
 
-  mark: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  frame: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.brandBorder,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: ms(8) },
+    shadowOpacity: 0.18,
+    shadowRadius: ms(16),
+    elevation: 5,
     overflow: 'hidden',
-    shadowColor: AUTH_COLORS.primaryPurpleDark,
-    shadowOffset: { width: 0, height: ms(10) },
-    shadowOpacity: 0.28,
-    shadowRadius: ms(20),
-    elevation: 8,
   },
 
-  markLg: {
-    width: ms(76),
-    height: ms(76),
-    borderRadius: radii['3xl'],
+  frameLg: {
+    width: ms(84),
+    height: ms(84),
+    borderRadius: radii['2xl'],
+    padding: ms(4),
   },
 
-  markMd: {
-    width: ms(60),
-    height: ms(60),
+  frameMd: {
+    width: ms(72),
+    height: ms(72),
     borderRadius: radii.xl,
+    padding: ms(3),
   },
 
-  glow: {
-    position: 'absolute',
-    top: ms(-10),
-    right: ms(-10),
-    width: ms(40),
-    height: ms(40),
-    borderRadius: ms(20),
-    backgroundColor: 'rgba(255,255,255,0.22)',
+  icon: {
+    width: '100%',
+    height: '100%',
   },
 
-  letter: {
-    color: AUTH_COLORS.white,
-    fontWeight: fontWeight.extrabold,
+  iconLg: {
+    borderRadius: ms(18),
   },
 
-  letterLg: {
-    fontSize: ms(34),
-    letterSpacing: -1,
-  },
-
-  letterMd: {
-    fontSize: fontSize['5xl'],
-    letterSpacing: -0.5,
+  iconMd: {
+    borderRadius: ms(14),
   },
 });

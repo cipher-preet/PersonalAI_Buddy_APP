@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import Svg, { Path } from 'react-native-svg';
 
 import { HistoryIcon } from '../../../../styles/icons';
-import ChevronRightIcon from '../../../../styles/icons/GreatorThan';
 import { COLORS } from '../styles';
 import {
   colors,
@@ -11,46 +11,63 @@ import {
   fontWeight,
   layout,
   ms,
-  radii,
   spacing,
 } from '../../../theme';
 
 type Props = {
   onHistoryPress?: () => void;
+  showTitle?: boolean;
 };
 
-const Header = ({ onHistoryPress }: Props) => {
+const CloseIcon = ({ color = colors.text }: { color?: string }) => (
+  <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M18 6 6 18M6 6l12 12"
+      stroke={color}
+      strokeWidth={2.1}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const Header = ({ onHistoryPress, showTitle = false }: Props) => {
   const navigation = useNavigation();
 
-  const handleBack = () => {
+  const handleClose = () => {
     navigation.navigate('Home' as never);
   };
 
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        style={styles.backButton}
-        onPress={handleBack}
-        activeOpacity={0.75}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      >
-        <View style={styles.backIcon}>
-          <ChevronRightIcon width={ms(18)} height={ms(18)} color={colors.text} />
-        </View>
-      </TouchableOpacity>
-
-      <View style={styles.center}>
-        <Text style={styles.title}>Buddy AI</Text>
-        <Text style={styles.subtitle}>Your personal assistant</Text>
-      </View>
-
-      <TouchableOpacity
         style={styles.iconButton}
         activeOpacity={0.75}
         onPress={onHistoryPress}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel="Chat history"
       >
-        <HistoryIcon width={ms(18)} height={ms(18)} color={colors.text} />
+        <HistoryIcon width={ms(20)} height={ms(20)} color={colors.primary} />
+      </TouchableOpacity>
+
+      {showTitle ? (
+        <View style={styles.center}>
+          <Text style={styles.title}>Buddy</Text>
+        </View>
+      ) : (
+        <View style={styles.center} />
+      )}
+
+      <TouchableOpacity
+        style={styles.iconButton}
+        onPress={handleClose}
+        activeOpacity={0.75}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="button"
+        accessibilityLabel="Close"
+      >
+        <CloseIcon color={colors.text} />
       </TouchableOpacity>
     </View>
   );
@@ -66,29 +83,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing['2xl'],
     paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.lg,
     backgroundColor: 'transparent',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(229, 231, 235, 0.9)',
-  },
-
-  backButton: {
-    width: layout.iconButtonSm,
-    height: layout.iconButtonSm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  backIcon: {
-    width: ms(36),
-    height: ms(36),
-    borderRadius: radii.md,
-    backgroundColor: COLORS.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ rotate: '180deg' }],
-    borderWidth: 1,
-    borderColor: COLORS.border,
   },
 
   center: {
@@ -99,26 +95,19 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: fontSize.xl,
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
     color: COLORS.text,
-  },
-
-  subtitle: {
-    marginTop: spacing.xxs,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
-    color: COLORS.subText,
   },
 
   iconButton: {
     width: layout.iconButtonSm,
     height: layout.iconButtonSm,
-    borderRadius: radii.md,
+    borderRadius: layout.iconButtonSm / 2,
     backgroundColor: COLORS.white,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
 });

@@ -24,9 +24,16 @@ export const colors = {
   primaryMid: '#7C3AED',
   accent: '#5B5FF8',
   accentCyan: '#15C7E8',
+  accentIndigo: '#6366F1',
+  brandBorder: '#C7D2FE',
   tabActive: '#4338CA',
   tabInactive: '#7E8795',
   tabPill: '#EEF2FF',
+
+  // Gradients (upgrade CTA, etc.)
+  upgradeGradientStart: '#7C3AED',
+  upgradeGradientMid: '#6366F1',
+  upgradeGradientEnd: '#22D3EE',
 
   // Text
   text: '#0F172A',
@@ -44,14 +51,22 @@ export const colors = {
   // Status
   error: '#DC2626',
   errorDark: '#B91C1C',
+  errorSoft: '#FEF2F2',
+  errorSoftBorder: '#FEE2E2',
   success: '#059669',
   successBright: '#22C55E',
   info: '#0992F2',
+  infoBright: '#3B82F6',
   online: '#08C7FA',
+  warningSoft: '#FEF3C7',
+  warningText: '#92400E',
+  successSoft: '#DCFCE7',
+  successText: '#166534',
 
   // Shadows
   shadow: '#64748B',
   shadowDeep: '#162B75',
+  shadowInk: '#0F172A',
 
   // Feature aliases (Notes/Tasks legacy keys)
   gray: '#8B8B8B',
@@ -64,6 +79,7 @@ export const colors = {
   userBubble: '#4338CA',
   aiBubble: '#FFFFFF',
   chipBg: '#FFFFFF',
+  chatSeparator: '#ECEFF5',
 } as const;
 
 export type AppColors = typeof colors;

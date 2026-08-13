@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { AUTH_COLORS } from '../styles/colors';
-import { ms, radii, spacing } from '../../../theme';
+import { View, StyleSheet, Text } from 'react-native';
+import { colors, fontSize, fontWeight, ms, radii, spacing } from '../../../theme';
 
 type Props = {
   step: number;
@@ -11,12 +10,17 @@ type Props = {
 const ProgressDots = ({ step, total = 3 }: Props) => {
   return (
     <View style={styles.container}>
-      {Array.from({ length: total }).map((_, index) => (
-        <View
-          key={index}
-          style={[styles.dot, index + 1 <= step && styles.dotActive]}
-        />
-      ))}
+      <View style={styles.trackRow}>
+        {Array.from({ length: total }).map((_, index) => (
+          <View
+            key={index}
+            style={[styles.dot, index + 1 <= step && styles.dotActive]}
+          />
+        ))}
+      </View>
+      <Text style={styles.stepLabel}>
+        Step {step} of {total}
+      </Text>
     </View>
   );
 };
@@ -25,19 +29,29 @@ export default ProgressDots;
 
 const styles = StyleSheet.create({
   container: {
+    marginBottom: spacing['3xl'],
+  },
+
+  trackRow: {
     flexDirection: 'row',
-    gap: spacing.md,
-    marginBottom: spacing['4xl'],
+    gap: spacing.sm,
   },
 
   dot: {
     flex: 1,
-    height: ms(5),
+    height: ms(4),
     borderRadius: radii.pill,
-    backgroundColor: AUTH_COLORS.border,
+    backgroundColor: colors.border,
   },
 
   dotActive: {
-    backgroundColor: AUTH_COLORS.primary,
+    backgroundColor: colors.primary,
+  },
+
+  stepLabel: {
+    marginTop: spacing.md,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.subText,
   },
 });

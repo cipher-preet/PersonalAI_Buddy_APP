@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import Animated, {
   Easing,
   runOnJS,
@@ -21,9 +20,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
-import AddIcon from '../../../../styles/icons/AddSpace';
 import { HistoryIcon } from '../../../../styles/icons';
-import { COLORS } from '../styles';
 import type { ChatSession } from '../types';
 import {
   colors,
@@ -36,7 +33,6 @@ import {
 } from '../../../theme';
 
 const DRAWER_WIDTH = Math.min(screenWidth * 0.86, ms(340));
-
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type Props = {
@@ -55,26 +51,25 @@ type Props = {
   onLoadMore?: () => void;
 };
 
-const CloseIcon = ({ color = COLORS.text }: { color?: string }) => (
-  <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
+const CloseIcon = ({ color = colors.text }: { color?: string }) => (
+  <Svg width={ms(16)} height={ms(16)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M18 6 6 18M6 6l12 12"
       stroke={color}
-      strokeWidth={2}
+      strokeWidth={2.1}
       strokeLinecap="round"
       strokeLinejoin="round"
     />
   </Svg>
 );
 
-const ChatBubbleIcon = ({ color = COLORS.primary }: { color?: string }) => (
-  <Svg width={ms(16)} height={ms(16)} viewBox="0 0 24 24" fill="none">
+const PlusIcon = () => (
+  <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"
-      stroke={color}
-      strokeWidth={1.8}
+      d="M12 5v14M5 12h14"
+      stroke={colors.white}
+      strokeWidth={2.2}
       strokeLinecap="round"
-      strokeLinejoin="round"
     />
   </Svg>
 );
@@ -183,7 +178,7 @@ const ChatHistoryDrawer = ({
   }, [visible, progress, finishClose]);
 
   const backdropStyle = useAnimatedStyle(() => ({
-    opacity: progress.value * 0.52,
+    opacity: progress.value * 0.4,
   }));
 
   const drawerStyle = useAnimatedStyle(() => ({
@@ -194,15 +189,14 @@ const ChatHistoryDrawer = ({
     ],
   }));
 
-  const handleClose = () => {
-    onClose();
-  };
-
   if (!mounted) {
     return null;
   }
 
-  const groupedSessions = groupSessions(sessions);
+  const visibleSessions = sessions.filter(
+    session => !session.id.startsWith('pending-'),
+  );
+  const groupedSessions = groupSessions(visibleSessions);
 
   return (
     <Modal
@@ -210,12 +204,12 @@ const ChatHistoryDrawer = ({
       transparent
       animationType="none"
       statusBarTranslucent
-      onRequestClose={handleClose}
+      onRequestClose={onClose}
     >
       <View style={styles.modalRoot}>
         <AnimatedPressable
           style={[styles.backdrop, backdropStyle]}
-          onPress={handleClose}
+          onPress={onClose}
         />
 
         <Animated.View
@@ -228,28 +222,15 @@ const ChatHistoryDrawer = ({
             },
           ]}
         >
-          <LinearGradient
-            colors={[COLORS.gradientStart, COLORS.white, COLORS.white]}
-            locations={[0, 0.35, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-
           <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <View style={styles.headerIconWrap}>
-                <HistoryIcon width={ms(18)} height={ms(18)} color={COLORS.primary} />
-              </View>
-              <View>
-                <Text style={styles.headerTitle}>Chat History</Text>
-                <Text style={styles.headerSubtitle}>
-                  {sessions.length} conversation{sessions.length === 1 ? '' : 's'}
-                </Text>
-              </View>
+            <View>
+              <Text style={styles.headerEyebrow}>Buddy</Text>
+              <Text style={styles.headerTitle}>History</Text>
             </View>
 
             <TouchableOpacity
               style={styles.closeButton}
-              onPress={handleClose}
+              onPress={onClose}
               activeOpacity={0.75}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
@@ -257,32 +238,27 @@ const ChatHistoryDrawer = ({
             </TouchableOpacity>
           </View>
 
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryText}>
+              {visibleSessions.length} conversation
+              {visibleSessions.length === 1 ? '' : 's'}
+            </Text>
+          </View>
+
           <TouchableOpacity
             activeOpacity={0.88}
             onPress={onNewChat}
-            style={styles.newChatTouchable}
+            style={[styles.newChatButton, creating && styles.newChatDisabled]}
             disabled={creating}
           >
-            <LinearGradient
-              colors={[COLORS.primary, COLORS.primaryPurple]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.newChatGradient}
-            >
-              <View style={styles.newChatIconWrap}>
-                {creating ? (
-                  <ActivityIndicator size="small" color={colors.white} />
-                ) : (
-                  <AddIcon width={ms(18)} height={ms(18)} color={colors.white} />
-                )}
-              </View>
-              <View style={styles.newChatTextWrap}>
-                <Text style={styles.newChatTitle}>New Chat</Text>
-                <Text style={styles.newChatSubtitle}>
-                  {creating ? 'Creating conversation...' : 'Start a fresh conversation'}
-                </Text>
-              </View>
-            </LinearGradient>
+            {creating ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <PlusIcon />
+            )}
+            <Text style={styles.newChatText}>
+              {creating ? 'Starting...' : 'New Chat'}
+            </Text>
           </TouchableOpacity>
 
           <ScrollView
@@ -293,22 +269,24 @@ const ChatHistoryDrawer = ({
           >
             {loading ? (
               <View style={styles.loadingState}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-                <Text style={styles.loadingText}>Loading chats...</Text>
+                <ActivityIndicator size="small" color={colors.primary} />
+                <Text style={styles.loadingText}>Loading conversations...</Text>
               </View>
             ) : null}
 
             {!loading && error ? (
               <View style={styles.errorState}>
-                <Text style={styles.errorTitle}>Could not load chats</Text>
-                <Text style={styles.errorText}>{error}</Text>
+                <Text style={styles.errorTitle}>Couldn't load history</Text>
+                <Text style={styles.errorText} numberOfLines={3}>
+                  {error}
+                </Text>
                 {onRetry ? (
                   <TouchableOpacity
                     style={styles.retryButton}
                     activeOpacity={0.82}
                     onPress={onRetry}
                   >
-                    <Text style={styles.retryButtonText}>Retry</Text>
+                    <Text style={styles.retryButtonText}>Try again</Text>
                   </TouchableOpacity>
                 ) : null}
               </View>
@@ -318,85 +296,87 @@ const ChatHistoryDrawer = ({
               <View key={group.label} style={styles.section}>
                 <Text style={styles.sectionLabel}>{group.label}</Text>
 
-                {group.data.map(session => {
-                  const isActive = session.id === activeSessionId;
+                <View style={styles.sectionCards}>
+                  {group.data.map(session => {
+                    const isActive = session.id === activeSessionId;
 
-                  return (
-                    <TouchableOpacity
-                      key={session.id}
-                      activeOpacity={0.82}
-                      onPress={() => onSelectSession(session.id)}
-                      style={[
-                        styles.sessionCard,
-                        isActive && styles.sessionCardActive,
-                      ]}
-                    >
-                      <View
+                    return (
+                      <TouchableOpacity
+                        key={session.id}
+                        activeOpacity={0.86}
+                        onPress={() => onSelectSession(session.id)}
                         style={[
-                          styles.sessionIconWrap,
-                          isActive && styles.sessionIconWrapActive,
+                          styles.sessionCard,
+                          isActive && styles.sessionCardActive,
                         ]}
                       >
-                        <ChatBubbleIcon
-                          color={isActive ? COLORS.primary : COLORS.subText}
-                        />
-                      </View>
+                        <View style={styles.sessionTop}>
+                          <Text
+                            style={[
+                              styles.sessionTitle,
+                              isActive && styles.sessionTitleActive,
+                            ]}
+                            numberOfLines={1}
+                          >
+                            {session.title}
+                          </Text>
+                          {isActive ? (
+                            <View style={styles.activePill}>
+                              <Text style={styles.activePillText}>Active</Text>
+                            </View>
+                          ) : null}
+                        </View>
 
-                      <View style={styles.sessionContent}>
-                        <Text
-                          style={[
-                            styles.sessionTitle,
-                            isActive && styles.sessionTitleActive,
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {session.title}
-                        </Text>
                         <Text style={styles.sessionPreview} numberOfLines={2}>
                           {session.preview}
                         </Text>
+
                         <View style={styles.sessionMeta}>
                           <Text style={styles.sessionMetaText}>
                             {formatSessionTime(session.updatedAt)}
                           </Text>
                           <View style={styles.metaDot} />
                           <Text style={styles.sessionMetaText}>
-                            {session.messageCount} message
+                            {session.messageCount} msg
                             {session.messageCount === 1 ? '' : 's'}
                           </Text>
                         </View>
-                      </View>
-
-                      {isActive ? <View style={styles.activeIndicator} /> : null}
-                    </TouchableOpacity>
-                  );
-                })}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
               </View>
             ))}
 
             {!loading && hasMore && onLoadMore ? (
-              <TouchableOpacity
-                style={styles.loadMoreButton}
-                activeOpacity={0.82}
-                onPress={onLoadMore}
-                disabled={loadingMore}
-              >
-                {loadingMore ? (
-                  <ActivityIndicator size="small" color={COLORS.primary} />
-                ) : (
-                  <Text style={styles.loadMoreText}>Load more</Text>
-                )}
-              </TouchableOpacity>
+              <View style={styles.loadMoreWrap}>
+                <TouchableOpacity
+                  style={styles.loadMoreButton}
+                  activeOpacity={0.82}
+                  onPress={onLoadMore}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? (
+                    <ActivityIndicator size="small" color={colors.primary} />
+                  ) : (
+                    <Text style={styles.loadMoreText}>Load more</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
             ) : null}
 
-            {!loading && sessions.length === 0 ? (
+            {!loading && !error && visibleSessions.length === 0 ? (
               <View style={styles.emptyState}>
                 <View style={styles.emptyIconWrap}>
-                  <HistoryIcon width={ms(28)} height={ms(28)} color={COLORS.muted} />
+                  <HistoryIcon
+                    width={ms(22)}
+                    height={ms(22)}
+                    color={colors.primary}
+                  />
                 </View>
                 <Text style={styles.emptyTitle}>No conversations yet</Text>
                 <Text style={styles.emptySubtitle}>
-                  Start a new chat and your history will appear here.
+                  Start a new chat and it will show up here.
                 </Text>
               </View>
             ) : null}
@@ -416,7 +396,7 @@ const styles = StyleSheet.create({
 
   backdrop: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: colors.text,
+    backgroundColor: '#0F172A',
   },
 
   drawer: {
@@ -425,116 +405,81 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: DRAWER_WIDTH,
-    borderTopRightRadius: radii['3xl'],
-    borderBottomRightRadius: radii['3xl'],
+    backgroundColor: colors.background,
+    borderTopRightRadius: radii['2xl'],
+    borderBottomRightRadius: radii['2xl'],
     overflow: 'hidden',
-    shadowColor: colors.primary,
-    shadowOffset: { width: ms(6), height: 0 },
-    shadowOpacity: 0.14,
-    shadowRadius: ms(24),
-    elevation: 16,
     borderRightWidth: 1,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: 'rgba(229, 231, 235, 0.9)',
+    borderColor: colors.border,
   },
 
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     paddingHorizontal: spacing['2xl'],
-    paddingBottom: spacing['2xl'],
+    marginBottom: spacing.md,
   },
 
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xl,
-    flex: 1,
-  },
-
-  headerIconWrap: {
-    width: ms(40),
-    height: ms(40),
-    borderRadius: radii.md,
-    backgroundColor: COLORS.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderFocus,
+  headerEyebrow: {
+    color: colors.primary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    marginBottom: spacing.xxs,
   },
 
   headerTitle: {
-    fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.extrabold,
-    color: COLORS.text,
-    letterSpacing: -0.3,
-  },
-
-  headerSubtitle: {
-    marginTop: spacing.xxs,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-    color: COLORS.subText,
+    fontSize: fontSize['3xl'],
+    fontWeight: fontWeight.bold,
+    color: colors.text,
+    letterSpacing: -0.4,
   },
 
   closeButton: {
-    width: ms(36),
-    height: ms(36),
-    borderRadius: radii.md,
-    backgroundColor: COLORS.white,
+    width: ms(34),
+    height: ms(34),
+    borderRadius: ms(17),
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
 
-  newChatTouchable: {
+  summaryRow: {
+    paddingHorizontal: spacing['2xl'],
+    marginBottom: spacing.xl,
+  },
+
+  summaryText: {
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+
+  newChatButton: {
     marginHorizontal: spacing['2xl'],
     marginBottom: spacing['2xl'],
-    borderRadius: radii.lg,
-    overflow: 'hidden',
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: ms(8) },
-    shadowOpacity: 0.22,
-    shadowRadius: ms(16),
-    elevation: 6,
-  },
-
-  newChatGradient: {
+    minHeight: ms(44),
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing['2xl'],
-    paddingVertical: spacing.xl,
-    gap: spacing.xl,
-  },
-
-  newChatIconWrap: {
-    width: ms(36),
-    height: ms(36),
-    borderRadius: radii.md,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing['2xl'],
   },
 
-  newChatTextWrap: {
-    flex: 1,
+  newChatDisabled: {
+    opacity: 0.75,
   },
 
-  newChatTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.extrabold,
+  newChatText: {
     color: colors.white,
-    letterSpacing: -0.2,
-  },
-
-  newChatSubtitle: {
-    marginTop: spacing.xxs,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    color: 'rgba(255, 255, 255, 0.82)',
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
   },
 
   list: {
@@ -551,72 +496,67 @@ const styles = StyleSheet.create({
   },
 
   sectionLabel: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.extrabold,
-    color: COLORS.muted,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    marginBottom: spacing.lg,
-    paddingLeft: spacing.xxs,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.subText,
+    marginBottom: spacing.md,
+  },
+
+  sectionCards: {
+    gap: spacing.md,
   },
 
   sessionCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: COLORS.white,
-    borderRadius: radii.lg,
-    padding: spacing.xl,
-    marginBottom: spacing.md,
+    backgroundColor: colors.white,
+    borderRadius: radii.xl,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.xl,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    position: 'relative',
-    overflow: 'hidden',
+    borderColor: colors.border,
   },
 
   sessionCardActive: {
-    backgroundColor: COLORS.primaryLight,
-    borderColor: '#C7D2FE',
+    backgroundColor: colors.primarySoft,
+    borderColor: '#C4B5FD',
   },
 
-  sessionIconWrap: {
-    width: ms(34),
-    height: ms(34),
-    borderRadius: radii.sm,
-    backgroundColor: colors.inputBg,
+  sessionTop: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.lg,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-
-  sessionIconWrapActive: {
-    backgroundColor: colors.white,
-    borderColor: '#C7D2FE',
-  },
-
-  sessionContent: {
-    flex: 1,
-    paddingRight: spacing.sm,
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
   },
 
   sessionTitle: {
+    flex: 1,
     fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
-    color: COLORS.text,
-    marginBottom: spacing.xxs,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
   },
 
   sessionTitleActive: {
-    color: COLORS.primary,
+    color: colors.primaryDark,
+  },
+
+  activePill: {
+    backgroundColor: colors.primaryLight,
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+
+  activePillText: {
+    color: colors.primaryDark,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
   },
 
   sessionPreview: {
     fontSize: fontSize.sm,
-    lineHeight: ms(17),
+    lineHeight: ms(18),
     fontWeight: fontWeight.medium,
-    color: COLORS.subText,
-    marginBottom: spacing.sm,
+    color: colors.subText,
+    marginBottom: spacing.md,
   },
 
   sessionMeta: {
@@ -625,58 +565,47 @@ const styles = StyleSheet.create({
   },
 
   sessionMetaText: {
-    fontSize: ms(10),
-    fontWeight: fontWeight.bold,
-    color: COLORS.muted,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    color: colors.muted,
   },
 
   metaDot: {
     width: ms(3),
     height: ms(3),
     borderRadius: ms(2),
-    backgroundColor: COLORS.muted,
+    backgroundColor: colors.muted,
     marginHorizontal: spacing.sm,
-  },
-
-  activeIndicator: {
-    position: 'absolute',
-    left: 0,
-    top: spacing.xl,
-    bottom: spacing.xl,
-    width: ms(3),
-    borderTopRightRadius: ms(3),
-    borderBottomRightRadius: ms(3),
-    backgroundColor: COLORS.primary,
   },
 
   emptyState: {
     alignItems: 'center',
-    paddingTop: spacing['7xl'],
-    paddingHorizontal: spacing['3xl'],
+    paddingTop: spacing['6xl'],
+    paddingHorizontal: spacing.xl,
   },
 
   emptyIconWrap: {
-    width: ms(64),
-    height: ms(64),
-    borderRadius: radii.xl,
-    backgroundColor: colors.lightGray,
+    width: ms(56),
+    height: ms(56),
+    borderRadius: ms(28),
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing['2xl'],
+    marginBottom: spacing.xl,
   },
 
   emptyTitle: {
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.extrabold,
-    color: COLORS.text,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    color: colors.text,
     marginBottom: spacing.sm,
   },
 
   emptySubtitle: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
     lineHeight: ms(20),
     fontWeight: fontWeight.medium,
-    color: COLORS.subText,
+    color: colors.subText,
     textAlign: 'center',
   },
 
@@ -688,37 +617,37 @@ const styles = StyleSheet.create({
 
   loadingText: {
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
-    color: COLORS.subText,
+    fontWeight: fontWeight.semibold,
+    color: colors.subText,
   },
 
   errorState: {
     backgroundColor: '#FEF2F2',
     borderWidth: 1,
     borderColor: '#FECACA',
-    borderRadius: ms(14),
+    borderRadius: radii.xl,
     padding: spacing.xl,
     marginBottom: spacing.xl,
   },
 
   errorTitle: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.extrabold,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
     color: '#991B1B',
     marginBottom: spacing.xs,
   },
 
   errorText: {
     fontSize: fontSize.sm,
-    lineHeight: ms(17),
-    fontWeight: fontWeight.semibold,
+    lineHeight: ms(18),
+    fontWeight: fontWeight.medium,
     color: colors.errorDark,
   },
 
   retryButton: {
     alignSelf: 'flex-start',
     marginTop: spacing.lg,
-    borderRadius: radii.sm,
+    borderRadius: radii.pill,
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: '#FECACA',
@@ -728,24 +657,29 @@ const styles = StyleSheet.create({
 
   retryButtonText: {
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.extrabold,
+    fontWeight: fontWeight.bold,
     color: '#991B1B',
   },
 
-  loadMoreButton: {
-    height: ms(42),
-    borderRadius: ms(13),
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    backgroundColor: COLORS.white,
+  loadMoreWrap: {
     alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: spacing['2xl'],
   },
 
+  loadMoreButton: {
+    minHeight: ms(36),
+    paddingHorizontal: spacing['3xl'],
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   loadMoreText: {
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.extrabold,
-    color: COLORS.primary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.primary,
   },
 });

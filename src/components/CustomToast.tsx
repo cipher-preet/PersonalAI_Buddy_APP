@@ -1,9 +1,16 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, StyleSheet, Text, ViewStyle } from 'react-native';
+import {
+  Animated,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import {
   colors,
   fontSize,
-  layout,
+  fontWeight,
   ms,
   mvs,
   radii,
@@ -15,20 +22,67 @@ export type ToastType = 'success' | 'error' | 'info';
 export interface CustomToastProps {
   visible: boolean;
   message: string;
+  description?: string;
   type?: ToastType;
   duration?: number;
   onHide?: () => void;
 }
 
-const backgroundColors: Record<ToastType, string> = {
+const TAB_BAR_BOTTOM = Platform.OS === 'ios' ? mvs(24) : mvs(16);
+const TAB_BAR_HEIGHT = ms(80);
+const TOAST_GAP = mvs(14);
+const TOAST_BOTTOM = TAB_BAR_BOTTOM + TAB_BAR_HEIGHT + TOAST_GAP;
+
+const ICON_BG: Record<ToastType, string> = {
   success: colors.successBright,
   error: colors.error,
-  info: colors.info,
+  info: colors.infoBright,
 };
+
+const TYPE_LABEL: Record<ToastType, string> = {
+  success: 'Completed successfully',
+  error: 'Something went wrong',
+  info: 'Please take a look',
+};
+
+const CheckIcon = () => (
+  <Svg width={ms(16)} height={ms(16)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M5 12.5l5 5L19 7"
+      stroke={colors.white}
+      strokeWidth={2.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const ErrorIcon = () => (
+  <Svg width={ms(16)} height={ms(16)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 7.5v5.5M12 16.5h.01"
+      stroke={colors.white}
+      strokeWidth={2.4}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
+const InfoIcon = () => (
+  <Svg width={ms(16)} height={ms(16)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 11v5.5M12 7.5h.01"
+      stroke={colors.white}
+      strokeWidth={2.4}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
 
 const CustomToast = ({
   visible,
   message,
+  description,
   type = 'info',
   duration = 3000,
   onHide,
@@ -36,12 +90,12 @@ const CustomToast = ({
   const animation = useRef(new Animated.Value(0)).current;
   const hideTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const toastStyle = useMemo<ViewStyle>(
-    () => ({
-      backgroundColor: backgroundColors[type],
-    }),
-    [type],
-  );
+  const subtitle = useMemo(() => {
+    if (description?.trim()) {
+      return description.trim();
+    }
+    return TYPE_LABEL[type];
+  }, [description, type]);
 
   useEffect(() => {
     if (visible) {
@@ -49,7 +103,7 @@ const CustomToast = ({
         toValue: 1,
         useNativeDriver: true,
         speed: 18,
-        bounciness: 8,
+        bounciness: 6,
       }).start();
 
       if (hideTimeout.current) {
@@ -59,16 +113,18 @@ const CustomToast = ({
       hideTimeout.current = setTimeout(() => {
         Animated.timing(animation, {
           toValue: 0,
-          duration: 200,
+          duration: 220,
           useNativeDriver: true,
-        }).start(() => {
-          onHide?.();
+        }).start(({ finished }) => {
+          if (finished) {
+            onHide?.();
+          }
         });
       }, duration);
     } else {
       Animated.timing(animation, {
         toValue: 0,
-        duration: 200,
+        duration: 180,
         useNativeDriver: true,
       }).start();
     }
@@ -82,47 +138,97 @@ const CustomToast = ({
 
   const translateY = animation.interpolate({
     inputRange: [0, 1],
-    outputRange: [40, 0],
+    outputRange: [28, 0],
   });
 
   const opacity = animation;
 
+  if (!visible && !message) {
+    return null;
+  }
+
   return (
     <Animated.View
-      pointerEvents={visible ? 'auto' : 'none'}
+      pointerEvents="none"
       style={[
         styles.toastContainer,
-        toastStyle,
         { opacity, transform: [{ translateY }] },
       ]}
     >
-      <Text style={styles.messageText}>{message}</Text>
+      <View style={[styles.iconCircle, { backgroundColor: ICON_BG[type] }]}>
+        {type === 'success' ? (
+          <CheckIcon />
+        ) : type === 'error' ? (
+          <ErrorIcon />
+        ) : (
+          <InfoIcon />
+        )}
+      </View>
+
+      <View style={styles.textBlock}>
+        <Text style={styles.title} numberOfLines={2}>
+          {message}
+        </Text>
+        <Text style={styles.subtitle} numberOfLines={1}>
+          {subtitle}
+        </Text>
+      </View>
     </Animated.View>
   );
 };
 
+export default CustomToast;
+
 const styles = StyleSheet.create({
   toastContainer: {
     position: 'absolute',
-    bottom: mvs(32),
-    left: layout.screenPadding,
-    right: layout.screenPadding,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing['2xl'],
-    borderRadius: radii.lg,
-    zIndex: 999,
-    shadowColor: colors.text,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 10,
+    bottom: TOAST_BOTTOM,
+    left: spacing['2xl'],
+    right: spacing['2xl'],
+    minHeight: ms(68),
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radii['3xl'],
+    backgroundColor: colors.white,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    zIndex: 9999,
+    elevation: 16,
+    shadowColor: colors.shadowInk,
+    shadowOffset: { width: 0, height: ms(10) },
+    shadowOpacity: 0.1,
+    shadowRadius: ms(20),
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(226, 232, 240, 0.9)',
   },
-  messageText: {
-    color: colors.white,
+
+  iconCircle: {
+    width: ms(40),
+    height: ms(40),
+    borderRadius: ms(20),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  textBlock: {
+    flex: 1,
+    paddingRight: spacing.xs,
+  },
+
+  title: {
     fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    color: colors.text,
     lineHeight: ms(20),
-    textAlign: 'center',
+    letterSpacing: -0.2,
+  },
+
+  subtitle: {
+    marginTop: spacing.xxs,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.subText,
+    lineHeight: ms(16),
   },
 });
-
-export default CustomToast;

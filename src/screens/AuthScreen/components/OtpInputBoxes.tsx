@@ -1,13 +1,14 @@
 import React, { useEffect, useRef } from 'react';
 import {
   NativeSyntheticEvent,
+  Platform,
   StyleSheet,
   TextInput,
   TextInputKeyPressEventData,
   View,
 } from 'react-native';
-import { AUTH_COLORS } from '../styles/colors';
 import {
+  colors,
   fontWeight,
   ms,
   radii,
@@ -16,10 +17,10 @@ import {
 } from '../../../theme';
 
 const OTP_LENGTH = 4;
-const HORIZONTAL_PADDING = ms(84);
-const BOX_GAP = spacing.md;
+const HORIZONTAL_PADDING = ms(48);
+const BOX_GAP = spacing.sm;
 const BOX_SIZE = Math.min(
-  ms(48),
+  ms(58),
   Math.floor(
     (screenWidth - HORIZONTAL_PADDING - BOX_GAP * (OTP_LENGTH - 1)) /
       OTP_LENGTH,
@@ -114,7 +115,7 @@ const OtpInputBoxes = ({
                 value={digit}
                 onChangeText={text => handleChange(text, index)}
                 onKeyPress={event => handleKeyPress(event, index)}
-                onFocus={() => focusInput(index)}
+                onFocus={() => focusInput(Math.min(value.length, length - 1))}
                 keyboardType="number-pad"
                 returnKeyType="done"
                 textContentType="oneTimeCode"
@@ -124,6 +125,7 @@ const OtpInputBoxes = ({
                 caretHidden={false}
                 style={styles.input}
                 textAlign="center"
+                underlineColorAndroid="transparent"
               />
             </View>
           );
@@ -137,7 +139,7 @@ export default OtpInputBoxes;
 
 const styles = StyleSheet.create({
   wrapper: {
-    alignItems: 'center',
+    width: '100%',
   },
 
   boxRow: {
@@ -150,28 +152,24 @@ const styles = StyleSheet.create({
 
   box: {
     width: BOX_SIZE,
-    height: BOX_SIZE + ms(8),
-    borderRadius: radii.sm,
-    backgroundColor: AUTH_COLORS.white,
-    borderWidth: 1.5,
-    borderColor: AUTH_COLORS.border,
+    height: BOX_SIZE,
+    borderRadius: radii.lg,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
 
   boxFilled: {
-    borderColor: AUTH_COLORS.primary,
-    backgroundColor: AUTH_COLORS.primarySoft,
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
   },
 
   boxActive: {
-    borderColor: AUTH_COLORS.borderFocus,
-    shadowColor: AUTH_COLORS.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.18,
-    shadowRadius: ms(8),
-    elevation: 3,
+    borderColor: colors.primary,
+    backgroundColor: colors.white,
   },
 
   input: {
@@ -179,8 +177,10 @@ const styles = StyleSheet.create({
     height: '100%',
     fontSize: ms(22),
     fontWeight: fontWeight.bold,
-    color: AUTH_COLORS.text,
+    color: colors.text,
     padding: 0,
     margin: 0,
+    includeFontPadding: false,
+    ...(Platform.OS === 'android' ? { textAlignVertical: 'center' as const } : null),
   },
 });

@@ -19,15 +19,15 @@ import Animated, {
 import Svg, { Path } from 'react-native-svg';
 
 import { FilterIcon, SearchIcon } from '../../../../styles/icons';
-import { COLORS } from './styles/color';
 import type { TaskFilter } from '../types/filter';
 import {
+  colors,
   fontSize,
   fontWeight,
   layout,
   ms,
   radii,
-  spacing,
+  spacing
 } from '../../../theme';
 
 const ICON_SIZE = layout.iconButtonSm;
@@ -44,7 +44,7 @@ type Props = {
   onFilterPress: () => void;
 };
 
-const CloseIcon = ({ color = COLORS.gray }: { color?: string }) => (
+const CloseIcon = ({ color = colors.gray }: { color?: string }) => (
   <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M18 6 6 18M6 6l12 12"
@@ -130,14 +130,14 @@ const Header = ({
               innerSearchWidth > 0 && { width: innerSearchWidth },
             ]}
           >
-            <SearchIcon width={ms(15)} height={ms(15)} color={COLORS.gray} />
+            <SearchIcon width={ms(15)} height={ms(15)} color={colors.gray} />
 
             <TextInput
               ref={inputRef}
               value={searchQuery}
               onChangeText={onSearchQueryChange}
               placeholder="Search tasks..."
-              placeholderTextColor={COLORS.muted}
+              placeholderTextColor={colors.muted}
               style={styles.searchInput}
               returnKeyType="search"
               autoCorrect={false}
@@ -165,7 +165,7 @@ const Header = ({
               activeOpacity={0.78}
               onPress={onSearchOpen}
             >
-              <SearchIcon width={ms(18)} height={ms(18)} color={COLORS.icon} />
+              <SearchIcon width={ms(18)} height={ms(18)} color={colors.icon} />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -178,7 +178,7 @@ const Header = ({
           <FilterIcon
             width={ms(18)}
             height={ms(18)}
-            color={isFilterActive ? COLORS.primaryDark : COLORS.icon}
+            color={isFilterActive ? colors.primaryDark : colors.icon}
           />
         </TouchableOpacity>
       </View>
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: fontSize['2xl'],
     fontWeight: fontWeight.extrabold,
-    color: COLORS.black,
+    color: colors.black,
     lineHeight: ms(22),
   },
 
@@ -228,14 +228,14 @@ const styles = StyleSheet.create({
   searchInputContainer: {
     height: ICON_SIZE,
     borderRadius: ms(14),
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: COLORS.borderFocus,
+    borderColor: colors.borderFocus,
     flexDirection: 'row',
     alignItems: 'center',
     paddingLeft: spacing.xl,
     paddingRight: spacing.sm,
-    shadowColor: COLORS.primary,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 10,
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
     marginRight: spacing.xs,
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
-    color: COLORS.black,
+    color: colors.black,
     paddingVertical: 0,
     height: ICON_SIZE,
   },
@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
     width: ms(28),
     height: ms(28),
     borderRadius: radii.sm,
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     width: ICON_SIZE,
     height: ICON_SIZE,
     borderRadius: ms(14),
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
@@ -290,7 +290,7 @@ const styles = StyleSheet.create({
   },
 
   iconButtonActive: {
-    backgroundColor: COLORS.purpleLight,
-    borderColor: COLORS.borderFocus,
+    backgroundColor: colors.purpleLight,
+    borderColor: colors.borderFocus,
   },
 });

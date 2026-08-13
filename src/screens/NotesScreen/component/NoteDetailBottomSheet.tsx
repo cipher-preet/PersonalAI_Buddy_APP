@@ -26,15 +26,15 @@ import {
   BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
 import { NoteItem } from '../types/note';
-import { COLORS } from './styles/color';
 import { StagedNoteDetail } from '../../../store/api/home';
 import {
+  colors,
   fontSize,
   fontWeight,
   ms,
   mvs,
   radii,
-  spacing,
+  spacing
 } from '../../../theme';
 
 type Props = {
@@ -52,7 +52,7 @@ type IconProps = {
 
 const EvidenceIcon = ({
   size = ms(18),
-  color = COLORS.primaryDark,
+  color = colors.primaryDark,
 }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
@@ -74,7 +74,7 @@ const EvidenceIcon = ({
 
 const EyeIcon = ({
   size = ms(14),
-  color = COLORS.primaryDark,
+  color = colors.primaryDark,
 }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
@@ -94,7 +94,7 @@ const EyeIcon = ({
   </Svg>
 );
 
-const EyeOffIcon = ({ size = ms(14), color = COLORS.white }: IconProps) => (
+const EyeOffIcon = ({ size = ms(14), color = colors.white }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
       d="m3 3 18 18M10.6 10.6A2 2 0 0 0 13.4 13.4M9.9 5.3A10.7 10.7 0 0 1 12 5c6 0 9.5 7 9.5 7a17 17 0 0 1-2.3 3.2M6.6 6.9C3.9 8.7 2.5 12 2.5 12s3.5 7 9.5 7c1.5 0 2.8-.4 4-.9"
@@ -108,7 +108,7 @@ const EyeOffIcon = ({ size = ms(14), color = COLORS.white }: IconProps) => (
 
 const ChevronDownIcon = ({
   size = ms(16),
-  color = COLORS.primaryDark,
+  color = colors.primaryDark,
 }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
@@ -326,7 +326,7 @@ const NoteDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
 
           {isLoading ? (
             <View style={styles.stateBox}>
-              <ActivityIndicator size="small" color={COLORS.primaryDark} />
+              <ActivityIndicator size="small" color={colors.primaryDark} />
               <Text style={styles.stateText}>Loading note details...</Text>
             </View>
           ) : isError ? (
@@ -360,7 +360,7 @@ const NoteDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
                 >
                   <View style={styles.evidenceHeaderLeft}>
                     <View style={styles.evidenceIconWrap}>
-                      <EvidenceIcon size={18} color={COLORS.primaryDark} />
+                      <EvidenceIcon size={18} color={colors.primaryDark} />
                     </View>
 
                     <View style={styles.evidenceCopy}>
@@ -382,9 +382,9 @@ const NoteDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
                     ]}
                   >
                     {isEvidenceOpen ? (
-                      <EyeOffIcon size={14} color={COLORS.white} />
+                      <EyeOffIcon size={14} color={colors.white} />
                     ) : (
-                      <EyeIcon size={14} color={COLORS.primaryDark} />
+                      <EyeIcon size={14} color={colors.primaryDark} />
                     )}
                     <Text
                       style={[
@@ -409,7 +409,7 @@ const NoteDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
                       <ChevronDownIcon
                         size={16}
                         color={
-                          isEvidenceOpen ? COLORS.white : COLORS.primaryDark
+                          isEvidenceOpen ? colors.white : colors.primaryDark
                         }
                       />
                     </Animated.View>
@@ -460,13 +460,13 @@ export default NoteDetailBottomSheet;
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     borderTopLeftRadius: ms(28),
     borderTopRightRadius: ms(28),
   },
 
   indicator: {
-    backgroundColor: COLORS.border,
+    backgroundColor: colors.border,
     width: ms(48),
     height: ms(5),
     borderRadius: radii.pill,
@@ -486,14 +486,14 @@ const styles = StyleSheet.create({
   },
 
   tag: {
-    backgroundColor: COLORS.purpleLight,
+    backgroundColor: colors.purpleLight,
     paddingHorizontal: spacing.lg,
     paddingVertical: ms(5),
     borderRadius: ms(8),
   },
 
   tagText: {
-    color: COLORS.primaryDark,
+    color: colors.primaryDark,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
     letterSpacing: 0.4,
@@ -503,7 +503,7 @@ const styles = StyleSheet.create({
     width: ms(34),
     height: ms(34),
     borderRadius: ms(17),
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: colors.lightGray,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -511,14 +511,14 @@ const styles = StyleSheet.create({
   closeIcon: {
     fontSize: fontSize['2xl'] + ms(4),
     lineHeight: ms(24),
-    color: COLORS.muted,
+    color: colors.muted,
     marginTop: -1,
   },
 
   title: {
     fontSize: fontSize['2xl'] + ms(4),
     fontWeight: fontWeight.extrabold,
-    color: COLORS.black,
+    color: colors.black,
     lineHeight: ms(30),
     letterSpacing: -0.3,
   },
@@ -527,7 +527,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
-    color: COLORS.gray,
+    color: colors.gray,
   },
 
   infoRow: {
@@ -539,27 +539,27 @@ const styles = StyleSheet.create({
   },
 
   infoChip: {
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: colors.inputBg,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: radii.sm,
     borderWidth: 1,
-    borderColor: COLORS.primaryLight,
+    borderColor: colors.primaryLight,
   },
 
   infoChipText: {
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
-    color: COLORS.subText,
+    color: colors.subText,
   },
 
   summaryCard: {
-    backgroundColor: COLORS.purpleLight,
+    backgroundColor: colors.purpleLight,
     borderRadius: radii.lg,
     padding: spacing['2xl'],
     marginBottom: spacing['3xl'],
     borderWidth: 1,
-    borderColor: COLORS.borderFocus,
+    borderColor: colors.borderFocus,
   },
 
   section: {
@@ -569,7 +569,7 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
-    color: COLORS.black,
+    color: colors.black,
     marginBottom: spacing.lg,
     letterSpacing: 0.2,
   },
@@ -577,7 +577,7 @@ const styles = StyleSheet.create({
   summaryText: {
     fontSize: fontSize.base,
     lineHeight: ms(22),
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: fontWeight.medium,
   },
 
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
     width: ms(6),
     height: ms(6),
     borderRadius: ms(3),
-    backgroundColor: COLORS.primary,
+    backgroundColor: colors.primary,
     marginTop: spacing.md,
     marginRight: spacing.lg,
   },
@@ -600,37 +600,37 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: fontSize.base,
     lineHeight: ms(22),
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: fontWeight.medium,
   },
 
   detailCard: {
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     borderRadius: ms(14),
     padding: ms(14),
     marginBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: COLORS.lightGray,
+    borderColor: colors.lightGray,
   },
 
   detailTitle: {
     fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
-    color: COLORS.black,
+    color: colors.black,
     marginBottom: spacing.sm,
   },
 
   detailText: {
     fontSize: fontSize.base,
     lineHeight: ms(22),
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: fontWeight.regular,
   },
 
   bodyText: {
     fontSize: fontSize.lg,
     lineHeight: ms(24),
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: fontWeight.regular,
   },
 
@@ -638,7 +638,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: spacing.lg,
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: colors.inputBg,
     borderRadius: radii.md,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
@@ -649,7 +649,7 @@ const styles = StyleSheet.create({
     height: ms(16),
     borderRadius: ms(5),
     borderWidth: 1.5,
-    borderColor: COLORS.primary,
+    borderColor: colors.primary,
     marginRight: spacing.lg,
     marginTop: spacing.xxs,
   },
@@ -658,7 +658,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: fontSize.base,
     lineHeight: ms(20),
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: fontWeight.medium,
   },
 
@@ -668,7 +668,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.xl,
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: colors.lightGray,
     borderRadius: radii.sm,
   },
 
@@ -676,7 +676,7 @@ const styles = StyleSheet.create({
     width: ms(6),
     height: ms(6),
     borderRadius: ms(3),
-    backgroundColor: COLORS.primaryDark,
+    backgroundColor: colors.primaryDark,
     marginRight: spacing.lg,
   },
 
@@ -684,7 +684,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: fontSize.md,
     fontWeight: fontWeight.semibold,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
   },
 
   tagsRow: {
@@ -694,14 +694,14 @@ const styles = StyleSheet.create({
   },
 
   pill: {
-    backgroundColor: COLORS.lightGray,
+    backgroundColor: colors.lightGray,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: radii.sm,
   },
 
   pillText: {
-    color: COLORS.gray,
+    color: colors.gray,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
   },
@@ -718,14 +718,14 @@ const styles = StyleSheet.create({
     marginTop: spacing['2xl'],
     marginBottom: spacing['3xl'],
     borderRadius: radii.lg,
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: COLORS.primaryLight,
+    borderColor: colors.primaryLight,
   },
 
   stateText: {
     marginTop: spacing.md,
-    color: COLORS.gray,
+    color: colors.gray,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
     textAlign: 'center',
@@ -733,7 +733,7 @@ const styles = StyleSheet.create({
   },
 
   errorTitle: {
-    color: COLORS.errorDark,
+    color: colors.errorDark,
     fontSize: fontSize.base,
     fontWeight: fontWeight.extrabold,
   },
@@ -743,11 +743,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing['2xl'],
     paddingVertical: spacing.md,
     borderRadius: radii.pill,
-    backgroundColor: COLORS.purpleLight,
+    backgroundColor: colors.purpleLight,
   },
 
   retryText: {
-    color: COLORS.primaryDark,
+    color: colors.primaryDark,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.extrabold,
   },
@@ -760,10 +760,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingVertical: ms(11),
     borderRadius: ms(14),
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: COLORS.borderFocus,
-    shadowColor: COLORS.shadow,
+    borderColor: colors.borderFocus,
+    shadowColor: colors.shadow,
     shadowOffset: {
       width: 0,
       height: 3,
@@ -787,7 +787,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: ms(11),
-    backgroundColor: COLORS.purpleLight,
+    backgroundColor: colors.purpleLight,
   },
 
   evidenceCopy: {
@@ -797,14 +797,14 @@ const styles = StyleSheet.create({
   evidenceTitle: {
     fontSize: fontSize.lg,
     fontWeight: fontWeight.extrabold,
-    color: COLORS.black,
+    color: colors.black,
   },
 
   evidenceSubtitle: {
     marginTop: spacing.xxs,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
-    color: COLORS.subText,
+    color: colors.subText,
   },
 
   evidenceToggle: {
@@ -814,47 +814,47 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: ms(7),
     borderRadius: radii.pill,
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: COLORS.primaryLight,
+    borderColor: colors.primaryLight,
   },
 
   evidenceToggleOpen: {
-    backgroundColor: COLORS.primaryDark,
-    borderColor: COLORS.primaryDark,
+    backgroundColor: colors.primaryDark,
+    borderColor: colors.primaryDark,
   },
 
   evidenceToggleText: {
-    color: COLORS.primaryDark,
+    color: colors.primaryDark,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.extrabold,
   },
 
   evidenceToggleTextOpen: {
-    color: COLORS.white,
+    color: colors.white,
   },
 
   chevron: {
-    color: COLORS.primaryDark,
+    color: colors.primaryDark,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.extrabold,
     lineHeight: ms(14),
   },
 
   chevronOpen: {
-    color: COLORS.white,
+    color: colors.white,
   },
 
   evidenceCard: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     borderRadius: ms(14),
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.xl,
     marginTop: spacing.lg,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
 
   evidenceIndex: {
@@ -864,11 +864,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.lg,
-    backgroundColor: COLORS.primaryLight,
+    backgroundColor: colors.primaryLight,
   },
 
   evidenceIndexText: {
-    color: COLORS.primary,
+    color: colors.primary,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.extrabold,
   },
@@ -877,14 +877,14 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: fontSize.md,
     lineHeight: ms(20),
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     fontWeight: fontWeight.medium,
   },
 
   emptyText: {
     fontSize: fontSize.md,
     lineHeight: ms(20),
-    color: COLORS.gray,
+    color: colors.gray,
     fontWeight: fontWeight.semibold,
   },
 });

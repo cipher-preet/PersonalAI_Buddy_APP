@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing['2xl'],
     paddingBottom: spacing.xl,
     borderWidth: 1,
-    borderColor: '#FEE2E2',
+    borderColor: colors.errorSoftBorder,
   },
 
   headerRow: {
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     width: ms(28),
     height: ms(28),
     borderRadius: ms(14),
-    backgroundColor: '#FEF2F2',
+    backgroundColor: colors.errorSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },

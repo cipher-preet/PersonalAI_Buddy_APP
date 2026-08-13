@@ -9,16 +9,24 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
+import { colors } from './src/theme';
 import CustomToast from './src/components/CustomToast';
 import RootNavigator from './src/navigation/RootNavigator';
 import { ToastProvider, useToast } from './src/store/context/ToastContext';
 import { store } from './src/store/store';
 import { configureGoogleSignIn } from './src/services/googleSignInService';
 
-const APP_BACKGROUND = '#F7F7FB';
+const APP_BACKGROUND = colors.background;
 
 const AppContent = () => {
-  const { toastVisible, toastMessage, toastType, hideToast } = useToast();
+  const {
+    toastVisible,
+    toastMessage,
+    toastDescription,
+    toastType,
+    toastDuration,
+    hideToast,
+  } = useToast();
 
   return (
     <>
@@ -35,7 +43,9 @@ const AppContent = () => {
       <CustomToast
         visible={toastVisible}
         message={toastMessage}
+        description={toastDescription}
         type={toastType}
+        duration={toastDuration}
         onHide={hideToast}
       />
     </>

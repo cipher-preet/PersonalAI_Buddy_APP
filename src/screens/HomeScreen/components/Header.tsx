@@ -1,6 +1,6 @@
 import React from 'react';
 import { StyleSheet, TouchableOpacity, View, Text } from 'react-native';
-import Svg, { Path, Rect } from 'react-native-svg';
+import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useAppSelector } from '../../../store/hooks';
@@ -11,7 +11,6 @@ import {
   layout,
   ms,
   radii,
-  shadows,
   spacing,
 } from '../../../theme';
 
@@ -23,28 +22,6 @@ type TabParamList = {
   Profile: undefined;
   Plans: undefined;
 };
-
-const PlanPurchaseIcon = () => (
-  <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M8 7.5 10.2 4l2.2 3.5L16 5.8l-1.2 5.7H5.2L4 5.8l3.6 1.7Z"
-      stroke={colors.primary}
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Rect
-      x={4}
-      y={13}
-      width={16}
-      height={7}
-      rx={2}
-      stroke={colors.primary}
-      strokeWidth={1.8}
-    />
-    <Path d="M4 16h16" stroke={colors.primary} strokeWidth={1.8} />
-  </Svg>
-);
 
 const Header = () => {
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
@@ -70,21 +47,26 @@ const Header = () => {
         </Text>
       </View>
 
-      <View style={styles.actionContainer}>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={styles.notificationButton}
-          accessibilityRole="button"
-          accessibilityLabel="Open plans and payment"
-          onPress={() => navigation.navigate('Plans')}
+      <TouchableOpacity
+        activeOpacity={0.88}
+        style={styles.upgradeButton}
+        accessibilityRole="button"
+        accessibilityLabel="Upgrade plan"
+        onPress={() => navigation.navigate('Plans')}
+      >
+        <LinearGradient
+          colors={[
+            colors.upgradeGradientStart,
+            colors.upgradeGradientMid,
+            colors.upgradeGradientEnd,
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.upgradeGradient}
         >
-          <PlanPurchaseIcon />
-        </TouchableOpacity>
-
-        {/* <TouchableOpacity activeOpacity={0.85} style={styles.settingsButton}>
-          <PlanPurchaseIcon />
-        </TouchableOpacity> */}
-      </View>
+          <Text style={styles.upgradeText}>Upgrade</Text>
+        </LinearGradient>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -100,6 +82,7 @@ const styles = StyleSheet.create({
 
   leftContainer: {
     flex: 1,
+    paddingRight: spacing.xl,
   },
 
   greetingWrapper: {
@@ -135,31 +118,28 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
   },
 
-  actionContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  upgradeButton: {
+    borderRadius: radii.pill,
+    overflow: 'hidden',
+    shadowColor: colors.accentIndigo,
+    shadowOffset: { width: 0, height: ms(4) },
+    shadowOpacity: 0.28,
+    shadowRadius: ms(8),
+    elevation: 4,
   },
 
-  notificationButton: {
-    width: layout.iconButton,
-    height: layout.iconButton,
-    borderRadius: radii.pill,
-    backgroundColor: colors.white,
-    justifyContent: 'center',
+  upgradeGradient: {
+    minHeight: layout.chipHeight,
+    paddingHorizontal: spacing['2xl'],
     alignItems: 'center',
-    marginRight: spacing.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadows.soft,
+    justifyContent: 'center',
+    borderRadius: radii.pill,
   },
 
-  settingsButton: {
-    width: layout.iconButton,
-    height: layout.iconButton,
-    borderRadius: radii.pill,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.primary,
-    ...shadows.primary,
+  upgradeText: {
+    color: colors.white,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: 0.2,
   },
 });

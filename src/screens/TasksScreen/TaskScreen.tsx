@@ -27,23 +27,21 @@ import type { MainTabParamList } from '../../navigation/types';
 import Header from './component/Header';
 import TasksFilterMenu from './component/TasksFilterMenu';
 import CategoryTabs from './component/CategoryTabs';
-import ProgressCard from './component/ProgressCard';
-import SectionHeader from './component/SectionHeader';
 import TaskCard from './component/TaskCard';
 import TaskDetailBottomSheet from './component/TaskDetailBottomSheet';
-import { COLORS } from './component/styles/color';
 import { TaskItem } from './types/task';
 import type { TaskFilter } from './types/filter';
-import { useAppSelector } from '../../store/hooks';
+import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { useToast } from '../../store/context/ToastContext';
-import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import {
+  homeApi,
   StagedTaskCard,
   useDeleteStagedTaskMutation,
   useGetStagedTasksBySpaceQuery,
   useGetUserSpacesQuery,
 } from '../../store/api/home';
 import {
+  colors,
   fontSize,
   fontWeight,
   layout,
@@ -65,17 +63,14 @@ const TaskScreen = () => {
   const [taskCompletionOverrides, setTaskCompletionOverrides] = useState<
     Record<string, boolean>
   >({});
-  const [taskPendingDelete, setTaskPendingDelete] = useState<TaskItem | null>(
-    null,
-  );
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [taskFilter, setTaskFilter] = useState<TaskFilter>('newest');
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const userId = useAppSelector(state => state.auth.userId) ?? '';
+  const dispatch = useAppDispatch();
   const { showToast } = useToast();
-  const [deleteStagedTask, { isLoading: isDeletingTask }] =
-    useDeleteStagedTaskMutation();
+  const [deleteStagedTask] = useDeleteStagedTaskMutation();
 
   const {
     data: spacesData,
@@ -88,6 +83,7 @@ const TaskScreen = () => {
     () => spacesData?.data?.data?.spaces ?? [],
     [spacesData],
   );
+  const isSpacesInitialLoading = isFetchingSpaces && spaces.length === 0;
   const selectedSpace = spaces.find(space => space._id === selectedSpaceId);
   const taskCountBySpaceId = useMemo(
     () =>
@@ -238,53 +234,70 @@ const TaskScreen = () => {
   const getApiErrorMessage = (error: any, fallback: string) =>
     error?.data?.message || error?.message || fallback;
 
-  const handleConfirmDeleteTask = useCallback(async () => {
-    if (!taskPendingDelete) {
-      return;
-    }
+  const handleDeleteTask = useCallback(
+    async (task: TaskItem) => {
+      try {
+        const response = await deleteStagedTask({
+          taskId: task.id,
+        }).unwrap();
 
-    try {
-      const response = await deleteStagedTask({
-        taskId: taskPendingDelete.id,
-      }).unwrap();
+        setLoadedTasks(prev => prev.filter(item => item.id !== task.id));
 
-      setLoadedTasks(prev =>
-        prev.filter(task => task.id !== taskPendingDelete.id),
-      );
+        setTaskCompletionOverrides(prev => {
+          const next = { ...prev };
+          delete next[task.id];
+          return next;
+        });
 
-      setTaskCompletionOverrides(prev => {
-        const next = { ...prev };
-        delete next[taskPendingDelete.id];
-        return next;
-      });
+        if (selectedSpaceId && userId) {
+          dispatch(
+            homeApi.util.updateQueryData(
+              'getUserSpaces',
+              { userId, limit: 50 },
+              draft => {
+                const space = draft?.data?.data?.spaces?.find(
+                  item => item._id === selectedSpaceId,
+                );
+                if (
+                  space &&
+                  typeof space.tasksCount === 'number' &&
+                  space.tasksCount > 0
+                ) {
+                  space.tasksCount -= 1;
+                }
+              },
+            ),
+          );
+        }
 
-      if (selectedTask?.id === taskPendingDelete.id) {
-        taskSheetRef.current?.dismiss();
-        setSelectedTask(null);
+        if (selectedTask?.id === task.id) {
+          taskSheetRef.current?.dismiss();
+          setSelectedTask(null);
+        }
+
+        showToast({
+          message:
+            response?.data?.message ||
+            response?.message ||
+            'Task deleted successfully.',
+          type: 'success',
+        });
+      } catch (error: any) {
+        showToast({
+          message: getApiErrorMessage(error, 'Unable to delete task.'),
+          type: 'error',
+        });
       }
-
-      showToast({
-        message:
-          response?.data?.message ||
-          response?.message ||
-          'Task deleted successfully.',
-        type: 'success',
-      });
-      setTaskPendingDelete(null);
-    } catch (error: any) {
-      showToast({
-        message: getApiErrorMessage(error, 'Unable to delete task.'),
-        type: 'error',
-      });
-    }
-  }, [
-    deleteStagedTask,
-    selectedTask,
-    showToast,
-    taskPendingDelete,
-  ]);
-
-  const doneTasksCount = loadedTasks.filter(task => isTaskDone(task)).length;
+    },
+    [
+      deleteStagedTask,
+      dispatch,
+      selectedSpaceId,
+      selectedTask,
+      showToast,
+      userId,
+    ],
+  );
 
   const formatDate = (value: string | null) => {
     if (!value) {
@@ -340,7 +353,7 @@ const TaskScreen = () => {
     if (isInitialTasksLoading) {
       return (
         <View style={styles.stateBox}>
-          <ActivityIndicator size="small" color={COLORS.primaryDark} />
+          <ActivityIndicator size="small" color={colors.primaryDark} />
           <Text style={styles.stateText}>Loading tasks...</Text>
         </View>
       );
@@ -403,28 +416,29 @@ const TaskScreen = () => {
               completed={completed}
               onPress={() => handleOpenTask(item)}
               onToggleComplete={() => handleToggleTaskComplete(task)}
-              onDelete={() => setTaskPendingDelete(item)}
+              onDelete={() => handleDeleteTask(item)}
             />
           );
         })}
 
         {nextTasksCursor ? (
-          <TouchableOpacity
-            activeOpacity={0.78}
-            disabled={isLoadingMoreTasks}
-            style={[
-              styles.loadMoreButton,
-              isLoadingMoreTasks && styles.loadMoreButtonDisabled,
-            ]}
-            onPress={() => setTasksCursor(nextTasksCursor)}
-          >
-            {isLoadingMoreTasks ? (
-              <ActivityIndicator size="small" color={COLORS.primaryDark} />
-            ) : null}
-            <Text style={styles.loadMoreText}>
-              {isLoadingMoreTasks ? 'Loading more tasks...' : 'Load more tasks'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.loadMoreWrap}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              disabled={isLoadingMoreTasks}
+              style={[
+                styles.loadMoreButton,
+                isLoadingMoreTasks && styles.loadMoreButtonDisabled,
+              ]}
+              onPress={() => setTasksCursor(nextTasksCursor)}
+            >
+              {isLoadingMoreTasks ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Text style={styles.loadMoreText}>Load more</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         ) : null}
       </>
     );
@@ -447,42 +461,28 @@ const TaskScreen = () => {
         />
       </View>
 
+      <CategoryTabs
+        spaces={spaces}
+        selectedSpaceId={selectedSpaceId}
+        isLoading={isSpacesInitialLoading}
+        isError={isSpacesError}
+        getTaskCount={spaceId => taskCountBySpaceId.get(spaceId) ?? 0}
+        onRetry={refetchSpaces}
+        onSelectSpace={setSelectedSpaceId}
+        onNavigateNotes={() => navigation.navigate('Notes')}
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        style={styles.tasksScroll}
       >
-        <CategoryTabs
-          spaces={spaces}
-          selectedSpaceId={selectedSpaceId}
-          isLoading={isFetchingSpaces}
-          isError={isSpacesError}
-          getTaskCount={spaceId => taskCountBySpaceId.get(spaceId) ?? 0}
-          onRetry={refetchSpaces}
-          onSelectSpace={setSelectedSpaceId}
-        />
-
-        <ProgressCard
-          totalTasks={loadedTasks.length}
-          doneTasks={doneTasksCount}
-        />
-
-        <SectionHeader />
-
         {renderTaskList()}
       </ScrollView>
 
       <TaskDetailBottomSheet ref={taskSheetRef} task={selectedTask} />
-
-      <DeleteConfirmationModal
-        visible={Boolean(taskPendingDelete)}
-        itemType="task"
-        itemTitle={taskPendingDelete?.title}
-        loading={isDeletingTask}
-        onCancel={() => setTaskPendingDelete(null)}
-        onConfirm={handleConfirmDeleteTask}
-      />
 
       <TasksFilterMenu
         visible={filterMenuVisible}
@@ -499,7 +499,7 @@ export default TaskScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: colors.background,
     paddingTop: mvs(16),
     paddingBottom: mvs(40),
   },
@@ -507,6 +507,10 @@ const styles = StyleSheet.create({
   headerWrap: {
     paddingHorizontal: layout.screenPadding,
     marginBottom: spacing.lg,
+  },
+
+  tasksScroll: {
+    flex: 1,
   },
 
   content: {
@@ -520,27 +524,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.lg,
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: colors.border,
   },
 
   stateText: {
     marginTop: spacing.md,
-    color: COLORS.gray,
+    color: colors.gray,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
     textAlign: 'center',
   },
 
   emptyTitle: {
-    color: COLORS.black,
+    color: colors.black,
     fontSize: fontSize.base,
     fontWeight: fontWeight.extrabold,
   },
 
   errorText: {
-    color: COLORS.errorDark,
+    color: colors.errorDark,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
   },
@@ -550,26 +554,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: ms(14),
     paddingVertical: ms(7),
     borderRadius: radii.pill,
-    backgroundColor: COLORS.purpleLight,
+    backgroundColor: colors.purpleLight,
   },
 
   retryText: {
-    color: COLORS.primaryDark,
+    color: colors.primaryDark,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.extrabold,
   },
 
+  loadMoreWrap: {
+    alignItems: 'center',
+    marginTop: spacing.xl,
+    marginBottom: spacing.sm,
+  },
+
   loadMoreButton: {
-    minHeight: mvs(52),
-    marginBottom: spacing.xl,
-    borderRadius: radii.lg,
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    minHeight: ms(36),
+    paddingHorizontal: layout.screenPadding,
+    borderRadius: radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    gap: spacing.md,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
 
   loadMoreButtonDisabled: {
@@ -577,8 +585,8 @@ const styles = StyleSheet.create({
   },
 
   loadMoreText: {
-    color: COLORS.primaryDark,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.extrabold,
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
   },
 });

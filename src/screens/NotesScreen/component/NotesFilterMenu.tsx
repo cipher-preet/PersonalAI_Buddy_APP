@@ -16,15 +16,15 @@ import Animated, {
 } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
-import { COLORS } from './styles/color';
 import type { NoteSortOrder } from '../types/sort';
 import {
+  colors,
   fontSize,
   fontWeight,
   layout,
   ms,
   mvs,
-  spacing,
+  spacing
 } from '../../../theme';
 
 type Props = {
@@ -38,7 +38,7 @@ const CheckIcon = () => (
   <Svg width={ms(16)} height={ms(16)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M20 6 9 17l-5-5"
-      stroke={COLORS.primaryDark}
+      stroke={colors.primaryDark}
       strokeWidth={2.4}
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -150,13 +150,13 @@ const styles = StyleSheet.create({
   menu: {
     width: ms(248),
     borderRadius: ms(18),
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     paddingHorizontal: spacing.xl,
     paddingTop: ms(14),
     paddingBottom: spacing.lg,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    shadowColor: COLORS.primary,
+    borderColor: colors.border,
+    shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.12,
     shadowRadius: 24,
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   menuTitle: {
     fontSize: fontSize.xs,
     fontWeight: fontWeight.extrabold,
-    color: COLORS.gray,
+    color: colors.gray,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
     marginBottom: spacing.md,
@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
   },
 
   optionActive: {
-    backgroundColor: COLORS.purpleLight,
+    backgroundColor: colors.purpleLight,
   },
 
   optionTextWrap: {
@@ -194,11 +194,11 @@ const styles = StyleSheet.create({
   optionLabel: {
     fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
-    color: COLORS.black,
+    color: colors.black,
   },
 
   optionLabelActive: {
-    color: COLORS.primaryDark,
+    color: colors.primaryDark,
   },
 
   optionDescription: {
@@ -206,17 +206,17 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     lineHeight: ms(15),
     fontWeight: fontWeight.medium,
-    color: COLORS.gray,
+    color: colors.gray,
   },
 
   checkWrap: {
     width: ms(24),
     height: ms(24),
     borderRadius: ms(12),
-    backgroundColor: COLORS.white,
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: COLORS.borderFocus,
+    borderColor: colors.borderFocus,
   },
 });

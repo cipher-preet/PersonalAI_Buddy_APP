@@ -4,19 +4,22 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import Svg, { Path } from 'react-native-svg';
 
 import AuthLayout from './components/AuthLayout';
 import AuthBrandMark from './components/AuthBrandMark';
 import GoogleSignInButton from './components/GoogleSignInButton';
-import { AUTH_COLORS } from './styles/colors';
 import {
+  colors,
   fontSize,
   fontWeight,
+  layout,
   ms,
   mvs,
   radii,
@@ -35,12 +38,29 @@ import { useToast } from '../../store/context/ToastContext';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
+const PhoneIcon = ({ color = colors.primary }: { color?: string }) => (
+  <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M7.5 3.75h9A1.75 1.75 0 0 1 18.25 5.5v13a1.75 1.75 0 0 1-1.75 1.75h-9A1.75 1.75 0 0 1 5.75 18.5v-13A1.75 1.75 0 0 1 7.5 3.75Z"
+      stroke={color}
+      strokeWidth={1.7}
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M10.5 17.25h3"
+      stroke={color}
+      strokeWidth={1.7}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
 const LoginScreen = ({ navigation }: Props) => {
   const dispatch = useAppDispatch();
   const { showToast } = useToast();
   const phoneInputRef = useRef<TextInput>(null);
   const [phone, setPhone] = useState('');
-  const [focusedField, setFocusedField] = useState<'phone' | null>(null);
+  const [focusedField, setFocusedField] = useState(false);
   const [sendOtp, { isLoading: isSendingOtp }] = useSendOtpMutation();
   const [checkPhone, { isLoading: isCheckingPhone }] = useCheckPhoneMutation();
   const [googleLogin, { isLoading: isGoogleLoading }] = useGoogleLoginMutation();
@@ -55,9 +75,14 @@ const LoginScreen = ({ navigation }: Props) => {
   const getApiErrorMessage = (error: any, fallback: string) =>
     error?.data?.message || error?.message || fallback;
 
+  const focusPhoneInput = () => {
+    phoneInputRef.current?.focus();
+  };
+
   const handleContinue = async () => {
     if (!isPhoneValid) {
       showToast({ message: 'Enter a valid mobile number', type: 'error' });
+      focusPhoneInput();
       return;
     }
 
@@ -74,7 +99,10 @@ const LoginScreen = ({ navigation }: Props) => {
       navigation.navigate('Otp', { phone: cleanedPhone });
     } catch (error: any) {
       showToast({
-        message: getApiErrorMessage(error, 'Unable to continue. Please try again.'),
+        message: getApiErrorMessage(
+          error,
+          'Unable to continue. Please try again.',
+        ),
         type: 'error',
       });
     }
@@ -85,7 +113,9 @@ const LoginScreen = ({ navigation }: Props) => {
 
     try {
       const googleData = await signInWithGoogle();
-      const response = await googleLogin({ idToken: googleData.idToken }).unwrap();
+      const response = await googleLogin({
+        idToken: googleData.idToken,
+      }).unwrap();
       const payload = {
         token: response.token,
         userId: response.userId,
@@ -122,90 +152,84 @@ const LoginScreen = ({ navigation }: Props) => {
   };
 
   return (
-    <AuthLayout scrollable>
+    <AuthLayout
+      scrollable
+      variant="white"
+      contentStyle={styles.layoutContent}
+    >
       <View style={styles.hero}>
-        <AuthBrandMark />
-        <Text style={styles.title}>Sign in to MyBuddy</Text>
+        <AuthBrandMark size="md" />
+        <Text style={styles.title}>Sign In</Text>
         <Text style={styles.subtitle}>
-          Your personal AI assistant for notes, tasks, and everyday productivity.
+          Enter your mobile number to sign in to Buddy and continue where you
+          left off.
         </Text>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.sectionLabel}>Mobile number</Text>
-        <View
-          style={[
-            styles.phoneField,
-            focusedField === 'phone' && styles.phoneFieldFocused,
-          ]}
-        >
-          <View style={styles.countryChip}>
-            <Text style={styles.flag}>🇮🇳</Text>
-            <Text style={styles.countryCode}>+91</Text>
-          </View>
-          <View style={styles.divider} />
-          <TextInput
-            ref={phoneInputRef}
-            value={phone}
-            onChangeText={setPhone}
-            placeholder="10-digit mobile number"
-            placeholderTextColor={AUTH_COLORS.muted}
-            keyboardType="phone-pad"
-            maxLength={10}
-            returnKeyType="done"
-            style={styles.phoneInput}
-            onFocus={() => setFocusedField('phone')}
-            onBlur={() => setFocusedField(null)}
-          />
+      <Text style={styles.fieldLabel}>Mobile number</Text>
+      <Pressable
+        onPress={focusPhoneInput}
+        style={[styles.inputField, focusedField && styles.inputFieldFocused]}
+      >
+        <View style={styles.iconChip} pointerEvents="none">
+          <PhoneIcon />
         </View>
-
-        <TouchableOpacity
-          onPress={handleContinue}
-          disabled={!canContinue || loading}
-          activeOpacity={0.9}
-          style={styles.ctaWrap}
-        >
-          <LinearGradient
-            colors={
-              canContinue
-                ? [AUTH_COLORS.primaryPurple, AUTH_COLORS.primaryMid, AUTH_COLORS.primary]
-                : ['#C4B5FD', '#A78BFA', AUTH_COLORS.borderFocus]
-            }
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.primaryButton}
-          >
-            {isSendingOtp || isCheckingPhone ? (
-              <ActivityIndicator color={AUTH_COLORS.white} />
-            ) : (
-              <Text style={styles.primaryButtonText}>Continue</Text>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
-
-        <View style={styles.orRow}>
-          <View style={styles.orLine} />
-          <Text style={styles.orText}>or</Text>
-          <View style={styles.orLine} />
-        </View>
-
-        <GoogleSignInButton
-          onPress={handleGoogleLogin}
-          loading={isGoogleBusy}
-          disabled={loading}
+        <Text style={styles.countryCode} pointerEvents="none">
+          +91
+        </Text>
+        <View style={styles.inputDivider} pointerEvents="none" />
+        <TextInput
+          ref={phoneInputRef}
+          value={phone}
+          onChangeText={text => setPhone(text.replace(/[^\d]/g, ''))}
+          placeholder="10-digit mobile number"
+          placeholderTextColor={colors.muted}
+          keyboardType="phone-pad"
+          textContentType="telephoneNumber"
+          autoComplete="tel"
+          maxLength={10}
+          returnKeyType="done"
+          editable={!loading}
+          style={styles.input}
+          onFocus={() => setFocusedField(true)}
+          onBlur={() => setFocusedField(false)}
+          onSubmitEditing={handleContinue}
+          underlineColorAndroid="transparent"
         />
+      </Pressable>
+
+      <TouchableOpacity
+        onPress={handleContinue}
+        disabled={loading}
+        activeOpacity={0.9}
+        style={[
+          styles.primaryButton,
+          canContinue && !loading && styles.primaryButtonReady,
+          (!canContinue || loading) && styles.primaryButtonDisabled,
+        ]}
+      >
+        {isSendingOtp || isCheckingPhone ? (
+          <ActivityIndicator color={colors.white} />
+        ) : (
+          <Text style={styles.primaryButtonText}>Continue</Text>
+        )}
+      </TouchableOpacity>
+
+      <View style={styles.dividerRow}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>or</Text>
+        <View style={styles.dividerLine} />
       </View>
 
-      <View style={styles.trustRow}>
-        <Text style={styles.trustIcon}>🔒</Text>
-        <Text style={styles.trustText}>
-          Secure sign-in. We never share your personal data.
-        </Text>
-      </View>
+      <GoogleSignInButton
+        onPress={handleGoogleLogin}
+        loading={isGoogleBusy}
+        disabled={loading}
+      />
 
       <Text style={styles.footer}>
-        By continuing, you agree to our{' '}
-        <Text style={styles.footerLink}>Terms</Text> and{' '}
+        By clicking Continue, I have read and agree with the{' '}
+        <Text style={styles.footerLink}>Term Sheet</Text>,{' '}
         <Text style={styles.footerLink}>Privacy Policy</Text>.
       </Text>
     </AuthLayout>
@@ -215,184 +239,148 @@ const LoginScreen = ({ navigation }: Props) => {
 export default LoginScreen;
 
 const styles = StyleSheet.create({
+  layoutContent: {
+    justifyContent: 'flex-start',
+    paddingTop: mvs(36),
+  },
+
   hero: {
     alignItems: 'center',
-    paddingTop: mvs(16),
-    paddingBottom: mvs(28),
+    marginBottom: spacing['4xl'],
   },
 
   title: {
-    fontSize: fontSize['5xl'],
+    marginTop: spacing['2xl'],
+    fontSize: fontSize['4xl'],
     fontWeight: fontWeight.extrabold,
-    color: AUTH_COLORS.text,
+    color: colors.text,
     textAlign: 'center',
-    letterSpacing: -0.8,
-    lineHeight: ms(34),
+    letterSpacing: -0.7,
   },
 
   subtitle: {
-    marginTop: spacing.lg,
-    fontSize: fontSize.lg,
-    lineHeight: ms(23),
-    color: AUTH_COLORS.subText,
+    marginTop: spacing.md,
+    fontSize: fontSize.base,
+    lineHeight: ms(22),
+    color: colors.subText,
     textAlign: 'center',
     paddingHorizontal: spacing.md,
-    fontWeight: fontWeight.regular,
+    fontWeight: fontWeight.medium,
   },
 
-  card: {
-    backgroundColor: AUTH_COLORS.white,
-    borderRadius: radii['3xl'],
-    padding: ms(22),
-    borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.8)',
-    shadowColor: AUTH_COLORS.shadow,
-    shadowOffset: { width: 0, height: ms(12) },
-    shadowOpacity: 0.08,
-    shadowRadius: ms(24),
-    elevation: 4,
-  },
-
-  sectionLabel: {
-    fontSize: fontSize.md,
+  fieldLabel: {
+    marginBottom: spacing.sm,
+    marginLeft: spacing.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
-    color: AUTH_COLORS.textSecondary,
-    marginBottom: spacing.lg,
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
+    color: colors.textSecondary,
   },
 
-  phoneField: {
+  inputField: {
     flexDirection: 'row',
     alignItems: 'center',
-    height: ms(56),
+    height: layout.inputHeight,
     borderRadius: radii.lg,
-    backgroundColor: AUTH_COLORS.inputBg,
-    borderWidth: 1.5,
-    borderColor: AUTH_COLORS.border,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.lg,
     marginBottom: spacing['3xl'],
-    overflow: 'hidden',
   },
 
-  phoneFieldFocused: {
-    borderColor: AUTH_COLORS.borderFocus,
-    backgroundColor: AUTH_COLORS.white,
-    shadowColor: AUTH_COLORS.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.12,
-    shadowRadius: ms(10),
-    elevation: 2,
+  inputFieldFocused: {
+    borderColor: colors.primary,
+    backgroundColor: colors.white,
   },
 
-  countryChip: {
-    flexDirection: 'row',
+  iconChip: {
+    width: ms(32),
+    height: ms(32),
+    borderRadius: ms(10),
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
-    paddingHorizontal: spacing.xl + spacing.xxs,
-    gap: spacing.sm,
-  },
-
-  flag: {
-    fontSize: fontSize.xl,
+    justifyContent: 'center',
+    marginRight: spacing.md,
   },
 
   countryCode: {
-    fontSize: fontSize.lg,
+    fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
-    color: AUTH_COLORS.text,
+    color: colors.text,
+    marginRight: spacing.sm,
   },
 
-  divider: {
-    width: ms(1),
-    height: ms(28),
-    backgroundColor: AUTH_COLORS.border,
+  inputDivider: {
+    width: StyleSheet.hairlineWidth,
+    height: ms(20),
+    backgroundColor: colors.border,
+    marginRight: spacing.md,
   },
 
-  phoneInput: {
+  input: {
     flex: 1,
-    minHeight: ms(54),
-    paddingHorizontal: spacing.xl + spacing.xxs,
-    fontSize: fontSize.xl,
+    height: '100%',
+    paddingVertical: Platform.OS === 'ios' ? spacing.md : 0,
+    fontSize: fontSize.base,
     fontWeight: fontWeight.medium,
-    color: AUTH_COLORS.text,
-    letterSpacing: 0.5,
-  },
-
-  ctaWrap: {
-    borderRadius: ms(28),
-    overflow: 'hidden',
-    shadowColor: AUTH_COLORS.primaryPurpleDark,
-    shadowOffset: { width: 0, height: ms(6) },
-    shadowOpacity: 0.25,
-    shadowRadius: ms(12),
-    elevation: 4,
+    color: colors.text,
+    includeFontPadding: false,
   },
 
   primaryButton: {
-    height: ms(56),
+    height: layout.buttonHeight,
+    borderRadius: radii.lg,
+    backgroundColor: colors.primaryDark,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: ms(28),
+    marginBottom: spacing['3xl'],
+  },
+
+  primaryButtonReady: {
+    backgroundColor: colors.primary,
+  },
+
+  primaryButtonDisabled: {
+    opacity: 0.45,
   },
 
   primaryButtonText: {
-    color: AUTH_COLORS.white,
-    fontSize: fontSize.xl,
+    color: colors.white,
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
-    letterSpacing: -0.2,
   },
 
-  orRow: {
+  dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginVertical: ms(22),
-  },
-
-  orLine: {
-    flex: 1,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: AUTH_COLORS.border,
-  },
-
-  orText: {
-    marginHorizontal: spacing['2xl'],
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.medium,
-    color: AUTH_COLORS.muted,
-    textTransform: 'lowercase',
-  },
-
-  trustRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing['4xl'],
-    paddingHorizontal: spacing.xl,
+    marginBottom: spacing['3xl'],
     gap: spacing.md,
   },
 
-  trustIcon: {
-    fontSize: fontSize.base,
+  dividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
   },
 
-  trustText: {
-    flex: 1,
+  dividerText: {
     fontSize: fontSize.sm,
-    lineHeight: ms(18),
-    color: AUTH_COLORS.subText,
     fontWeight: fontWeight.medium,
+    color: colors.subText,
   },
 
   footer: {
-    marginTop: spacing['2xl'],
+    marginTop: spacing['5xl'],
     fontSize: fontSize.sm,
-    lineHeight: ms(19),
-    color: AUTH_COLORS.muted,
+    lineHeight: ms(20),
+    color: colors.muted,
     textAlign: 'center',
-    paddingHorizontal: spacing['2xl'],
+    paddingHorizontal: spacing.sm,
   },
 
   footerLink: {
-    color: AUTH_COLORS.primary,
+    color: colors.primary,
     fontWeight: fontWeight.semibold,
+    textDecorationLine: 'underline',
   },
 });

@@ -23,7 +23,6 @@ import Svg, { Path } from 'react-native-svg';
 import { useAppDispatch } from '../../../store/hooks';
 import { logout } from '../../../store/slices/authSlice';
 import { useToast } from '../../../store/context/ToastContext';
-import { ProfileSummary } from '../../../store/api/home';
 import {
   useDeleteAccountMutation,
   useLogoutUserMutation,
@@ -44,20 +43,7 @@ type IconProps = {
 
 const KEYBOARD_BUTTON_GAP = ms(32);
 
-type MetricItem = {
-  id: string;
-  title: string;
-  value: string;
-  accent: string;
-  surface: string;
-  icon: (props: IconProps) => React.ReactNode;
-  onPress: () => void;
-};
-
 type ProfileActionGridProps = {
-  summary?: ProfileSummary;
-  isLoading?: boolean;
-  isError?: boolean;
   planName?: string;
   isPlanLoading?: boolean;
   isPlanError?: boolean;
@@ -201,10 +187,10 @@ const formatMetric = (
   return String(value ?? 0);
 };
 
+// keep export helper for ProfileScreen
+export { formatMetric };
+
 const ProfileActionGrid = ({
-  summary,
-  isLoading,
-  isError,
   planName,
   isPlanLoading,
   isPlanError,
@@ -342,35 +328,36 @@ const ProfileActionGrid = ({
     }
   };
 
-  const metrics: MetricItem[] = [
+  const workspaceItems = [
     {
       id: 'notes',
       title: 'Notes',
-      value: formatMetric(summary?.notesCount, isLoading, isError),
-      accent: colors.success,
-      surface: '#ECFDF5',
+      subtitle: 'Open and manage your notes',
+      surface: colors.primaryLight,
+      accent: colors.primary,
       icon: NotesGridIcon,
       onPress: () => navigation.navigate('Notes'),
     },
     {
       id: 'tasks',
       title: 'Tasks',
-      value: formatMetric(summary?.tasksCount, isLoading, isError),
-      accent: '#2563EB',
+      subtitle: 'Track what needs to get done',
       surface: '#EFF6FF',
+      accent: '#2563EB',
       icon: TaskGridIcon,
       onPress: () => navigation.navigate('Tasks'),
     },
     {
       id: 'spaces',
       title: 'Spaces',
-      value: formatMetric(summary?.spacesCount, isLoading, isError),
-      accent: colors.primaryPurpleDark,
+      subtitle: 'Jump back to your workspaces',
       surface: colors.primarySoft,
+      accent: colors.primaryPurpleDark,
       icon: SpacesGridIcon,
       onPress: () => navigation.navigate('Home'),
     },
   ];
+
   const bottomPadding =
     keyboardHeight > 0
       ? keyboardHeight - insets.bottom + KEYBOARD_BUTTON_GAP
@@ -380,30 +367,34 @@ const ProfileActionGrid = ({
 
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.sectionLabel}>Overview</Text>
-      <View style={styles.metricsRow}>
-        {metrics.map(item => (
-          <TouchableOpacity
-            key={item.id}
-            activeOpacity={0.85}
-            style={styles.metricCard}
-            onPress={item.onPress}
-            accessibilityRole="button"
-            accessibilityLabel={`${item.title}, ${item.value}`}
-          >
-            <View
-              style={[styles.metricIcon, { backgroundColor: item.surface }]}
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionLabel}>Workspace</Text>
+        {workspaceItems.map((item, index) => (
+          <View key={item.id}>
+            {index > 0 ? <View style={styles.listDivider} /> : null}
+            <TouchableOpacity
+              activeOpacity={0.82}
+              style={styles.listRow}
+              onPress={item.onPress}
+              accessibilityRole="button"
+              accessibilityLabel={item.title}
             >
-              {item.icon({ color: item.accent })}
-            </View>
-            <Text style={styles.metricValue}>{item.value}</Text>
-            <Text style={styles.metricTitle}>{item.title}</Text>
-          </TouchableOpacity>
+              <View style={[styles.listIcon, { backgroundColor: item.surface }]}>
+                {item.icon({ color: item.accent })}
+              </View>
+              <View style={styles.listContent}>
+                <Text style={styles.listTitle}>{item.title}</Text>
+                <Text style={styles.listSubtitle}>{item.subtitle}</Text>
+              </View>
+              <ChevronIcon />
+            </TouchableOpacity>
+          </View>
         ))}
       </View>
 
-      <Text style={[styles.sectionLabel, styles.sectionSpacer]}>Account</Text>
-      <View style={styles.listCard}>
+      <View style={[styles.sectionCard, styles.sectionCardSpacer]}>
+        <Text style={styles.sectionLabel}>Account</Text>
+
         <TouchableOpacity
           activeOpacity={0.82}
           style={styles.listRow}
@@ -418,7 +409,9 @@ const ProfileActionGrid = ({
           </View>
           <View style={styles.listContent}>
             <Text style={styles.listTitle}>Plan</Text>
-            <Text style={styles.listSubtitle}>View and manage subscription</Text>
+            <Text style={styles.listSubtitle}>
+              View and manage subscription
+            </Text>
           </View>
           <View style={styles.listTrailing}>
             <Text style={styles.listValue}>{planValue}</Text>
@@ -435,7 +428,7 @@ const ProfileActionGrid = ({
           accessibilityRole="button"
           accessibilityLabel="Delete account"
         >
-          <View style={[styles.listIcon, { backgroundColor: '#FEF2F2' }]}>
+          <View style={[styles.listIcon, { backgroundColor: colors.errorSoft }]}>
             <DeleteAccountIcon color={colors.error} />
           </View>
           <View style={styles.listContent}>
@@ -458,7 +451,7 @@ const ProfileActionGrid = ({
           accessibilityRole="button"
           accessibilityLabel="Logout"
         >
-          <View style={[styles.listIcon, { backgroundColor: '#FEF2F2' }]}>
+          <View style={[styles.listIcon, { backgroundColor: colors.errorSoft }]}>
             <LogoutIcon color={colors.error} />
           </View>
           <View style={styles.listContent}>
@@ -566,64 +559,25 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
 
-  sectionLabel: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    color: colors.muted,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-    marginBottom: spacing.lg,
-  },
-
-  sectionSpacer: {
-    marginTop: spacing['3xl'],
-  },
-
-  metricsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-
-  metricCard: {
-    flex: 1,
+  sectionCard: {
     backgroundColor: colors.white,
-    borderRadius: radii.lg,
+    borderRadius: radii['2xl'],
     borderWidth: 1,
     borderColor: colors.border,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.sm,
-    alignItems: 'center',
-  },
-
-  metricIcon: {
-    width: ms(32),
-    height: ms(32),
-    borderRadius: ms(10),
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.sm,
-  },
-
-  metricValue: {
-    color: colors.text,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    lineHeight: ms(22),
-  },
-
-  metricTitle: {
-    marginTop: spacing.xxs,
-    color: colors.subText,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
-  },
-
-  listCard: {
-    backgroundColor: colors.white,
-    borderRadius: radii.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
+    paddingTop: spacing.xl,
     overflow: 'hidden',
+  },
+
+  sectionCardSpacer: {
+    marginTop: spacing['2xl'],
+  },
+
+  sectionLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    color: colors.subText,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing['2xl'],
   },
 
   listRow: {
@@ -635,9 +589,9 @@ const styles = StyleSheet.create({
   },
 
   listIcon: {
-    width: ms(38),
-    height: ms(38),
-    borderRadius: ms(12),
+    width: ms(40),
+    height: ms(40),
+    borderRadius: ms(20),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -663,28 +617,27 @@ const styles = StyleSheet.create({
   },
 
   listSubtitle: {
-    color: colors.muted,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.regular,
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
   },
 
   listTrailing: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
 
   listValue: {
-    color: colors.primary,
+    color: colors.primaryDark,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-    textTransform: 'uppercase',
+    fontWeight: fontWeight.bold,
   },
 
   listDivider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.border,
-    marginLeft: ms(70),
+    marginLeft: ms(76),
   },
 
   sheetBackground: {
@@ -716,7 +669,7 @@ const styles = StyleSheet.create({
   warningBox: {
     minHeight: ms(64),
     borderRadius: radii.xl,
-    backgroundColor: '#FEE2E2',
+    backgroundColor: colors.errorSoftBorder,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.lg,
     flexDirection: 'row',

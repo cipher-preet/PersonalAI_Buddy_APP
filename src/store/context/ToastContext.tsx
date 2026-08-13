@@ -3,6 +3,7 @@ import { ToastType } from '../../components/CustomToast';
 
 export interface ShowToastParams {
   message: string;
+  description?: string;
   type?: ToastType;
   duration?: number;
 }
@@ -12,10 +13,14 @@ interface ToastContextType {
   hideToast: () => void;
   toastVisible: boolean;
   toastMessage: string;
+  toastDescription?: string;
   toastType: ToastType;
+  toastDuration: number;
 }
 
-export const ToastContext = createContext<ToastContextType | undefined>(undefined);
+export const ToastContext = createContext<ToastContextType | undefined>(
+  undefined,
+);
 
 interface ToastProviderProps {
   children: React.ReactNode;
@@ -24,12 +29,21 @@ interface ToastProviderProps {
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [toastDescription, setToastDescription] = useState<string | undefined>();
   const [toastType, setToastType] = useState<ToastType>('success');
+  const [toastDuration, setToastDuration] = useState(3000);
 
   const showToast = useCallback(
-    ({ message, type = 'success' }: ShowToastParams) => {
+    ({
+      message,
+      description,
+      type = 'success',
+      duration = 3000,
+    }: ShowToastParams) => {
       setToastMessage(message);
+      setToastDescription(description);
       setToastType(type);
+      setToastDuration(duration);
       setToastVisible(true);
     },
     [],
@@ -40,7 +54,17 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   }, []);
 
   return (
-    <ToastContext.Provider value={{ showToast, hideToast, toastVisible, toastMessage, toastType }}>
+    <ToastContext.Provider
+      value={{
+        showToast,
+        hideToast,
+        toastVisible,
+        toastMessage,
+        toastDescription,
+        toastType,
+        toastDuration,
+      }}
+    >
       {children}
     </ToastContext.Provider>
   );
