@@ -207,29 +207,26 @@ const styles = StyleSheet.create({
 
   hero: {
     alignItems: 'center',
-    paddingTop: spacing['3xl'],
-    paddingBottom: spacing['4xl'],
+    paddingTop: spacing.xl,
+    paddingBottom: spacing['2xl'],
   },
 
   avatarWrap: {
-    width: ms(96),
-    height: ms(96),
-    borderRadius: ms(48),
+    width: ms(88),
+    height: ms(88),
+    borderRadius: ms(44),
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#94A3B8',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 3,
-    marginBottom: spacing['2xl'],
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    marginBottom: spacing.lg,
   },
 
   avatarInner: {
-    width: ms(78),
-    height: ms(78),
-    borderRadius: ms(39),
+    width: ms(72),
+    height: ms(72),
+    borderRadius: ms(36),
     backgroundColor: '#EEF2FF',
     alignItems: 'center',
     justifyContent: 'center',
@@ -245,7 +242,7 @@ const styles = StyleSheet.create({
   },
 
   greetingSub: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     textAlign: 'center',
     color: colors.subText,
     fontSize: fontSize.base,
@@ -256,11 +253,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.md,
   },
 
   historyHeader: {
-    marginTop: spacing['4xl'],
+    marginTop: spacing['2xl'],
   },
 
   sectionLabel: {
@@ -278,7 +275,7 @@ const styles = StyleSheet.create({
   chipsWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
 
   chip: {
@@ -288,9 +285,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     backgroundColor: '#EEF2FF',
     borderRadius: radii.xl,
-    paddingVertical: spacing.lg,
-    paddingLeft: spacing.xl,
-    paddingRight: spacing.lg,
+    paddingVertical: spacing.md,
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.md,
   },
 
   chipText: {
@@ -318,9 +315,9 @@ const styles = StyleSheet.create({
   historyEmpty: {
     backgroundColor: colors.white,
     borderRadius: radii.xl,
-    paddingHorizontal: spacing['2xl'],
-    paddingVertical: spacing['3xl'],
-    borderWidth: 1,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing['2xl'],
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
 
@@ -338,21 +335,16 @@ const styles = StyleSheet.create({
   },
 
   historyList: {
-    gap: spacing.lg,
+    gap: spacing.md,
   },
 
   historyCard: {
     backgroundColor: colors.white,
     borderRadius: radii.xl,
-    paddingHorizontal: spacing['2xl'],
-    paddingVertical: spacing.xl,
-    borderWidth: 1,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    shadowColor: '#94A3B8',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 1,
   },
 
   historyTitle: {
@@ -363,7 +355,7 @@ const styles = StyleSheet.create({
   },
 
   historyDate: {
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     color: colors.subText,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,

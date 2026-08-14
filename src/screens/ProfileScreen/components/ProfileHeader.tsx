@@ -24,7 +24,7 @@ const styles = StyleSheet.create({
     minHeight: layout.iconButton,
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
 
   title: {

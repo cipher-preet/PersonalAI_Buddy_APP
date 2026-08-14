@@ -80,17 +80,12 @@ const styles = StyleSheet.create({
   bubble: {
     maxWidth: '72%',
     backgroundColor: COLORS.aiBubble,
-    paddingHorizontal: spacing['2xl'],
-    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
     borderRadius: radii.xl,
     borderBottomLeftRadius: radii.xs,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.primaryLight,
-    shadowColor: colors.shadow,
-    shadowOffset: { width: 0, height: ms(4) },
-    shadowOpacity: 0.05,
-    shadowRadius: ms(10),
-    elevation: 2,
   },
 
   dotsRow: {
@@ -108,7 +103,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
     color: COLORS.muted,

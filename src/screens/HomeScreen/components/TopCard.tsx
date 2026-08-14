@@ -7,7 +7,6 @@ import {
   ms,
   mvs,
   radii,
-  shadows,
   spacing,
 } from '../../../theme';
 
@@ -98,12 +97,11 @@ const styles = StyleSheet.create({
     width: '48%',
     backgroundColor: colors.white,
     borderRadius: ms(26),
-    paddingHorizontal: ms(18),
-    paddingTop: ms(18),
-    paddingBottom: mvs(20),
-    borderWidth: 1,
+    paddingHorizontal: ms(16),
+    paddingTop: ms(14),
+    paddingBottom: mvs(14),
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    ...shadows.card,
   },
 
   topSection: {
@@ -153,7 +151,7 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    marginTop: mvs(28),
+    marginTop: mvs(16),
   },
 
   title: {

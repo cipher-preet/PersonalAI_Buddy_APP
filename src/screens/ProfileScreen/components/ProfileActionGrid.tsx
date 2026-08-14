@@ -556,42 +556,42 @@ export default ProfileActionGrid;
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginTop: spacing.xs,
+    marginTop: 0,
   },
 
   sectionCard: {
     backgroundColor: colors.white,
-    borderRadius: radii['2xl'],
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingTop: spacing.xl,
+    borderRadius: radii.xl,
+    paddingTop: spacing.lg,
     overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
 
   sectionCardSpacer: {
-    marginTop: spacing['2xl'],
+    marginTop: spacing.lg,
   },
 
   sectionLabel: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
     color: colors.subText,
-    marginBottom: spacing.sm,
-    paddingHorizontal: spacing['2xl'],
+    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.xl,
   },
 
   listRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xl,
-    paddingHorizontal: spacing['2xl'],
-    paddingVertical: spacing.xl,
+    gap: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
   },
 
   listIcon: {
-    width: ms(40),
-    height: ms(40),
-    borderRadius: ms(20),
+    width: ms(36),
+    height: ms(36),
+    borderRadius: ms(18),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -637,7 +637,7 @@ const styles = StyleSheet.create({
   listDivider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.border,
-    marginLeft: ms(76),
+    marginLeft: ms(68),
   },
 
   sheetBackground: {

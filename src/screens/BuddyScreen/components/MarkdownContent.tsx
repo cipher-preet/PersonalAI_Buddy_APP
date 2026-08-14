@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xxs,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#C7D2FE',
   },
 

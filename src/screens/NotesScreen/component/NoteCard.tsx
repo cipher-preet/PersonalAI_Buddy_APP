@@ -17,8 +17,6 @@ import {
   ms,
   radii,
   spacing,
-  shadows,
-  layout
 } from '../../../theme';
 
 type Props = {
@@ -199,17 +197,18 @@ export default NoteCard;
 
 const styles = StyleSheet.create({
   shadowWrap: {
-    marginBottom: layout.listGap,
-    borderRadius: radii.md,
+    marginBottom: spacing.md,
+    borderRadius: radii.xl,
     backgroundColor: colors.white,
-    ...shadows.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
 
   card: {
-    borderRadius: radii.md,
+    borderRadius: radii.xl,
     backgroundColor: colors.white,
-    paddingHorizontal: layout.cardPadding,
-    paddingTop: layout.cardPadding,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.md,
     overflow: 'hidden',
   },
@@ -219,7 +218,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
 
   tag: {

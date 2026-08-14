@@ -20,7 +20,7 @@ import {
 
 type Props = {
   visible: boolean;
-  itemType: 'note' | 'task' | 'space';
+  itemType: 'note' | 'task' | 'space' | 'reminder';
   itemTitle?: string;
   loading?: boolean;
   onCancel: () => void;
@@ -48,7 +48,13 @@ const DeleteConfirmationModal = ({
   onConfirm,
 }: Props) => {
   const label =
-    itemType === 'task' ? 'task' : itemType === 'space' ? 'space' : 'note';
+    itemType === 'task'
+      ? 'task'
+      : itemType === 'space'
+        ? 'space'
+        : itemType === 'reminder'
+          ? 'reminder'
+          : 'note';
   const title = `Delete ${label}?`;
   const trimmedTitle = itemTitle?.trim();
 

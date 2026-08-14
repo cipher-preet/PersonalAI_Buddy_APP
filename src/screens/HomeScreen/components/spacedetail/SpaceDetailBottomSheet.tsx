@@ -22,7 +22,6 @@ import SpaceOverviewCard from './SpaceOverviewCard';
 import SpaceActionList from './SpaceActionList';
 import {
   colors,
-  layout,
   ms,
   radii,
   spacing,
@@ -232,7 +231,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: ms(18),
     paddingTop: spacing.xxs,
-    paddingBottom: Platform.OS === 'ios' ? vSpacing['3xl'] : vSpacing['2xl'],
-    gap: layout.sectionGap,
+    paddingBottom: Platform.OS === 'ios' ? vSpacing['2xl'] : vSpacing.xl,
+    gap: spacing.lg,
   },
 });

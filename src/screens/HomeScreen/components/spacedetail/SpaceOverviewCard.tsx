@@ -11,11 +11,9 @@ import {
   colors,
   fontSize,
   fontWeight,
-  layout,
   ms,
   mvs,
   radii,
-  shadows,
   spacing,
 } from '../../../../theme';
 
@@ -121,31 +119,30 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
     borderRadius: ms(18),
-    padding: layout.cardPadding,
-    borderWidth: 1,
+    padding: spacing.xl,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.primaryLight,
-    ...shadows.soft,
   },
 
   cardTitle: {
     fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
     color: colors.text,
-    marginBottom: ms(14),
+    marginBottom: spacing.md,
   },
 
   stateBox: {
-    minHeight: mvs(138),
+    minHeight: mvs(120),
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: ms(14),
     backgroundColor: colors.inputBg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
 
   stateText: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     color: colors.subText,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
@@ -176,8 +173,8 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
     backgroundColor: colors.inputBg,
     borderRadius: ms(14),
-    paddingVertical: spacing.xl,
-    borderWidth: 1,
+    paddingVertical: spacing.lg,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
 
@@ -216,9 +213,9 @@ const styles = StyleSheet.create({
   },
 
   separator: {
-    height: 1,
+    height: StyleSheet.hairlineWidth,
     backgroundColor: colors.border,
-    marginVertical: ms(14),
+    marginVertical: spacing.md,
   },
 
   progressSection: {},
@@ -227,7 +224,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
 
   progressTitle: {
@@ -262,7 +259,7 @@ const styles = StyleSheet.create({
   },
 
   progressSubtext: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
     color: colors.muted,

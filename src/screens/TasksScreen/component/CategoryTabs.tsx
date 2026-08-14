@@ -236,8 +236,8 @@ export default CategoryTabs;
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginBottom: spacing.xl,
-    paddingBottom: spacing.sm,
+    marginBottom: spacing.md,
+    paddingBottom: spacing.xs,
   },
 
   container: {
@@ -248,14 +248,14 @@ const styles = StyleSheet.create({
 
   card: {
     width: CARD_WIDTH,
-    minHeight: ms(148),
+    minHeight: ms(132),
     borderRadius: radii.xl,
     backgroundColor: colors.white,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
     justifyContent: 'space-between',
-    borderWidth: 1.5,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'transparent',
   },
 
@@ -324,12 +324,14 @@ const styles = StyleSheet.create({
 
   stateCard: {
     width: CARD_WIDTH,
-    minHeight: ms(148),
+    minHeight: ms(132),
     borderRadius: radii.xl,
     backgroundColor: colors.white,
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     justifyContent: 'center',
     alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
 
   stateText: {

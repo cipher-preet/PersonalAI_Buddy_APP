@@ -217,8 +217,8 @@ const ChatHistoryDrawer = ({
             styles.drawer,
             drawerStyle,
             {
-              paddingTop: insets.top + spacing.xl,
-              paddingBottom: Math.max(insets.bottom, spacing['2xl']),
+              paddingTop: insets.top + spacing.md,
+              paddingBottom: Math.max(insets.bottom, spacing.lg),
             },
           ]}
         >
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: radii['2xl'],
     borderBottomRightRadius: radii['2xl'],
     overflow: 'hidden',
-    borderRightWidth: 1,
+    borderRightWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
 
@@ -417,8 +417,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing['2xl'],
-    marginBottom: spacing.md,
+    paddingHorizontal: spacing.xl,
+    marginBottom: spacing.sm,
   },
 
   headerEyebrow: {
@@ -444,13 +444,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
 
   summaryRow: {
-    paddingHorizontal: spacing['2xl'],
-    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    marginBottom: spacing.md,
   },
 
   summaryText: {
@@ -460,8 +460,8 @@ const styles = StyleSheet.create({
   },
 
   newChatButton: {
-    marginHorizontal: spacing['2xl'],
-    marginBottom: spacing['2xl'],
+    marginHorizontal: spacing.xl,
+    marginBottom: spacing.lg,
     minHeight: ms(44),
     borderRadius: radii.pill,
     backgroundColor: colors.primary,
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    paddingHorizontal: spacing['2xl'],
+    paddingHorizontal: spacing.xl,
   },
 
   newChatDisabled: {
@@ -487,31 +487,31 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    paddingHorizontal: spacing['2xl'],
-    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.lg,
   },
 
   section: {
-    marginBottom: spacing['2xl'],
+    marginBottom: spacing.lg,
   },
 
   sectionLabel: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
     color: colors.subText,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
 
   sectionCards: {
-    gap: spacing.md,
+    gap: spacing.sm,
   },
 
   sessionCard: {
     backgroundColor: colors.white,
     borderRadius: radii.xl,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xl,
-    borderWidth: 1,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
 
@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
     lineHeight: ms(18),
     fontWeight: fontWeight.medium,
     color: colors.subText,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
 
   sessionMeta: {
@@ -580,7 +580,7 @@ const styles = StyleSheet.create({
 
   emptyState: {
     alignItems: 'center',
-    paddingTop: spacing['6xl'],
+    paddingTop: spacing['4xl'],
     paddingHorizontal: spacing.xl,
   },
 
@@ -591,7 +591,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
 
   emptyTitle: {
@@ -611,8 +611,8 @@ const styles = StyleSheet.create({
 
   loadingState: {
     alignItems: 'center',
-    paddingVertical: spacing['4xl'],
-    gap: spacing.lg,
+    paddingVertical: spacing['2xl'],
+    gap: spacing.md,
   },
 
   loadingText: {
@@ -623,11 +623,11 @@ const styles = StyleSheet.create({
 
   errorState: {
     backgroundColor: '#FEF2F2',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#FECACA',
     borderRadius: radii.xl,
-    padding: spacing.xl,
-    marginBottom: spacing.xl,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
   },
 
   errorTitle: {
@@ -646,12 +646,12 @@ const styles = StyleSheet.create({
 
   retryButton: {
     alignSelf: 'flex-start',
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     borderRadius: radii.pill,
     backgroundColor: colors.white,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: '#FECACA',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
   },
 
@@ -663,14 +663,14 @@ const styles = StyleSheet.create({
 
   loadMoreWrap: {
     alignItems: 'center',
-    marginBottom: spacing['2xl'],
+    marginBottom: spacing.lg,
   },
 
   loadMoreButton: {
     minHeight: ms(36),
-    paddingHorizontal: spacing['3xl'],
+    paddingHorizontal: spacing['2xl'],
     borderRadius: radii.pill,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     backgroundColor: colors.white,
     alignItems: 'center',

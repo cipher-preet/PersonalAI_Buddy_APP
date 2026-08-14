@@ -25,6 +25,9 @@ import TaskScreen from '../screens/TasksScreen/TaskScreen';
 import ProfileScreen from '../screens/ProfileScreen/ProfileScreen';
 import BuddyScreen from '../screens/BuddyScreen/BuddyScreen';
 import PlansScreen from '../screens/PlansScreen/PlansScreen';
+import RemindersScreen from '../screens/RemindersScreen/RemindersScreen';
+import BriefingScreen from '../screens/BriefingScreen/BriefingScreen';
+import ShareScreen from '../screens/ShareScreen/ShareScreen';
 import {
   colors,
   fontSize,
@@ -181,7 +184,13 @@ const TAB_CONFIG = [
 const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
   const currentRoute = state.routes[state.index];
 
-  if (currentRoute.name === 'AI' || currentRoute.name === 'Plans') {
+  if (
+    currentRoute.name === 'AI' ||
+    currentRoute.name === 'Plans' ||
+    currentRoute.name === 'Reminders' ||
+    currentRoute.name === 'Briefing' ||
+    currentRoute.name === 'Share'
+  ) {
     return null;
   }
 
@@ -248,6 +257,9 @@ const MainTabs = () => {
       <Tab.Screen name="Tasks" component={TaskScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
       <Tab.Screen name="Plans" component={PlansScreen} />
+      <Tab.Screen name="Reminders" component={RemindersScreen} />
+      <Tab.Screen name="Briefing" component={BriefingScreen} />
+      <Tab.Screen name="Share" component={ShareScreen} />
     </Tab.Navigator>
   );
 };

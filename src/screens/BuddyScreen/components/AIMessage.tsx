@@ -76,10 +76,10 @@ export default AIMessage;
 
 const styles = StyleSheet.create({
   row: {
-    marginTop: spacing.xl,
+    marginTop: spacing.md,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing.md,
+    gap: spacing.sm,
     paddingRight: spacing.md,
   },
 
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     height: ms(28),
     borderRadius: ms(14),
     backgroundColor: colors.white,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
@@ -100,23 +100,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: radii.xl,
     borderTopLeftRadius: radii.sm,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
-    borderWidth: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    shadowColor: '#94A3B8',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 1,
   },
 
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
 
   metaLabel: {
@@ -140,7 +135,7 @@ const styles = StyleSheet.create({
   },
 
   time: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     fontSize: fontSize.xs,
     color: colors.muted,
     fontWeight: fontWeight.semibold,

@@ -17,7 +17,6 @@ import {
   ms,
   radii,
   spacing,
-  shadows,
   layout
 } from '../../../theme';
 
@@ -269,9 +268,10 @@ export default TaskCard;
 const styles = StyleSheet.create({
   shadowWrap: {
     marginBottom: layout.listGap,
-    borderRadius: radii.md,
+    borderRadius: radii.xl,
     backgroundColor: colors.white,
-    ...shadows.card,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
 
   shadowWrapCompleted: {
@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    borderRadius: radii.md,
+    borderRadius: radii.xl,
     backgroundColor: colors.white,
     paddingHorizontal: layout.cardPadding,
     paddingTop: layout.cardPadding,

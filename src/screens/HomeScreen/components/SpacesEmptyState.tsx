@@ -59,8 +59,8 @@ export default SpacesEmptyState;
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: spacing.xl,
-    paddingVertical: spacing['5xl'],
+    marginTop: spacing.lg,
+    paddingVertical: spacing['4xl'],
     paddingHorizontal: spacing['4xl'],
     alignItems: 'center',
     backgroundColor: colors.white,

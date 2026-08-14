@@ -131,9 +131,9 @@ export default BottomInput;
 
 const styles = StyleSheet.create({
   wrapper: {
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
     paddingHorizontal: spacing['2xl'],
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.md,
     backgroundColor: 'transparent',
   },
 
@@ -146,12 +146,8 @@ const styles = StyleSheet.create({
     paddingLeft: spacing.xl,
     paddingRight: spacing.sm,
     paddingVertical: CONTAINER_VERTICAL_PADDING,
-    borderWidth: 0,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: ms(10) },
-    shadowOpacity: 0.14,
-    shadowRadius: ms(18),
-    elevation: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
 
   inputWrap: {

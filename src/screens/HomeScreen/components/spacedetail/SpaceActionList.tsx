@@ -90,13 +90,13 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
     color: colors.text,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
 
   group: {
     backgroundColor: colors.white,
     borderRadius: radii.lg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.primaryLight,
     overflow: 'hidden',
   },
@@ -106,18 +106,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: ms(14),
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.lg,
   },
 
   rowBorder: {
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
 
   rowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.lg,
+    gap: spacing.md,
   },
 
   iconBox: {
@@ -136,18 +136,18 @@ const styles = StyleSheet.create({
   },
 
   primaryWrap: {
-    margin: spacing.lg,
+    margin: spacing.md,
     marginTop: spacing.xs,
     borderRadius: ms(14),
     overflow: 'hidden',
   },
 
   primaryButton: {
-    height: mvs(46),
+    height: mvs(44),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
     borderRadius: ms(14),
   },
 

@@ -518,13 +518,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingTop: mvs(16),
+    paddingTop: mvs(10),
     paddingBottom: mvs(40),
   },
 
   headerWrap: {
     paddingHorizontal: layout.screenPadding,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
 
   notesScroll: {
@@ -538,17 +538,17 @@ const styles = StyleSheet.create({
 
   stateBox: {
     minHeight: mvs(120),
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.lg,
     backgroundColor: colors.white,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
 
   stateText: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     color: colors.gray,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
@@ -607,12 +607,12 @@ const styles = StyleSheet.create({
   },
 
   paginationFooter: {
-    marginTop: spacing.xl,
-    marginBottom: mvs(36),
+    marginTop: spacing.lg,
+    marginBottom: mvs(24),
   },
 
   paginationText: {
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     color: colors.subText,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,

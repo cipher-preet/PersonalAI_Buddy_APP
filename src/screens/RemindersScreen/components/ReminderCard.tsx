@@ -1,0 +1,228 @@
+import React, { memo, useState } from 'react';
+import {
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import Svg, { Circle, Path } from 'react-native-svg';
+
+import { REMINDER_TONES, ReminderItem } from './mockReminders';
+import {
+  colors,
+  fontSize,
+  fontWeight,
+  ms,
+  radii,
+  spacing,
+} from '../../../theme';
+
+type Props = {
+  item: ReminderItem;
+  width: number;
+  onPress?: () => void;
+  onDelete?: () => void;
+};
+
+const ArrowIcon = ({ color }: { color: string }) => (
+  <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M7 17 17 7M10 7h7v7"
+      stroke={color}
+      strokeWidth={2.2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const MoreIcon = ({ color = colors.text }: { color?: string }) => (
+  <Svg width={ms(15)} height={ms(15)} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="5" r="1.6" fill={color} />
+    <Circle cx="12" cy="12" r="1.6" fill={color} />
+    <Circle cx="12" cy="19" r="1.6" fill={color} />
+  </Svg>
+);
+
+const TrashIcon = () => (
+  <Svg width={ms(15)} height={ms(15)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"
+      stroke={colors.error}
+      strokeWidth={1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const ReminderCard = ({ item, width, onPress, onDelete }: Props) => {
+  const tone = REMINDER_TONES[item.tone];
+  const [menuVisible, setMenuVisible] = useState(false);
+
+  return (
+    <View style={[styles.shadowWrap, { width }]}>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        style={[styles.card, { backgroundColor: tone.bg }]}
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={item.title}
+      >
+        <View style={styles.headerRow}>
+          <Text numberOfLines={3} style={[styles.title, { color: tone.text }]}>
+            {item.title} {item.emoji}
+          </Text>
+
+          <TouchableOpacity
+            activeOpacity={0.75}
+            style={[styles.moreButton, { backgroundColor: `${tone.arrow}18` }]}
+            onPress={event => {
+              event.stopPropagation();
+              setMenuVisible(true);
+            }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            accessibilityRole="button"
+            accessibilityLabel="Reminder options"
+          >
+            <MoreIcon color={tone.arrow} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={[styles.timeLabel, { color: tone.muted }]}>
+            {item.timeLabel}
+          </Text>
+
+          <View style={[styles.arrowButton, { backgroundColor: tone.arrow }]}>
+            <ArrowIcon color="#FFFFFF" />
+          </View>
+        </View>
+      </TouchableOpacity>
+
+      <Modal
+        visible={menuVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <Pressable
+          style={styles.menuBackdrop}
+          onPress={() => setMenuVisible(false)}
+        >
+          <Pressable style={styles.menuCard}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                onDelete?.();
+              }}
+            >
+              <TrashIcon />
+              <Text style={styles.menuItemText}>Delete reminder</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+    </View>
+  );
+};
+
+export default memo(ReminderCard);
+
+const styles = StyleSheet.create({
+  shadowWrap: {
+    borderRadius: radii['2xl'],
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+
+  card: {
+    minHeight: ms(148),
+    borderRadius: radii['2xl'],
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    justifyContent: 'space-between',
+  },
+
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+
+  moreButton: {
+    width: ms(28),
+    height: ms(28),
+    borderRadius: ms(10),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: ms(1),
+  },
+
+  title: {
+    flex: 1,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    lineHeight: ms(22),
+    letterSpacing: -0.3,
+  },
+
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing.xl,
+  },
+
+  timeLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+  },
+
+  arrowButton: {
+    width: ms(34),
+    height: ms(34),
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  menuBackdrop: {
+    flex: 1,
+    backgroundColor: colors.backdrop,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing['4xl'],
+  },
+
+  menuCard: {
+    width: '100%',
+    maxWidth: ms(260),
+    borderRadius: radii.xl,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: spacing.sm,
+    overflow: 'hidden',
+  },
+
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xl,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.xl,
+  },
+
+  menuItemText: {
+    color: colors.error,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+  },
+});

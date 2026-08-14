@@ -473,16 +473,16 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingHorizontal: ms(22),
+    paddingHorizontal: ms(20),
     paddingTop: spacing.xs,
-    paddingBottom: Platform.OS === 'ios' ? mvs(40) : mvs(32),
+    paddingBottom: Platform.OS === 'ios' ? mvs(32) : mvs(24),
   },
 
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: ms(14),
+    marginBottom: spacing.md,
   },
 
   tag: {
@@ -533,17 +533,17 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
-    marginTop: spacing.xl,
-    marginBottom: spacing['3xl'],
+    gap: spacing.sm,
+    marginTop: spacing.lg,
+    marginBottom: spacing.xl,
   },
 
   infoChip: {
     backgroundColor: colors.inputBg,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radii.sm,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.primaryLight,
   },
 
@@ -556,21 +556,21 @@ const styles = StyleSheet.create({
   summaryCard: {
     backgroundColor: colors.purpleLight,
     borderRadius: radii.lg,
-    padding: spacing['2xl'],
-    marginBottom: spacing['3xl'],
-    borderWidth: 1,
+    padding: spacing.xl,
+    marginBottom: spacing.xl,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderFocus,
   },
 
   section: {
-    marginBottom: spacing['3xl'],
+    marginBottom: spacing.xl,
   },
 
   sectionLabel: {
     fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
     color: colors.black,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
     letterSpacing: 0.2,
   },
 
@@ -584,7 +584,7 @@ const styles = StyleSheet.create({
   highlightRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
 
   bullet: {
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
     borderRadius: ms(3),
     backgroundColor: colors.primary,
     marginTop: spacing.md,
-    marginRight: spacing.lg,
+    marginRight: spacing.md,
   },
 
   highlightText: {
@@ -607,9 +607,9 @@ const styles = StyleSheet.create({
   detailCard: {
     backgroundColor: colors.white,
     borderRadius: ms(14),
-    padding: ms(14),
-    marginBottom: spacing.lg,
-    borderWidth: 1,
+    padding: ms(12),
+    marginBottom: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.lightGray,
   },
 
@@ -617,7 +617,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
     color: colors.black,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs,
   },
 
   detailText: {
@@ -637,20 +637,20 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
     backgroundColor: colors.inputBg,
     borderRadius: radii.md,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
 
   actionCheck: {
     width: ms(16),
     height: ms(16),
     borderRadius: ms(5),
-    borderWidth: 1.5,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.primary,
-    marginRight: spacing.lg,
+    marginRight: spacing.md,
     marginTop: spacing.xxs,
   },
 
@@ -665,9 +665,9 @@ const styles = StyleSheet.create({
   relatedRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.xl,
+    marginBottom: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
     backgroundColor: colors.lightGray,
     borderRadius: radii.sm,
   },
@@ -677,7 +677,7 @@ const styles = StyleSheet.create({
     height: ms(6),
     borderRadius: ms(3),
     backgroundColor: colors.primaryDark,
-    marginRight: spacing.lg,
+    marginRight: spacing.md,
   },
 
   relatedText: {
@@ -690,12 +690,12 @@ const styles = StyleSheet.create({
   tagsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
 
   pill: {
     backgroundColor: colors.lightGray,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radii.sm,
   },
@@ -707,19 +707,19 @@ const styles = StyleSheet.create({
   },
 
   footerSpace: {
-    height: spacing['2xl'],
+    height: spacing.lg,
   },
 
   stateBox: {
-    minHeight: mvs(180),
+    minHeight: mvs(160),
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: ms(18),
-    marginTop: spacing['2xl'],
-    marginBottom: spacing['3xl'],
+    marginTop: spacing.lg,
+    marginBottom: spacing.xl,
     borderRadius: radii.lg,
     backgroundColor: colors.inputBg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.primaryLight,
   },
 
@@ -753,40 +753,32 @@ const styles = StyleSheet.create({
   },
 
   evidenceHeader: {
-    minHeight: mvs(66),
+    minHeight: mvs(58),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: ms(11),
+    paddingHorizontal: spacing.lg,
+    paddingVertical: ms(10),
     borderRadius: ms(14),
     backgroundColor: colors.white,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderFocus,
-    shadowColor: colors.shadow,
-    shadowOffset: {
-      width: 0,
-      height: 3,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 1,
   },
 
   evidenceHeaderLeft: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingRight: spacing.xl,
+    paddingRight: spacing.lg,
   },
 
   evidenceIconWrap: {
-    width: ms(38),
-    height: ms(38),
+    width: ms(36),
+    height: ms(36),
     borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: ms(11),
+    marginRight: ms(10),
     backgroundColor: colors.purpleLight,
   },
 
@@ -811,11 +803,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: ms(7),
+    paddingHorizontal: spacing.md,
+    paddingVertical: ms(6),
     borderRadius: radii.pill,
     backgroundColor: colors.inputBg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.primaryLight,
   },
 
@@ -850,10 +842,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     backgroundColor: colors.white,
     borderRadius: ms(14),
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xl,
-    marginTop: spacing.lg,
-    borderWidth: 1,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    marginTop: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
 
@@ -863,7 +855,7 @@ const styles = StyleSheet.create({
     borderRadius: ms(8),
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.lg,
+    marginRight: spacing.md,
     backgroundColor: colors.primaryLight,
   },
 

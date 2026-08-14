@@ -126,38 +126,38 @@ export default ProfileCard;
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
-    borderRadius: radii['2xl'],
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingHorizontal: spacing['2xl'],
-    paddingTop: spacing['3xl'],
-    paddingBottom: spacing['2xl'],
+    borderRadius: radii.xl,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing['2xl'],
+    paddingBottom: spacing.xl,
     alignItems: 'center',
-    marginBottom: spacing['2xl'],
+    marginBottom: spacing.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
 
   avatarRing: {
-    width: ms(96),
-    height: ms(96),
-    borderRadius: ms(48),
+    width: ms(88),
+    height: ms(88),
+    borderRadius: ms(44),
     padding: ms(3),
-    borderWidth: 2,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.brandBorder,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
   },
 
   avatar: {
     width: '100%',
     height: '100%',
-    borderRadius: ms(45),
+    borderRadius: ms(41),
   },
 
   fallbackAvatar: {
     width: '100%',
     height: '100%',
-    borderRadius: ms(45),
+    borderRadius: ms(41),
     backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     height: ms(28),
     borderRadius: ms(14),
     backgroundColor: colors.white,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
   },
 
   email: {
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     color: colors.subText,
     fontSize: fontSize.base,
     fontWeight: fontWeight.medium,
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   },
 
   phone: {
-    marginTop: spacing.xs,
+    marginTop: spacing.xxs,
     color: colors.muted,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
   },
 
   planPill: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     backgroundColor: colors.primaryLight,
     borderRadius: radii.pill,
     paddingHorizontal: spacing.xl,
@@ -222,19 +222,21 @@ const styles = StyleSheet.create({
   },
 
   statsRow: {
-    marginTop: spacing['2xl'],
+    marginTop: spacing.xl,
     width: '100%',
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
 
   statCard: {
     flex: 1,
     backgroundColor: colors.inputBg,
     borderRadius: radii.lg,
-    paddingVertical: spacing.xl,
+    paddingVertical: spacing.lg,
     paddingHorizontal: spacing.sm,
     alignItems: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
 
   statValue: {
@@ -245,7 +247,7 @@ const styles = StyleSheet.create({
   },
 
   statLabel: {
-    marginTop: spacing.xs,
+    marginTop: spacing.xxs,
     color: colors.subText,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,

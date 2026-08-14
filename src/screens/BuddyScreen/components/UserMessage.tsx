@@ -35,14 +35,14 @@ export default UserMessage;
 
 const styles = StyleSheet.create({
   row: {
-    marginTop: spacing.xl,
+    marginTop: spacing.md,
     alignItems: 'flex-end',
   },
 
   bubble: {
     maxWidth: '82%',
-    paddingHorizontal: spacing['2xl'],
-    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.lg,
     borderRadius: radii.xl,
     borderBottomRightRadius: radii.sm,
   },
@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
   },
 
   time: {
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     fontSize: fontSize.xs,
     color: 'rgba(255, 255, 255, 0.72)',
     fontWeight: fontWeight.semibold,

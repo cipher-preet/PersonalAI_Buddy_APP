@@ -73,15 +73,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: ms(14),
-    gap: spacing.lg,
+    marginBottom: spacing.md,
+    gap: spacing.md,
   },
 
   left: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.lg,
+    gap: spacing.md,
   },
 
   icon: {

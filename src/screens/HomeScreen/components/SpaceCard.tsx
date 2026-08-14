@@ -484,21 +484,18 @@ export default memo(SpaceCard);
 const styles = StyleSheet.create({
   shadowWrap: {
     width: '100%',
-    marginTop: spacing.lg,
-    borderRadius: radii.md,
+    marginTop: spacing.md,
+    borderRadius: radii.xl,
     backgroundColor: colors.white,
-    shadowColor: '#94A3B8',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
 
   card: {
-    borderRadius: radii.md,
+    borderRadius: radii.xl,
     backgroundColor: colors.white,
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.md,
     overflow: 'hidden',
   },
@@ -512,7 +509,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
 
   dateRow: {

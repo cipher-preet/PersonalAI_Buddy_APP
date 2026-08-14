@@ -82,12 +82,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderFocus,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: ms(8) },
-    shadowOpacity: 0.14,
-    shadowRadius: ms(16),
-    elevation: 6,
   },
 });

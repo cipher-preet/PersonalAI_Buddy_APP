@@ -14,6 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 
 import Header from './components/Header';
+import QuickActionsStrip from './components/QuickActionsStrip';
 import TopCard from './components/TopCard';
 import SpaceCard from './components/SpaceCard';
 import SpacesEmptyState from './components/SpacesEmptyState';
@@ -656,6 +657,8 @@ const Home = () => {
           />
         </View>
 
+        <QuickActionsStrip />
+
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>My Spaces</Text>
         </View>
@@ -769,7 +772,7 @@ const styles = StyleSheet.create({
   },
 
   scrollContainer: {
-    paddingTop: vSpacing.xl,
+    paddingTop: vSpacing.md,
     paddingHorizontal: layout.screenPadding,
     paddingBottom: layout.tabBarClearance,
     flexGrow: 1,
@@ -809,11 +812,11 @@ const styles = StyleSheet.create({
   topCardsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: mvs(28),
+    marginTop: mvs(16),
   },
 
   sectionHeader: {
-    marginTop: mvs(34),
+    marginTop: mvs(14),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -827,7 +830,7 @@ const styles = StyleSheet.create({
 
   spacesLoader: {
     minHeight: mvs(150),
-    marginTop: spacing.xl,
+    marginTop: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii['3xl'],

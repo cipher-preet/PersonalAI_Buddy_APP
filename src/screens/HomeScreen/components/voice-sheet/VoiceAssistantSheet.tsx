@@ -43,11 +43,10 @@ import {
   mvs,
   radii,
   screenHeight,
-  shadows,
   spacing,
 } from '../../../../theme';
 
-const FOOTER_HEIGHT = Platform.OS === 'ios' ? mvs(110) : mvs(90);
+const FOOTER_HEIGHT = Platform.OS === 'ios' ? mvs(96) : mvs(80);
 const MAX_SHEET_HEIGHT = screenHeight * 0.82;
 
 const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
@@ -361,25 +360,25 @@ export default VoiceAssistantSheet;
 const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing['3xl'],
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
   },
 
   sheetBackground: {
     backgroundColor: colors.white,
-    borderTopLeftRadius: ms(32),
-    borderTopRightRadius: ms(32),
+    borderTopLeftRadius: ms(28),
+    borderTopRightRadius: ms(28),
   },
 
   indicator: {
     backgroundColor: colors.muted,
-    width: ms(70),
-    height: ms(6),
+    width: ms(56),
+    height: ms(5),
     borderRadius: radii.pill,
   },
 
   header: {
-    marginBottom: spacing['3xl'],
+    marginBottom: spacing.xl,
   },
 
   headerTop: {
@@ -414,7 +413,7 @@ const styles = StyleSheet.create({
   },
 
   subHeading: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     fontSize: fontSize.md,
     color: colors.textSecondary,
     lineHeight: ms(20),
@@ -423,30 +422,29 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing['4xl'],
+    marginBottom: spacing.xl,
   },
 
   input: {
     flex: 1,
-    height: mvs(54),
+    height: mvs(50),
     backgroundColor: colors.inputBg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    borderRadius: ms(18),
-    paddingHorizontal: ms(18),
+    borderRadius: ms(16),
+    paddingHorizontal: ms(16),
     color: colors.black,
     fontSize: fontSize.base,
   },
 
   createBtn: {
-    height: mvs(54),
-    marginLeft: spacing.xl,
-    paddingHorizontal: ms(18),
-    borderRadius: ms(18),
+    height: mvs(50),
+    marginLeft: spacing.md,
+    paddingHorizontal: ms(16),
+    borderRadius: ms(16),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
-    ...shadows.primary,
   },
 
   createBtnText: {
@@ -459,7 +457,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: mvs(18),
+    marginBottom: spacing.md,
   },
 
   sectionTitle: {
@@ -484,20 +482,19 @@ const styles = StyleSheet.create({
 
   footer: {
     paddingHorizontal: layout.screenPadding,
-    paddingTop: ms(14),
-    paddingBottom: Platform.OS === 'ios' ? mvs(34) : spacing['3xl'],
+    paddingTop: spacing.md,
+    paddingBottom: Platform.OS === 'ios' ? mvs(28) : spacing.xl,
     backgroundColor: colors.white,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.borderLight,
   },
 
   startButton: {
-    height: mvs(58),
-    borderRadius: ms(18),
+    height: mvs(52),
+    borderRadius: ms(16),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
-    ...shadows.primary,
   },
 
   startButtonText: {
@@ -507,14 +504,14 @@ const styles = StyleSheet.create({
   },
 
   loadMoreButton: {
-    marginTop: spacing.xl,
-    marginBottom: spacing.md,
-    height: mvs(60),
-    borderRadius: ms(18),
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
+    height: mvs(52),
+    borderRadius: ms(16),
     backgroundColor: colors.lightGray,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderLight,
     borderStyle: 'dashed',
   },

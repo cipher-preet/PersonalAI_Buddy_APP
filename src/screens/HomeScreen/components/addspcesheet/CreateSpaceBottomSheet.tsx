@@ -34,7 +34,6 @@ import {
   ms,
   mvs,
   radii,
-  shadows,
   spacing,
 } from '../../../../theme';
 
@@ -296,15 +295,15 @@ const styles = StyleSheet.create({
   },
 
   container: {
-    paddingHorizontal: ms(22),
-    paddingTop: spacing.sm,
+    paddingHorizontal: ms(20),
+    paddingTop: spacing.xs,
   },
 
   headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
 
   closeButton: {
@@ -335,19 +334,19 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: fontSize.base,
     color: colors.textSecondary,
-    marginBottom: spacing['3xl'],
+    marginBottom: spacing.xl,
   },
 
   inputContainer: {
-    marginBottom: spacing['3xl'],
+    marginBottom: spacing.xl,
   },
 
   input: {
-    height: mvs(56),
-    borderRadius: ms(18),
-    paddingHorizontal: spacing['2xl'],
+    height: mvs(52),
+    borderRadius: ms(16),
+    paddingHorizontal: spacing.xl,
     backgroundColor: colors.inputBg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.borderLight,
     color: colors.black,
     fontSize: fontSize.xl,
@@ -396,12 +395,11 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    height: mvs(56),
-    borderRadius: ms(18),
+    height: mvs(52),
+    borderRadius: ms(16),
     backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    ...shadows.primary,
   },
 
   buttonDisabled: {

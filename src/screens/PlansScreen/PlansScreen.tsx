@@ -516,7 +516,7 @@ const styles = StyleSheet.create({
   headerBar: {
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.sm,
   },
 
   closeButton: {
@@ -530,14 +530,14 @@ const styles = StyleSheet.create({
 
   content: {
     paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.md,
-    paddingBottom: spacing['4xl'],
+    paddingTop: spacing.sm,
+    paddingBottom: spacing['2xl'],
     flexGrow: 1,
   },
 
   hero: {
     alignItems: 'center',
-    marginBottom: spacing['3xl'],
+    marginBottom: spacing.xl,
     paddingHorizontal: spacing.md,
   },
 
@@ -560,28 +560,28 @@ const styles = StyleSheet.create({
   },
 
   loaderCard: {
-    minHeight: ms(160),
-    borderRadius: radii['2xl'],
+    minHeight: ms(140),
+    borderRadius: radii.xl,
     backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: spacing['4xl'],
+    padding: spacing['2xl'],
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
 
   loaderTitle: {
     color: colors.text,
     fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
   },
 
   loaderText: {
     color: colors.subText,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     textAlign: 'center',
   },
 
@@ -589,11 +589,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: colors.white,
     borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
     padding: spacing.xs,
     gap: spacing.xs,
-    marginBottom: spacing['4xl'],
+    marginBottom: spacing.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
 
   planToggleItem: {
@@ -630,15 +630,15 @@ const styles = StyleSheet.create({
   },
 
   featureList: {
-    gap: spacing['2xl'],
+    gap: spacing.lg,
     paddingHorizontal: spacing.xs,
-    marginBottom: spacing['3xl'],
+    marginBottom: spacing.xl,
   },
 
   featureRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing.xl,
+    gap: spacing.lg,
   },
 
   featureIcon: {
@@ -661,7 +661,7 @@ const styles = StyleSheet.create({
 
   squiggleWrap: {
     alignItems: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.md,
   },
 
   squiggle: {
@@ -686,18 +686,18 @@ const styles = StyleSheet.create({
 
   bottomPanel: {
     marginHorizontal: layout.screenPadding,
-    marginBottom: spacing.md,
-    borderRadius: ms(28),
+    marginBottom: spacing.sm,
+    borderRadius: radii.xl,
     backgroundColor: colors.primarySoft,
-    borderWidth: 1,
+    padding: spacing.xl,
+    gap: spacing.md,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.primaryLight,
-    padding: spacing['2xl'],
-    gap: spacing.xl,
   },
 
   priceCardsRow: {
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
 
   priceCardsColumn: {
@@ -706,12 +706,12 @@ const styles = StyleSheet.create({
 
   priceCard: {
     flex: 1,
-    minHeight: ms(92),
+    minHeight: ms(84),
     borderRadius: radii.xl,
     backgroundColor: colors.white,
-    borderWidth: 1.5,
-    borderColor: 'transparent',
-    padding: spacing.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    padding: spacing.lg,
   },
 
   priceCardFull: {
@@ -728,7 +728,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
 
   priceCardLabel: {

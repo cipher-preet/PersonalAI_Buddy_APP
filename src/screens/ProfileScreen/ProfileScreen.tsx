@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
 
   content: {
     paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
     paddingBottom: layout.tabBarClearance,
   },
 
@@ -479,11 +479,11 @@ const styles = StyleSheet.create({
   modalCard: {
     maxHeight: '92%',
     borderRadius: radii['3xl'],
-    paddingTop: spacing['3xl'],
+    paddingTop: spacing['2xl'],
     paddingHorizontal: layout.screenPadding,
     paddingBottom: spacing['2xl'],
     backgroundColor: colors.white,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
 
