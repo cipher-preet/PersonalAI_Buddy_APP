@@ -1,5 +1,8 @@
-import React from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
+  Animated,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   ScrollView,
   StyleSheet,
   Text,
@@ -160,28 +163,16 @@ const TeamWorkspaceIcon = ({
   </Svg>
 );
 
-const WorkspaceIcon = ({
+const GoalMonitorIcon = ({
   color = colors.white,
   size = ICON_SIZE,
 }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Rect
-      x={3.4}
-      y={4.4}
-      width={17.2}
-      height={15.2}
-      rx={3}
-      stroke={color}
-      strokeWidth={STROKE}
-    />
+    <Circle cx={12} cy={12} r={8.2} stroke={color} strokeWidth={STROKE} />
+    <Circle cx={12} cy={12} r={4.8} stroke={color} strokeWidth={STROKE} />
+    <Circle cx={12} cy={12} r={1.5} fill={color} />
     <Path
-      d="M3.4 9.2h17.2M9.4 9.2v10.4"
-      stroke={color}
-      strokeWidth={STROKE}
-      strokeLinecap="round"
-    />
-    <Path
-      d="M12.6 13h5M12.6 16h3"
+      d="M12 3.8v2.2M20.2 12h-2.2M12 20.2v-2.2M3.8 12h2.2"
       stroke={color}
       strokeWidth={STROKE}
       strokeLinecap="round"
@@ -191,11 +182,16 @@ const WorkspaceIcon = ({
 
 const TILE_SIZE = ms(78);
 const TILE_GAP = spacing.xl;
+const DOT_SIZE = ms(6);
+const DOT_ACTIVE_WIDTH = ms(18);
 
 const QuickActionsStrip = () => {
   const navigation =
     useNavigation<BottomTabNavigationProp<MainTabParamList>>();
   const { showToast } = useToast();
+  const scrollX = useRef(new Animated.Value(0)).current;
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const [contentWidth, setContentWidth] = useState(0);
 
   const showComingSoon = (feature: string) => {
     showToast({
@@ -220,18 +216,25 @@ const QuickActionsStrip = () => {
       onPress: () => navigation.navigate('Briefing'),
     },
     {
+      id: 'ai-calendar',
+      title: 'Calendar',
+      accent: '#EA580C',
+      Icon: AICalendarIcon,
+      onPress: () => navigation.navigate('Calendar'),
+    },
+    {
+      id: 'goal-monitor',
+      title: 'Goal Monitor',
+      accent: '#4338CA',
+      Icon: GoalMonitorIcon,
+      onPress: () => navigation.navigate('GoalMonitor'),
+    },
+    {
       id: 'share-space',
       title: 'Share',
       accent: '#0D9488',
       Icon: ShareSpaceIcon,
       onPress: () => navigation.navigate('Share'),
-    },
-    {
-      id: 'ai-calendar',
-      title: 'Calendar',
-      accent: '#EA580C',
-      Icon: AICalendarIcon,
-      onPress: () => showComingSoon('AI Calendar'),
     },
     {
       id: 'team-workspace',
@@ -240,14 +243,30 @@ const QuickActionsStrip = () => {
       Icon: TeamWorkspaceIcon,
       onPress: () => showComingSoon('Team Workspace'),
     },
-    {
-      id: 'workspace',
-      title: 'Workspace',
-      accent: '#4338CA',
-      Icon: WorkspaceIcon,
-      onPress: () => navigation.navigate('Notes'),
-    },
   ];
+
+  const pageCount = useMemo(() => {
+    if (!viewportWidth || !contentWidth) {
+      return 0;
+    }
+    const scrollable = Math.max(contentWidth - viewportWidth, 0);
+    if (scrollable <= ms(8)) {
+      return 0;
+    }
+    return Math.min(4, Math.max(2, Math.ceil(contentWidth / viewportWidth)));
+  }, [contentWidth, viewportWidth]);
+
+  const pageWidth = useMemo(() => {
+    if (!viewportWidth || pageCount <= 1) {
+      return viewportWidth || 1;
+    }
+    const scrollable = Math.max(contentWidth - viewportWidth, 1);
+    return scrollable / (pageCount - 1);
+  }, [contentWidth, pageCount, viewportWidth]);
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    scrollX.setValue(event.nativeEvent.contentOffset.x);
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -257,6 +276,10 @@ const QuickActionsStrip = () => {
         decelerationRate="fast"
         contentContainerStyle={styles.scrollContent}
         nestedScrollEnabled
+        scrollEventThrottle={16}
+        onLayout={event => setViewportWidth(event.nativeEvent.layout.width)}
+        onContentSizeChange={width => setContentWidth(width)}
+        onScroll={handleScroll}
       >
         {actions.map(item => (
           <TouchableOpacity
@@ -275,6 +298,50 @@ const QuickActionsStrip = () => {
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      {pageCount > 1 ? (
+        <View style={styles.dotsRow} accessibilityRole="progressbar">
+          {Array.from({ length: pageCount }).map((_, index) => {
+            const inputRange = [
+              (index - 1) * pageWidth,
+              index * pageWidth,
+              (index + 1) * pageWidth,
+            ];
+
+            const width = scrollX.interpolate({
+              inputRange,
+              outputRange: [DOT_SIZE, DOT_ACTIVE_WIDTH, DOT_SIZE],
+              extrapolate: 'clamp',
+            });
+
+            const opacity = scrollX.interpolate({
+              inputRange,
+              outputRange: [0.28, 1, 0.28],
+              extrapolate: 'clamp',
+            });
+
+            const backgroundColor = scrollX.interpolate({
+              inputRange,
+              outputRange: [colors.borderFocus, colors.primary, colors.borderFocus],
+              extrapolate: 'clamp',
+            });
+
+            return (
+              <Animated.View
+                key={`quick-dot-${index}`}
+                style={[
+                  styles.dot,
+                  {
+                    width,
+                    opacity,
+                    backgroundColor,
+                  },
+                ]}
+              />
+            );
+          })}
+        </View>
+      ) : null}
     </View>
   );
 };
@@ -311,5 +378,19 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
     letterSpacing: -0.1,
+  },
+
+  dotsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    minHeight: ms(10),
+  },
+
+  dot: {
+    height: DOT_SIZE,
+    borderRadius: radii.pill,
   },
 });

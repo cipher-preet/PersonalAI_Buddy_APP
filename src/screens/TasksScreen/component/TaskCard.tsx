@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { memo, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -263,7 +263,7 @@ const TaskCard = ({
   );
 };
 
-export default TaskCard;
+export default memo(TaskCard);
 
 const styles = StyleSheet.create({
   shadowWrap: {

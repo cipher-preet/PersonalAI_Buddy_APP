@@ -15,6 +15,7 @@ import {
   fontWeight,
   ms,
   radii,
+  shadows,
   spacing,
 } from '../theme';
 
@@ -132,16 +133,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing['2xl'],
     paddingTop: spacing['2xl'],
     paddingBottom: spacing.xl,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.errorSoftBorder,
-    shadowColor: colors.text,
-    shadowOffset: {
-      width: 0,
-      height: 14,
-    },
-    shadowOpacity: 0.16,
-    shadowRadius: 24,
-    elevation: 10,
+    ...shadows.card,
   },
 
   headerRow: {

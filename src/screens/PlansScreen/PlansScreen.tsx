@@ -83,12 +83,13 @@ const fallbackPlans: Plan[] = [
 ];
 
 const CloseIcon = () => (
-  <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
+  <Svg width={ms(16)} height={ms(16)} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M6 6l12 12M18 6 6 18"
-      stroke={colors.textSecondary}
-      strokeWidth={2.2}
+      d="M7 7l10 10M17 7 7 17"
+      stroke={colors.text}
+      strokeWidth={1.8}
       strokeLinecap="round"
+      strokeLinejoin="round"
     />
   </Svg>
 );
@@ -514,18 +515,23 @@ const styles = StyleSheet.create({
   },
 
   headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
   },
 
   closeButton: {
-    width: ms(36),
-    height: ms(36),
-    borderRadius: ms(18),
+    width: layout.headerButton,
+    height: layout.headerButton,
+    borderRadius: layout.headerButton / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F1F5F9',
+    backgroundColor: colors.white,
+    borderWidth: layout.hairline,
+    borderColor: colors.border,
   },
 
   content: {

@@ -6,9 +6,9 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BASE_WIDTH = 375;
 const BASE_HEIGHT = 812;
 
-/** Clamp factor so tablets don't over-scale and small phones don't shrink too much */
-const WIDTH_RATIO = Math.min(Math.max(SCREEN_WIDTH / BASE_WIDTH, 0.85), 1.25);
-const HEIGHT_RATIO = Math.min(Math.max(SCREEN_HEIGHT / BASE_HEIGHT, 0.85), 1.2);
+/** Clamp so tiny phones stay readable and tablets don't balloon */
+const WIDTH_RATIO = Math.min(Math.max(SCREEN_WIDTH / BASE_WIDTH, 0.88), 1.18);
+const HEIGHT_RATIO = Math.min(Math.max(SCREEN_HEIGHT / BASE_HEIGHT, 0.88), 1.12);
 
 /**
  * Scale size by screen width (icons, widths, horizontal padding).
@@ -40,6 +40,8 @@ export const mvs = (size: number, factor = 0.5): number =>
 export const screenWidth = SCREEN_WIDTH;
 export const screenHeight = SCREEN_HEIGHT;
 
-/** True when device is phone-sized (shortest side < 600) */
+/** Narrow phones (Android Go / compact iPhones) */
 export const isSmallDevice = SCREEN_WIDTH < 360;
+/** Short viewports (landscape or small Android) */
+export const isCompactHeight = SCREEN_HEIGHT < 700;
 export const isTablet = Math.min(SCREEN_WIDTH, SCREEN_HEIGHT) >= 600;

@@ -5,6 +5,8 @@ export type MainTabParamList = {
   Reminders: undefined;
   Briefing: undefined;
   Share: undefined;
+  Calendar: undefined;
+  GoalMonitor: undefined;
   AI: undefined;
   Profile: undefined;
   Plans: undefined;

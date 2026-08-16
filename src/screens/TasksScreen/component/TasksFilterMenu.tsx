@@ -24,6 +24,7 @@ import {
   layout,
   ms,
   mvs,
+  shadows,
   spacing
 } from '../../../theme';
 
@@ -164,13 +165,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     paddingTop: ms(14),
     paddingBottom: spacing.lg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 10,
+    ...shadows.card,
   },
 
   menuTitle: {

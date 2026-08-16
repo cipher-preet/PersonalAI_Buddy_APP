@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import {
   ActivityIndicator,
-  ScrollView,
+  FlatList,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -46,6 +46,7 @@ import {
   fontSize,
   fontWeight,
   layout,
+  listPerf,
   ms,
   mvs,
   radii,
@@ -53,6 +54,41 @@ import {
 } from '../../theme';
 
 const NOTES_PAGE_SIZE = 10;
+
+const formatDate = (value: string | null) => {
+  if (!value) {
+    return 'Recently';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Recently';
+  }
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
+
+const formatTime = (value: string | null) => {
+  if (!value) {
+    return 'Recently';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'Recently';
+  }
+
+  return date.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+};
 
 const Notes = () => {
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
@@ -281,42 +317,7 @@ const Notes = () => {
     setNotesCursor(nextNotesCursor);
   }, [isLoadingMoreNotes, nextNotesCursor]);
 
-  const formatDate = (value: string | null) => {
-    if (!value) {
-      return 'Recently';
-    }
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      return 'Recently';
-    }
-
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const formatTime = (value: string | null) => {
-    if (!value) {
-      return 'Recently';
-    }
-
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      return 'Recently';
-    }
-
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-    });
-  };
-
-  const toNoteItem = (note: StagedNoteCard): NoteItem => {
+  const toNoteItem = useCallback((note: StagedNoteCard): NoteItem => {
     const confidencePercent =
       typeof note.confidence === 'number'
         ? Math.round(note.confidence * 100)
@@ -347,9 +348,24 @@ const Notes = () => {
       body: preview,
       relatedNotes: [],
     };
-  };
+  }, [selectedSpace?.name]);
 
-  const renderRecentNotes = () => {
+  const renderNoteItem = useCallback(
+    ({ item: note }: { item: StagedNoteCard }) => {
+      const item = toNoteItem(note);
+
+      return (
+        <NoteCard
+          item={item}
+          onPress={() => handleOpenNote(item)}
+          onDelete={() => handleDeleteNote(item)}
+        />
+      );
+    },
+    [handleDeleteNote, handleOpenNote, toNoteItem],
+  );
+
+  const notesListEmpty = useMemo(() => {
     if (isInitialNotesLoading) {
       return (
         <View style={styles.stateBox}>
@@ -394,67 +410,75 @@ const Notes = () => {
       );
     }
 
+    return (
+      <View style={styles.stateBox}>
+        <Text style={styles.emptyTitle}>No matching notes</Text>
+        <Text style={styles.stateText}>
+          Try a different search term or clear your filters.
+        </Text>
+      </View>
+    );
+  }, [
+    isInitialNotesLoading,
+    isNotesError,
+    loadedNotes.length,
+    refetchNotes,
+    selectedSpaceId,
+  ]);
+
+  const notesListFooter = useMemo(() => {
     if (displayedNotes.length === 0) {
+      return null;
+    }
+
+    if (nextNotesCursor) {
       return (
-        <View style={styles.stateBox}>
-          <Text style={styles.emptyTitle}>No matching notes</Text>
-          <Text style={styles.stateText}>
-            Try a different search term or clear your filters.
+        <View style={styles.paginationFooter}>
+          <Text style={styles.paginationText}>
+            Showing {loadedNotes.length}
+            {selectedSpace?.notesCount ? ` of ${selectedSpace.notesCount}` : ''}{' '}
+            notes
+          </Text>
+          <View style={styles.loadMoreWrap}>
+            <TouchableOpacity
+              activeOpacity={0.8}
+              disabled={isLoadingMoreNotes}
+              style={[
+                styles.loadMoreButton,
+                isLoadingMoreNotes && styles.loadMoreButtonDisabled,
+              ]}
+              onPress={handleLoadMoreNotes}
+            >
+              {isLoadingMoreNotes ? (
+                <ActivityIndicator size="small" color={colors.primary} />
+              ) : (
+                <Text style={styles.loadMoreText}>Load more</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
+
+    if (loadedNotes.length >= NOTES_PAGE_SIZE) {
+      return (
+        <View style={styles.paginationFooter}>
+          <Text style={styles.paginationText}>
+            All {loadedNotes.length} notes loaded
           </Text>
         </View>
       );
     }
 
-    return (
-      <>
-        {displayedNotes.map(note => {
-          const item = toNoteItem(note);
-
-          return (
-            <NoteCard
-              key={item.id}
-              item={item}
-              onPress={() => handleOpenNote(item)}
-              onDelete={() => handleDeleteNote(item)}
-            />
-          );
-        })}
-
-        {nextNotesCursor ? (
-          <View style={styles.paginationFooter}>
-            <Text style={styles.paginationText}>
-              Showing {loadedNotes.length}
-              {selectedSpace?.notesCount ? ` of ${selectedSpace.notesCount}` : ''}{' '}
-              notes
-            </Text>
-            <View style={styles.loadMoreWrap}>
-              <TouchableOpacity
-                activeOpacity={0.8}
-                disabled={isLoadingMoreNotes}
-                style={[
-                  styles.loadMoreButton,
-                  isLoadingMoreNotes && styles.loadMoreButtonDisabled,
-                ]}
-                onPress={handleLoadMoreNotes}
-              >
-                {isLoadingMoreNotes ? (
-                  <ActivityIndicator size="small" color={colors.primary} />
-                ) : (
-                  <Text style={styles.loadMoreText}>Load more</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : loadedNotes.length >= NOTES_PAGE_SIZE ? (
-          <View style={styles.paginationFooter}>
-            <Text style={styles.paginationText}>
-              All {loadedNotes.length} notes loaded
-            </Text>
-          </View>
-        ) : null}
-      </>
-    );
-  };
+    return null;
+  }, [
+    displayedNotes.length,
+    handleLoadMoreNotes,
+    isLoadingMoreNotes,
+    loadedNotes.length,
+    nextNotesCursor,
+    selectedSpace?.notesCount,
+  ]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -483,15 +507,21 @@ const Notes = () => {
         onNavigateTasks={() => navigation.navigate('Tasks')}
       />
 
-      <ScrollView
+      <FlatList
+        data={
+          isInitialNotesLoading || isNotesError ? [] : displayedNotes
+        }
+        keyExtractor={item => item.id}
+        renderItem={renderNoteItem}
+        ListEmptyComponent={notesListEmpty}
+        ListFooterComponent={notesListFooter}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         style={styles.notesScroll}
-      >
-        {renderRecentNotes()}
-      </ScrollView>
+        {...listPerf}
+      />
 
       <NoteDetailBottomSheet
         ref={noteSheetRef}
@@ -518,8 +548,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingTop: mvs(10),
-    paddingBottom: mvs(40),
+    paddingTop: layout.screenTop,
   },
 
   headerWrap: {
@@ -592,7 +621,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
 

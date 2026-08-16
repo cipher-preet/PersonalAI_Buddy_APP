@@ -94,14 +94,14 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingHorizontal: layout.screenPadding,
-    paddingTop: mvs(8),
+    paddingTop: layout.screenTop,
     paddingBottom: mvs(24),
   },
 
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: layout.screenPadding,
-    paddingTop: mvs(8),
+    paddingTop: layout.screenTop,
     paddingBottom: mvs(32),
   },
 });

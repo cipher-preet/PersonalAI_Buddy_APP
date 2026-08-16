@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   ScrollView,
   StatusBar,
@@ -7,14 +7,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
-import BriefingSourceBottomSheet from './components/BriefingSourceBottomSheet';
-import { insights, type InsightItem } from './components/mockBriefing';
+import type { MainTabParamList } from '../../navigation/types';
 import {
   colors,
   fontSize,
@@ -22,47 +22,69 @@ import {
   layout,
   ms,
   radii,
+  shadows,
   spacing,
 } from '../../theme';
-
-type IconProps = {
-  color?: string;
-  size?: number;
-};
+import BriefingSourceBottomSheet from './components/BriefingSourceBottomSheet';
+import { insights, type InsightItem } from './components/mockBriefing';
 
 type TaskItem = {
   id: string;
   title: string;
   meta: string;
-  priority?: 'High' | 'Medium';
 };
 
 type MeetingItem = {
   id: string;
   time: string;
-  period: string;
   title: string;
   meta: string;
-  note: string;
 };
 
-type FollowUpItem = {
-  id: string;
-  initials: string;
-  name: string;
-  reason: string;
-  meta: string;
-  tone: 'purple' | 'blue' | 'teal';
-};
+const tasks: TaskItem[] = [
+  {
+    id: 'proposal',
+    title: 'Finish product proposal',
+    meta: 'Due today · Product Launch',
+  },
+  {
+    id: 'research',
+    title: 'Review research notes',
+    meta: 'Due 2:00 PM · Personal',
+  },
+  {
+    id: 'invoice',
+    title: 'Send August invoice',
+    meta: 'Due 5:00 PM · Finance',
+  },
+];
 
-const SECTION_LIST_HEIGHT = ms(220);
-const PAGE_BG = colors.background;
+const meetings: MeetingItem[] = [
+  {
+    id: 'sync',
+    time: '10:30 AM',
+    title: 'Product sync',
+    meta: '30 min · Google Meet',
+  },
+  {
+    id: 'review',
+    time: '3:00 PM',
+    title: 'Client review',
+    meta: '45 min · Zoom',
+  },
+  {
+    id: 'critique',
+    time: '5:30 PM',
+    title: 'Design critique',
+    meta: '40 min · Office',
+  },
+];
 
-const BackIcon = ({ color = colors.text, size = 18 }: IconProps) => (
-  <Svg width={ms(size)} height={ms(size)} viewBox="0 0 24 24" fill="none">
+const BackIcon = () => (
+  <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M15 18 9 12l6-6"
-      stroke={color}
+      stroke={colors.text}
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -70,7 +92,13 @@ const BackIcon = ({ color = colors.text, size = 18 }: IconProps) => (
   </Svg>
 );
 
-const SparkleIcon = ({ color = colors.primary, size = 18 }: IconProps) => (
+const SparkleIcon = ({
+  color = colors.primary,
+  size = 18,
+}: {
+  color?: string;
+  size?: number;
+}) => (
   <Svg width={ms(size)} height={ms(size)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M12 3.8c.7 4.1 2.4 5.8 6.5 6.5-4.1.7-5.8 2.4-6.5 6.5-.7-4.1-2.4-5.8-6.5-6.5C9.6 9.6 11.3 7.9 12 3.8Z"
@@ -78,20 +106,31 @@ const SparkleIcon = ({ color = colors.primary, size = 18 }: IconProps) => (
       strokeWidth={1.7}
       strokeLinejoin="round"
     />
+  </Svg>
+);
+
+const ChatIcon = () => (
+  <Svg width={ms(32)} height={ms(32)} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M18.5 16.5c.3 1.8 1.2 2.7 3 3-1.8.3-2.7 1.2-3 3-.3-1.8-1.2-2.7-3-3 1.8-.3 2.7-1.2 3-3Z"
-      stroke={color}
-      strokeWidth={1.5}
+      d="M5 5.5h14a2.5 2.5 0 0 1 2.5 2.5v6.5A2.5 2.5 0 0 1 19 17H10l-5.5 3v-3.6A2.5 2.5 0 0 1 2.5 14V8A2.5 2.5 0 0 1 5 5.5Z"
+      stroke={colors.primary}
+      strokeWidth={1.6}
       strokeLinejoin="round"
+    />
+    <Path
+      d="M7.5 11h.1m4.4 0h.1m4.4 0h.1"
+      stroke={colors.primary}
+      strokeWidth={2.4}
+      strokeLinecap="round"
     />
   </Svg>
 );
 
-const CheckIcon = ({ color = colors.white, size = 14 }: IconProps) => (
-  <Svg width={ms(size)} height={ms(size)} viewBox="0 0 24 24" fill="none">
+const CheckIcon = () => (
+  <Svg width={ms(13)} height={ms(13)} viewBox="0 0 24 24" fill="none">
     <Path
       d="m6 12.5 4 4L18.5 8"
-      stroke={color}
+      stroke={colors.white}
       strokeWidth={2.2}
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -99,74 +138,31 @@ const CheckIcon = ({ color = colors.white, size = 14 }: IconProps) => (
   </Svg>
 );
 
-const CalendarIcon = ({ color = colors.primary, size = 18 }: IconProps) => (
-  <Svg width={ms(size)} height={ms(size)} viewBox="0 0 24 24" fill="none">
+const CalendarIcon = () => (
+  <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
     <Rect
       x={3.5}
       y={5}
       width={17}
       height={15.5}
       rx={3}
-      stroke={color}
+      stroke={colors.primary}
       strokeWidth={1.7}
     />
     <Path
       d="M8 3.5v3M16 3.5v3M3.5 9.5h17"
-      stroke={color}
+      stroke={colors.primary}
       strokeWidth={1.7}
       strokeLinecap="round"
     />
   </Svg>
 );
 
-const ClockIcon = ({ color = colors.subText, size = 16 }: IconProps) => (
-  <Svg width={ms(size)} height={ms(size)} viewBox="0 0 24 24" fill="none">
-    <Circle cx={12} cy={12} r={8.5} stroke={color} strokeWidth={1.7} />
-    <Path
-      d="M12 7.5V12l3 2"
-      stroke={color}
-      strokeWidth={1.7}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const PersonIcon = ({ color = colors.primaryMid, size = 18 }: IconProps) => (
-  <Svg width={ms(size)} height={ms(size)} viewBox="0 0 24 24" fill="none">
-    <Circle cx={12} cy={8} r={3.5} stroke={color} strokeWidth={1.7} />
-    <Path
-      d="M5.5 20c.4-4 2.8-6 6.5-6s6.1 2 6.5 6"
-      stroke={color}
-      strokeWidth={1.7}
-      strokeLinecap="round"
-    />
-  </Svg>
-);
-
-const NoteIcon = ({ color = colors.info, size = 18 }: IconProps) => (
-  <Svg width={ms(size)} height={ms(size)} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M6 3.8h9.5L19 7.3v12.9H6V3.8Z"
-      stroke={color}
-      strokeWidth={1.7}
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M15.5 3.8v3.5H19M9 11h6M9 15h6"
-      stroke={color}
-      strokeWidth={1.7}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const ChevronIcon = ({ color = colors.muted, size = 16 }: IconProps) => (
-  <Svg width={ms(size)} height={ms(size)} viewBox="0 0 24 24" fill="none">
+const ChevronIcon = () => (
+  <Svg width={ms(15)} height={ms(15)} viewBox="0 0 24 24" fill="none">
     <Path
       d="m9 6 6 6-6 6"
-      stroke={color}
+      stroke={colors.primary}
       strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -174,193 +170,24 @@ const ChevronIcon = ({ color = colors.muted, size = 16 }: IconProps) => (
   </Svg>
 );
 
-const todayTasks: TaskItem[] = [
-  {
-    id: 'proposal',
-    title: 'Finish product proposal',
-    meta: 'Due today · Work',
-    priority: 'High',
-  },
-  {
-    id: 'notes',
-    title: 'Review research notes',
-    meta: 'Due 2:00 PM · Personal',
-    priority: 'Medium',
-  },
-  {
-    id: 'invoice',
-    title: 'Send August invoice',
-    meta: 'Due 5:00 PM · Finance',
-  },
-  {
-    id: 'standup',
-    title: 'Prepare standup talking points',
-    meta: 'Due 9:30 AM · Work',
-    priority: 'Medium',
-  },
-  {
-    id: 'docs',
-    title: 'Update onboarding docs',
-    meta: 'Due today · Ops',
-  },
-  {
-    id: 'vendor',
-    title: 'Reply to vendor quote',
-    meta: 'Due 4:00 PM · Finance',
-    priority: 'High',
-  },
-];
-
-const overdueTasks: TaskItem[] = [
-  {
-    id: 'budget',
-    title: 'Approve quarterly budget',
-    meta: 'Overdue by 2 days · Finance',
-    priority: 'High',
-  },
-  {
-    id: 'feedback',
-    title: 'Share design feedback',
-    meta: 'Overdue since yesterday · Work',
-  },
-  {
-    id: 'contract',
-    title: 'Sign partner contract',
-    meta: 'Overdue by 4 days · Legal',
-    priority: 'High',
-  },
-  {
-    id: 'expense',
-    title: 'Submit travel expenses',
-    meta: 'Overdue since Monday · Finance',
-  },
-];
-
-const meetings: MeetingItem[] = [
-  {
-    id: 'sync',
-    time: '10:30',
-    period: 'AM',
-    title: 'Product sync',
-    meta: '30 min · Google Meet',
-    note: 'Prepare the launch status and open decisions.',
-  },
-  {
-    id: 'review',
-    time: '3:00',
-    period: 'PM',
-    title: 'Client review',
-    meta: '45 min · Zoom',
-    note: 'Last note: client asked for revised milestones.',
-  },
-  {
-    id: 'design',
-    time: '5:30',
-    period: 'PM',
-    title: 'Design critique',
-    meta: '40 min · Office',
-    note: 'Bring the latest mobile flow screens.',
-  },
-];
-
-const followUps: FollowUpItem[] = [
-  {
-    id: 'aarav',
-    initials: 'AM',
-    name: 'Aarav Mehta',
-    reason: 'Send the revised project timeline',
-    meta: 'Last contact · 3 days ago',
-    tone: 'purple',
-  },
-  {
-    id: 'sara',
-    initials: 'SK',
-    name: 'Sara Khan',
-    reason: 'Confirm availability for Friday',
-    meta: 'Last contact · Monday',
-    tone: 'blue',
-  },
-  {
-    id: 'noah',
-    initials: 'NR',
-    name: 'Noah Rivera',
-    reason: 'Share the interview scorecard',
-    meta: 'Last contact · Yesterday',
-    tone: 'teal',
-  },
-];
-
-type StickyHeaderProps = {
-  title: string;
-  subtitle: string;
-  icon: React.ReactNode;
-  iconStyle?: object;
-};
-
-const StickySectionHeader = ({
-  title,
-  subtitle,
-  icon,
-  iconStyle,
-}: StickyHeaderProps) => (
-  <View style={styles.stickySectionHeader}>
-    <View style={[styles.sectionIcon, iconStyle]}>{icon}</View>
-    <View style={styles.sectionCopy}>
-      <Text style={styles.sectionTitle}>{title}</Text>
-      <Text style={styles.sectionSubtitle}>{subtitle}</Text>
-    </View>
-  </View>
-);
-
-type ScrollableCardProps = {
-  children: React.ReactNode;
-  cardStyle?: object;
-};
-
-const ScrollableSectionCard = ({
-  children,
-  cardStyle,
-}: ScrollableCardProps) => (
-  <View style={[styles.sectionCard, cardStyle]}>
-    <ScrollView
-      nestedScrollEnabled
-      showsVerticalScrollIndicator={false}
-      style={styles.sectionList}
-      contentContainerStyle={styles.sectionListContent}
-    >
-      {children}
-    </ScrollView>
-  </View>
-);
-
 const BriefingScreen = () => {
-  const navigation = useNavigation();
+  const navigation =
+    useNavigation<BottomTabNavigationProp<MainTabParamList>>();
   const sourceSheetRef = useRef<BottomSheetModal>(null);
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
   const [selectedInsight, setSelectedInsight] = useState<InsightItem | null>(
     null,
   );
 
-  const formattedDate = useMemo(
-    () =>
-      new Intl.DateTimeFormat('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-      }).format(new Date()),
-    [],
-  );
-
-  const completedTodayCount = todayTasks.filter(task =>
-    completedTasks.includes(task.id),
-  ).length;
-
-  const openInsightSource = useCallback((insight: InsightItem) => {
-    setSelectedInsight(insight);
-    requestAnimationFrame(() => {
-      sourceSheetRef.current?.present();
-    });
-  }, []);
+  const now = useMemo(() => new Date(), []);
+  const month = now.toLocaleDateString('en-US', { month: 'short' });
+  const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+  const fullDate = now.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+  });
+  const progress = completedTasks.length / tasks.length;
 
   const toggleTask = (id: string) => {
     setCompletedTasks(current =>
@@ -370,87 +197,27 @@ const BriefingScreen = () => {
     );
   };
 
-  const renderTask = (item: TaskItem, overdue = false) => {
-    const completed = completedTasks.includes(item.id);
-
-    return (
-      <TouchableOpacity
-        key={item.id}
-        activeOpacity={0.75}
-        style={styles.taskRow}
-        onPress={() => toggleTask(item.id)}
-        accessibilityRole="checkbox"
-        accessibilityState={{ checked: completed }}
-      >
-        <View style={[styles.checkbox, completed && styles.checkboxChecked]}>
-          {completed ? <CheckIcon /> : null}
-        </View>
-
-        <View style={styles.taskCopy}>
-          <Text style={[styles.taskTitle, completed && styles.completedText]}>
-            {item.title}
-          </Text>
-          <Text style={[styles.taskMeta, overdue && styles.overdueMeta]}>
-            {item.meta}
-          </Text>
-        </View>
-
-        {item.priority ? (
-          <View
-            style={[
-              styles.priorityPill,
-              item.priority === 'High'
-                ? styles.priorityHigh
-                : styles.priorityMedium,
-            ]}
-          >
-            <Text
-              style={[
-                styles.priorityText,
-                item.priority === 'High'
-                  ? styles.priorityHighText
-                  : styles.priorityMediumText,
-              ]}
-            >
-              {item.priority}
-            </Text>
-          </View>
-        ) : null}
-      </TouchableOpacity>
-    );
-  };
-
-  const avatarTone = {
-    purple: styles.avatarPurple,
-    blue: styles.avatarBlue,
-    teal: styles.avatarTeal,
+  const openInsightSource = (insight: InsightItem) => {
+    setSelectedInsight(insight);
+    requestAnimationFrame(() => sourceSheetRef.current?.present());
   };
 
   return (
     <View style={styles.screen}>
-      <StatusBar
-        barStyle="dark-content"
-        translucent
-        backgroundColor="transparent"
-      />
-
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <SafeAreaView style={styles.safeArea} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity
             activeOpacity={0.78}
-            style={styles.iconButton}
+            style={styles.headerButton}
             onPress={() => navigation.goBack()}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
           >
             <BackIcon />
           </TouchableOpacity>
-
           <View style={styles.headerCopy}>
             <Text style={styles.headerTitle}>Daily Briefing</Text>
-            <Text style={styles.headerDate}>{formattedDate}</Text>
+            <Text style={styles.headerDate}>{fullDate}</Text>
           </View>
-
           <View style={styles.buddyBadge}>
             <SparkleIcon size={17} />
           </View>
@@ -459,91 +226,179 @@ const BriefingScreen = () => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
-          stickyHeaderIndices={[1, 3, 5, 7, 9]}
-          nestedScrollEnabled
         >
           <LinearGradient
             colors={[colors.primaryDark, colors.primary, colors.primaryMid]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.heroCard}
+            style={styles.dayCard}
           >
-            <View style={styles.heroTop}>
-              <View style={styles.heroEyebrow}>
-                <SparkleIcon color={colors.white} size={15} />
-                <Text style={styles.heroEyebrowText}>
-                  BUDDY'S RECOMMENDATION
-                </Text>
+            <View style={styles.dateColumn}>
+              <View style={styles.buddyPlanRow}>
+                <SparkleIcon color={colors.white} size={14} />
+                <Text style={styles.buddyPlanText}>TODAY</Text>
               </View>
-              <Text style={styles.heroTime}>Today</Text>
+              <Text style={styles.bigDate}>
+                {month} {now.getDate()}
+              </Text>
+              <Text style={styles.dayName}>{dayName}</Text>
             </View>
-
-            <Text style={styles.heroTitle}>Start with the product proposal</Text>
-            <Text style={styles.heroBody}>
-              You have a clear focus window before your first meeting. Finishing
-              the proposal now will remove today’s biggest blocker.
-            </Text>
-
-            <View style={styles.focusRow}>
-              <View style={styles.focusChip}>
-                <ClockIcon color={colors.white} size={14} />
-                <Text style={styles.focusChipText}>90 min focus block</Text>
-              </View>
-              <View style={styles.focusChip}>
-                <Text style={styles.focusChipText}>High impact</Text>
-              </View>
+            <View style={styles.dayMeetings}>
+              {meetings.slice(0, 2).map((meeting, index) => (
+                <View key={meeting.id} style={styles.dayMeeting}>
+                  <View
+                    style={[
+                      styles.meetingAccent,
+                      index === 1 && styles.meetingAccentSecondary,
+                    ]}
+                  />
+                  <View style={styles.dayMeetingCopy}>
+                    <Text numberOfLines={1} style={styles.dayMeetingTitle}>
+                      {meeting.title}
+                    </Text>
+                    <Text style={styles.dayMeetingTime}>
+                      {meeting.time} · {meeting.meta.split(' · ')[0]}
+                    </Text>
+                  </View>
+                </View>
+              ))}
             </View>
           </LinearGradient>
 
-          <StickySectionHeader
-            title="Today’s priorities"
-            subtitle={`${completedTodayCount} of ${todayTasks.length} completed`}
-            icon={<CheckIcon color={colors.primary} size={16} />}
-          />
+          <View style={styles.quickGrid}>
+            <View style={[styles.quickCard, styles.chatCard]}>
+              <View style={styles.chatIconWrap}>
+                <ChatIcon />
+              </View>
+              <Text style={styles.quickTitle}>Let’s plan your day</Text>
+              <Text style={styles.quickBody}>Buddy is ready when you are.</Text>
+              <TouchableOpacity
+                activeOpacity={0.82}
+                style={styles.chatButton}
+                onPress={() => navigation.navigate('AI')}
+              >
+                <Text style={styles.chatButtonText}>Start chat</Text>
+              </TouchableOpacity>
+            </View>
 
-          <ScrollableSectionCard>
-            {todayTasks.map((item, index) => (
-              <React.Fragment key={item.id}>
-                {renderTask(item)}
-                {index < todayTasks.length - 1 ? (
-                  <View style={styles.divider} />
-                ) : null}
-              </React.Fragment>
-            ))}
-          </ScrollableSectionCard>
-
-          <StickySectionHeader
-            title="Needs attention"
-            subtitle={`${overdueTasks.length} overdue items`}
-            icon={<Text style={styles.alertMark}>!</Text>}
-            iconStyle={styles.alertIcon}
-          />
-
-          <ScrollableSectionCard cardStyle={styles.overdueCard}>
-            {overdueTasks.map((item, index) => (
-              <React.Fragment key={item.id}>
-                {renderTask(item, true)}
-                {index < overdueTasks.length - 1 ? (
-                  <View style={styles.divider} />
-                ) : null}
-              </React.Fragment>
-            ))}
-          </ScrollableSectionCard>
-
-          <StickySectionHeader
-            title="Upcoming meetings"
-            subtitle="Your next 8 hours"
-            icon={<CalendarIcon />}
-          />
-
-          <ScrollableSectionCard>
-            {meetings.map((item, index) => (
-              <View key={item.id} style={styles.meetingRow}>
-                <View style={styles.timeColumn}>
-                  <Text style={styles.meetingTime}>{item.time}</Text>
-                  <Text style={styles.meetingPeriod}>{item.period}</Text>
+            <View style={[styles.quickCard, styles.focusCard]}>
+              <Text style={styles.focusValue}>4h 30m</Text>
+              <Text style={styles.focusLabel}>Focus time available</Text>
+              <View style={styles.focusRingWrap}>
+                <Svg width={ms(72)} height={ms(72)} viewBox="0 0 72 72">
+                  <Circle
+                    cx={36}
+                    cy={36}
+                    r={27}
+                    fill="none"
+                    stroke={colors.white}
+                    strokeWidth={6}
+                    opacity={0.72}
+                  />
+                  <Circle
+                    cx={36}
+                    cy={36}
+                    r={27}
+                    fill="none"
+                    stroke={colors.info}
+                    strokeWidth={6}
+                    strokeLinecap="round"
+                    strokeDasharray={`${2 * Math.PI * 27}`}
+                    strokeDashoffset={`${2 * Math.PI * 27 * 0.28}`}
+                    rotation={-90}
+                    origin="36, 36"
+                  />
+                </Svg>
+                <View style={styles.focusRingCenter}>
+                  <Text style={styles.focusRingText}>72%</Text>
                 </View>
-                <View style={styles.timeline}>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.sectionHeading}>
+            <View>
+              <Text style={styles.sectionTitle}>Today’s priorities</Text>
+              <Text style={styles.sectionSubtitle}>
+                {completedTasks.length} of {tasks.length} completed
+              </Text>
+            </View>
+            <TouchableOpacity
+              activeOpacity={0.72}
+              style={styles.viewAllButton}
+              onPress={() => navigation.navigate('Tasks')}
+            >
+              <Text style={styles.viewAllText}>View all</Text>
+              <ChevronIcon />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.priorityCard}>
+            {tasks.map((task, index) => {
+              const completed = completedTasks.includes(task.id);
+              return (
+                <React.Fragment key={task.id}>
+                  <TouchableOpacity
+                    activeOpacity={0.76}
+                    style={styles.taskRow}
+                    onPress={() => toggleTask(task.id)}
+                  >
+                    <View
+                      style={[
+                        styles.checkbox,
+                        completed && styles.checkboxCompleted,
+                      ]}
+                    >
+                      {completed ? <CheckIcon /> : null}
+                    </View>
+                    <View style={styles.taskCopy}>
+                      <Text
+                        style={[
+                          styles.taskTitle,
+                          completed && styles.taskTitleCompleted,
+                        ]}
+                      >
+                        {task.title}
+                      </Text>
+                      <Text style={styles.taskMeta}>{task.meta}</Text>
+                    </View>
+                  </TouchableOpacity>
+                  {index < tasks.length - 1 ? <View style={styles.divider} /> : null}
+                </React.Fragment>
+              );
+            })}
+            <View style={styles.progressRow}>
+              <View style={styles.progressTrack}>
+                <View
+                  style={[
+                    styles.progressFill,
+                    { width: `${Math.max(progress * 100, 4)}%` },
+                  ]}
+                />
+              </View>
+              <Text style={styles.progressText}>
+                {Math.round(progress * 100)}%
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.sectionHeading}>
+            <View>
+              <Text style={styles.sectionTitle}>Upcoming meetings</Text>
+              <Text style={styles.sectionSubtitle}>Your next 8 hours</Text>
+            </View>
+            <View style={styles.sectionIcon}>
+              <CalendarIcon />
+            </View>
+          </View>
+
+          <View style={styles.meetingsCard}>
+            {meetings.map((meeting, index) => (
+              <View key={meeting.id} style={styles.meetingRow}>
+                <View style={styles.meetingTimeColumn}>
+                  <Text style={styles.meetingTime}>{meeting.time}</Text>
+                </View>
+                <View style={styles.timelineColumn}>
                   <View
                     style={[
                       styles.timelineDot,
@@ -556,88 +411,61 @@ const BriefingScreen = () => {
                   ) : null}
                 </View>
                 <View style={styles.meetingCopy}>
-                  <Text style={styles.meetingTitle}>{item.title}</Text>
-                  <Text style={styles.meetingMeta}>{item.meta}</Text>
-                  <Text style={styles.meetingNote}>{item.note}</Text>
+                  <Text style={styles.meetingTitle}>{meeting.title}</Text>
+                  <Text style={styles.meetingMeta}>{meeting.meta}</Text>
                 </View>
               </View>
             ))}
-          </ScrollableSectionCard>
+          </View>
 
-          <StickySectionHeader
-            title="Follow-ups"
-            subtitle="People waiting on you"
-            icon={<PersonIcon />}
-            iconStyle={styles.followUpIcon}
-          />
+          <View style={styles.sectionHeading}>
+            <View>
+              <Text style={styles.sectionTitle}>Captured by Buddy</Text>
+              <Text style={styles.sectionSubtitle}>Context worth remembering</Text>
+            </View>
+            <View style={styles.sectionIcon}>
+              <SparkleIcon size={17} />
+            </View>
+          </View>
 
-          <ScrollableSectionCard>
-            {followUps.map((item, index) => (
-              <React.Fragment key={item.id}>
-                <TouchableOpacity
-                  activeOpacity={0.75}
-                  style={styles.followUpRow}
-                >
-                  <View style={[styles.avatar, avatarTone[item.tone]]}>
-                    <Text style={styles.avatarText}>{item.initials}</Text>
-                  </View>
-                  <View style={styles.followUpCopy}>
-                    <Text style={styles.followUpName}>{item.name}</Text>
-                    <Text style={styles.followUpReason}>{item.reason}</Text>
-                    <Text style={styles.followUpMeta}>{item.meta}</Text>
-                  </View>
-                </TouchableOpacity>
-                {index < followUps.length - 1 ? (
-                  <View style={styles.divider} />
-                ) : null}
-              </React.Fragment>
-            ))}
-          </ScrollableSectionCard>
-
-          <StickySectionHeader
-            title="Captured by Buddy"
-            subtitle="Important context from your work"
-            icon={<NoteIcon />}
-            iconStyle={styles.noteIcon}
-          />
-
-          <ScrollableSectionCard cardStyle={styles.insightCard}>
-            {insights.map((item, index) => (
-              <View
-                key={item.id}
-                style={[
-                  styles.insightBlock,
-                  index < insights.length - 1 && styles.insightBlockSpaced,
-                ]}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.insightsScroll}
+            contentContainerStyle={styles.insightsContent}
+          >
+            {insights.map(insight => (
+              <TouchableOpacity
+                key={insight.id}
+                activeOpacity={0.8}
+                style={styles.insightCard}
+                onPress={() => openInsightSource(insight)}
               >
                 <View style={styles.insightTop}>
                   <View style={styles.insightBadge}>
-                    <SparkleIcon size={14} />
+                    <SparkleIcon size={13} />
                     <Text style={styles.insightBadgeText}>KEY INSIGHT</Text>
                   </View>
-                  <Text style={styles.insightSource}>{item.source}</Text>
+                  <Text style={styles.insightSource}>{insight.source}</Text>
                 </View>
-                <Text style={styles.insightTitle}>{item.title}</Text>
-                <Text style={styles.insightBody}>{item.body}</Text>
-                <TouchableOpacity
-                  activeOpacity={0.75}
-                  style={styles.insightAction}
-                  onPress={() => openInsightSource(item)}
-                >
+                <Text numberOfLines={2} style={styles.insightTitle}>
+                  {insight.title}
+                </Text>
+                <Text numberOfLines={3} style={styles.insightBody}>
+                  {insight.body}
+                </Text>
+                <View style={styles.insightAction}>
                   <Text style={styles.insightActionText}>View source</Text>
-                  <ChevronIcon color={colors.primary} size={15} />
-                </TouchableOpacity>
-                {index < insights.length - 1 ? (
-                  <View style={[styles.divider, styles.insightDivider]} />
-                ) : null}
-              </View>
+                  <ChevronIcon />
+                </View>
+              </TouchableOpacity>
             ))}
-          </ScrollableSectionCard>
+          </ScrollView>
 
           <View style={styles.endNote}>
-            <SparkleIcon color={colors.muted} size={15} />
+            <SparkleIcon color={colors.muted} size={14} />
             <Text style={styles.endNoteText}>
-              Buddy will keep this briefing updated throughout your day.
+              Buddy keeps your briefing updated throughout the day.
             </Text>
           </View>
         </ScrollView>
@@ -656,34 +484,32 @@ export default BriefingScreen;
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: PAGE_BG,
+    backgroundColor: colors.background,
   },
   safeArea: {
     flex: 1,
-    backgroundColor: PAGE_BG,
   },
   header: {
-    minHeight: ms(54),
+    minHeight: ms(56),
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: layout.screenPadding,
     paddingVertical: spacing.sm,
-    backgroundColor: PAGE_BG,
   },
-  iconButton: {
-    width: ms(38),
-    height: ms(38),
-    borderRadius: ms(19),
-    backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+  headerButton: {
+    width: layout.headerButton,
+    height: layout.headerButton,
+    borderRadius: layout.headerButton / 2,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.white,
+    borderWidth: layout.hairline,
+    borderColor: colors.border,
   },
   headerCopy: {
     flex: 1,
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
   },
   headerTitle: {
     color: colors.text,
@@ -698,33 +524,187 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
   },
   buddyBadge: {
-    width: ms(38),
-    height: ms(38),
-    borderRadius: ms(19),
-    backgroundColor: colors.primaryLight,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.brandBorder,
+    width: layout.headerButton,
+    height: layout.headerButton,
+    borderRadius: layout.headerButton / 2,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.primaryLight,
+    borderWidth: layout.hairline,
+    borderColor: colors.brandBorder,
   },
   content: {
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.md,
     paddingBottom: spacing['5xl'],
-    backgroundColor: PAGE_BG,
   },
-  stickySectionHeader: {
+  dayCard: {
+    minHeight: ms(142),
+    flexDirection: 'row',
+    padding: spacing['2xl'],
+    borderRadius: radii['2xl'],
+    overflow: 'hidden',
+    ...shadows.card,
+  },
+  dateColumn: {
+    width: '36%',
+    justifyContent: 'center',
+    paddingRight: spacing.md,
+  },
+  buddyPlanRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: spacing.xl,
+    gap: spacing.xs,
     marginBottom: spacing.sm,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
-    gap: spacing.md,
-    backgroundColor: PAGE_BG,
   },
-  sectionCopy: {
+  buddyPlanText: {
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 0.6,
+  },
+  bigDate: {
+    color: colors.white,
+    fontSize: fontSize['2xl'] + ms(4),
+    fontWeight: fontWeight.extrabold,
+    letterSpacing: -0.7,
+  },
+  dayName: {
+    marginTop: spacing.xs,
+    color: 'rgba(255,255,255,0.76)',
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+  dayMeetings: {
     flex: 1,
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  dayMeeting: {
+    minHeight: ms(50),
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+  },
+  meetingAccent: {
+    width: ms(3),
+    alignSelf: 'stretch',
+    marginRight: spacing.md,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primaryPurple,
+  },
+  meetingAccentSecondary: {
+    backgroundColor: colors.info,
+  },
+  dayMeetingCopy: {
+    flex: 1,
+  },
+  dayMeetingTitle: {
+    color: colors.text,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+  },
+  dayMeetingTime: {
+    marginTop: spacing.xxs,
+    color: colors.subText,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+  },
+  quickGrid: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  quickCard: {
+    flex: 1,
+    minHeight: ms(178),
+    padding: spacing['2xl'],
+    borderRadius: radii['2xl'],
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  chatCard: {
+    backgroundColor: colors.primarySoft,
+  },
+  focusCard: {
+    backgroundColor: colors.primaryLight,
+  },
+  chatIconWrap: {
+    width: ms(50),
+    height: ms(44),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.lg,
+    backgroundColor: colors.white,
+  },
+  quickTitle: {
+    marginTop: spacing.md,
+    color: colors.text,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+  },
+  quickBody: {
+    marginTop: spacing.xs,
+    color: colors.subText,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+  },
+  chatButton: {
+    alignSelf: 'flex-start',
+    marginTop: 'auto',
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.md,
+    borderRadius: radii.pill,
+    backgroundColor: colors.text,
+  },
+  chatButtonText: {
+    color: colors.white,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+  },
+  focusValue: {
+    color: colors.primaryDark,
+    fontSize: fontSize['2xl'] + ms(4),
+    fontWeight: fontWeight.extrabold,
+    letterSpacing: -0.6,
+  },
+  focusLabel: {
+    marginTop: spacing.xxs,
+    color: colors.subText,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+  },
+  focusRingWrap: {
+    position: 'relative',
+    alignSelf: 'flex-end',
+    width: ms(72),
+    height: ms(72),
+    marginTop: 'auto',
+  },
+  focusRingCenter: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  focusRingText: {
+    color: colors.primaryDark,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+  sectionHeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing['2xl'],
+    marginBottom: spacing.sm,
   },
   sectionTitle: {
     color: colors.text,
@@ -738,112 +718,40 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
   },
-  sectionIcon: {
-    width: ms(34),
-    height: ms(34),
-    borderRadius: ms(11),
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  alertIcon: {
-    backgroundColor: colors.errorSoft,
-  },
-  alertMark: {
-    color: colors.error,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.extrabold,
-  },
-  followUpIcon: {
-    backgroundColor: colors.purpleLight,
-  },
-  noteIcon: {
-    backgroundColor: '#EAF5FF',
-  },
-  sectionCard: {
-    backgroundColor: colors.white,
-    borderRadius: radii.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-  sectionList: {
-    maxHeight: SECTION_LIST_HEIGHT,
-  },
-  sectionListContent: {
-    paddingHorizontal: spacing.xl,
-  },
-  overdueCard: {
-    borderColor: colors.errorSoftBorder,
-  },
-  insightCard: {
-    borderColor: colors.brandBorder,
-  },
-  heroCard: {
-    borderRadius: radii['2xl'],
-    padding: spacing['2xl'],
-    overflow: 'hidden',
-  },
-  heroTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xl,
-  },
-  heroEyebrow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  heroEyebrowText: {
-    color: 'rgba(255,255,255,0.78)',
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 0.7,
-  },
-  heroTime: {
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-  },
-  heroTitle: {
-    color: colors.white,
-    fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.extrabold,
-    lineHeight: ms(27),
-    letterSpacing: -0.4,
-  },
-  heroBody: {
-    marginTop: spacing.sm,
-    color: 'rgba(255,255,255,0.84)',
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    lineHeight: ms(19),
-  },
-  focusRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.xl,
-  },
-  focusChip: {
+  viewAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radii.pill,
-    backgroundColor: 'rgba(255,255,255,0.14)',
+    backgroundColor: colors.white,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.24)',
+    borderColor: colors.border,
   },
-  focusChipText: {
-    color: colors.white,
+  viewAllText: {
+    color: colors.primary,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
+    fontWeight: fontWeight.bold,
+  },
+  sectionIcon: {
+    width: ms(34),
+    height: ms(34),
+    borderRadius: ms(11),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primaryLight,
+  },
+  priorityCard: {
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xl,
+    borderRadius: radii.xl,
+    backgroundColor: colors.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
   taskRow: {
-    minHeight: ms(66),
+    minHeight: ms(64),
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.md,
@@ -852,28 +760,26 @@ const styles = StyleSheet.create({
     width: ms(22),
     height: ms(22),
     borderRadius: ms(7),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderFocus,
-    backgroundColor: colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
+    backgroundColor: colors.inputBg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderFocus,
   },
-  checkboxChecked: {
+  checkboxCompleted: {
     backgroundColor: colors.primary,
     borderColor: colors.primary,
   },
   taskCopy: {
     flex: 1,
-    paddingRight: spacing.sm,
   },
   taskTitle: {
     color: colors.text,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
-    lineHeight: ms(20),
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
   },
-  completedText: {
+  taskTitleCompleted: {
     color: colors.muted,
     textDecorationLine: 'line-through',
   },
@@ -883,63 +789,64 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
   },
-  overdueMeta: {
-    color: colors.errorDark,
-  },
-  priorityPill: {
-    borderRadius: radii.pill,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-  },
-  priorityHigh: {
-    backgroundColor: colors.errorSoft,
-  },
-  priorityMedium: {
-    backgroundColor: colors.warningSoft,
-  },
-  priorityText: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-  },
-  priorityHighText: {
-    color: colors.errorDark,
-  },
-  priorityMediumText: {
-    color: colors.warningText,
-  },
   divider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.border,
   },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.xl,
+  },
+  progressTrack: {
+    flex: 1,
+    height: ms(8),
+    overflow: 'hidden',
+    borderRadius: radii.pill,
+    backgroundColor: colors.lightGray,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
+  },
+  progressText: {
+    color: colors.primaryDark,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+  },
+  meetingsCard: {
+    paddingHorizontal: spacing.xl,
+    borderRadius: radii.xl,
+    backgroundColor: colors.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
   meetingRow: {
+    minHeight: ms(68),
     flexDirection: 'row',
     alignItems: 'stretch',
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.md,
   },
-  timeColumn: {
-    width: ms(48),
-    alignItems: 'flex-end',
+  meetingTimeColumn: {
+    width: ms(62),
     paddingTop: spacing.xxs,
   },
   meetingTime: {
     color: colors.text,
-    fontSize: fontSize.base,
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
   },
-  meetingPeriod: {
-    color: colors.muted,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-  },
-  timeline: {
+  timelineColumn: {
     width: ms(28),
     alignItems: 'center',
   },
   timelineDot: {
     width: ms(10),
     height: ms(10),
-    borderRadius: ms(5),
     marginTop: spacing.xs,
+    borderRadius: ms(5),
     backgroundColor: colors.primary,
     borderWidth: ms(2),
     borderColor: colors.primaryLight,
@@ -950,13 +857,13 @@ const styles = StyleSheet.create({
   },
   timelineDotTertiary: {
     backgroundColor: colors.info,
-    borderColor: '#DBEAFE',
+    borderColor: colors.primaryLight,
   },
   timelineLine: {
-    width: StyleSheet.hairlineWidth,
     flex: 1,
+    width: StyleSheet.hairlineWidth,
     marginTop: spacing.xs,
-    marginBottom: -spacing.lg,
+    marginBottom: -spacing.md,
     backgroundColor: colors.borderFocus,
   },
   meetingCopy: {
@@ -964,76 +871,30 @@ const styles = StyleSheet.create({
   },
   meetingTitle: {
     color: colors.text,
-    fontSize: fontSize.base,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
   },
   meetingMeta: {
     marginTop: spacing.xxs,
     color: colors.subText,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-  },
-  meetingNote: {
-    marginTop: spacing.sm,
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    lineHeight: ms(18),
-  },
-  followUpRow: {
-    minHeight: ms(76),
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-  },
-  avatar: {
-    width: ms(40),
-    height: ms(40),
-    borderRadius: ms(14),
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  avatarPurple: {
-    backgroundColor: colors.primaryLight,
-  },
-  avatarBlue: {
-    backgroundColor: '#EAF5FF',
-  },
-  avatarTeal: {
-    backgroundColor: '#E6F7F4',
-  },
-  avatarText: {
-    color: colors.primaryDark,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.extrabold,
-  },
-  followUpCopy: {
-    flex: 1,
-    paddingRight: spacing.sm,
-  },
-  followUpName: {
-    color: colors.text,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
-  },
-  followUpReason: {
-    marginTop: spacing.xxs,
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
   },
-  followUpMeta: {
-    marginTop: spacing.xs,
-    color: colors.muted,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
+  insightsScroll: {
+    marginHorizontal: -layout.screenPadding,
   },
-  insightBlock: {
-    paddingVertical: spacing.md,
+  insightsContent: {
+    gap: spacing.sm,
+    paddingHorizontal: layout.screenPadding,
   },
-  insightBlockSpaced: {
-    paddingBottom: 0,
+  insightCard: {
+    width: ms(280),
+    minHeight: ms(182),
+    padding: spacing['2xl'],
+    borderRadius: radii.xl,
+    backgroundColor: colors.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.brandBorder,
   },
   insightTop: {
     flexDirection: 'row',
@@ -1054,15 +915,17 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
-    letterSpacing: 0.4,
+    letterSpacing: 0.3,
   },
   insightSource: {
+    flexShrink: 1,
     color: colors.muted,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
+    textAlign: 'right',
   },
   insightTitle: {
-    marginTop: spacing.md,
+    marginTop: spacing.xl,
     color: colors.text,
     fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
@@ -1071,31 +934,27 @@ const styles = StyleSheet.create({
   insightBody: {
     marginTop: spacing.sm,
     color: colors.textSecondary,
-    fontSize: fontSize.sm,
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
-    lineHeight: ms(19),
+    lineHeight: ms(17),
   },
   insightAction: {
-    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    marginTop: spacing.md,
+    marginTop: 'auto',
+    paddingTop: spacing.md,
   },
   insightActionText: {
     color: colors.primary,
-    fontSize: fontSize.sm,
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
-  },
-  insightDivider: {
-    marginTop: spacing.md,
   },
   endNote: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    paddingHorizontal: spacing.xl,
     marginTop: spacing['2xl'],
   },
   endNoteText: {

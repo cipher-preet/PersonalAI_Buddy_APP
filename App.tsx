@@ -1,7 +1,8 @@
 import 'react-native-gesture-handler';
 
 import React, { useEffect } from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, StyleSheet } from 'react-native';
+import { enableFreeze, enableScreens } from 'react-native-screens';
 
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider } from 'react-redux';
@@ -16,7 +17,16 @@ import { ToastProvider, useToast } from './src/store/context/ToastContext';
 import { store } from './src/store/store';
 import { configureGoogleSignIn } from './src/services/googleSignInService';
 
+enableScreens(true);
+enableFreeze(true);
+
 const APP_BACKGROUND = colors.background;
+const rootStyles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: APP_BACKGROUND,
+  },
+});
 
 const AppContent = () => {
   const {
@@ -35,7 +45,7 @@ const AppContent = () => {
         backgroundColor={APP_BACKGROUND}
         translucent={false}
       />
-      <GestureHandlerRootView style={{ flex: 1, backgroundColor: APP_BACKGROUND }}>
+      <GestureHandlerRootView style={rootStyles.root}>
         <BottomSheetModalProvider>
           <RootNavigator />
         </BottomSheetModalProvider>

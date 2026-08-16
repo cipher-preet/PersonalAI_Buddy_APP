@@ -1,16 +1,13 @@
 import React from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import type { ChatSession } from '../types';
 import {
   colors,
   fontSize,
@@ -24,11 +21,7 @@ import {
 type Props = {
   userName?: string | null;
   suggestions: string[];
-  sessions: ChatSession[];
-  loadingSessions?: boolean;
   onSuggestionPress: (suggestion: string) => void;
-  onSeeAllHistory: () => void;
-  onSelectSession: (sessionId: string) => void;
 };
 
 const BuddyAvatar = () => (
@@ -71,45 +64,13 @@ const ArrowUpIcon = ({ color = colors.primary }: { color?: string }) => (
   </Svg>
 );
 
-const formatHistoryDate = (date: Date) => {
-  const now = new Date();
-  const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const startThatDay = new Date(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-  );
-  const dayDiff = Math.round(
-    (startToday.getTime() - startThatDay.getTime()) / 86400000,
-  );
-
-  if (dayDiff === 0) {
-    return 'Today';
-  }
-  if (dayDiff === 1) {
-    return 'Yesterday';
-  }
-
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
-};
-
 const BuddyLanding = ({
   userName,
   suggestions,
-  sessions,
-  loadingSessions = false,
   onSuggestionPress,
-  onSeeAllHistory,
-  onSelectSession,
 }: Props) => {
   const firstName = userName?.trim()?.split(/\s+/)[0];
   const greetingName = firstName || 'there';
-  const recentSessions = sessions
-    .filter(session => !session.id.startsWith('pending-'))
-    .slice(0, 5);
 
   return (
     <View style={styles.root}>
@@ -130,13 +91,6 @@ const BuddyLanding = ({
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>Start a chat</Text>
-          <TouchableOpacity
-            activeOpacity={0.75}
-            onPress={onSeeAllHistory}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Text style={styles.seeAll}>See all</Text>
-          </TouchableOpacity>
         </View>
 
         <View style={styles.chipsWrap}>
@@ -153,41 +107,6 @@ const BuddyLanding = ({
             </Pressable>
           ))}
         </View>
-
-        <View style={[styles.sectionHeader, styles.historyHeader]}>
-          <Text style={styles.sectionLabel}>History</Text>
-        </View>
-
-        {loadingSessions ? (
-          <View style={styles.historyLoading}>
-            <ActivityIndicator size="small" color={colors.primary} />
-          </View>
-        ) : recentSessions.length === 0 ? (
-          <View style={styles.historyEmpty}>
-            <Text style={styles.historyEmptyText}>No conversations yet</Text>
-            <Text style={styles.historyEmptySub}>
-              Start a new chat to see it here
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.historyList}>
-            {recentSessions.map(session => (
-              <TouchableOpacity
-                key={session.id}
-                activeOpacity={0.88}
-                style={styles.historyCard}
-                onPress={() => onSelectSession(session.id)}
-              >
-                <Text numberOfLines={2} style={styles.historyTitle}>
-                  {session.title}
-                </Text>
-                <Text style={styles.historyDate}>
-                  {formatHistoryDate(session.updatedAt)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
       </ScrollView>
     </View>
   );
@@ -256,18 +175,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
 
-  historyHeader: {
-    marginTop: spacing['2xl'],
-  },
-
   sectionLabel: {
     color: colors.subText,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-  },
-
-  seeAll: {
-    color: colors.primary,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
   },
@@ -304,60 +213,5 @@ const styles = StyleSheet.create({
     borderRadius: ms(11),
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  historyLoading: {
-    minHeight: ms(88),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  historyEmpty: {
-    backgroundColor: colors.white,
-    borderRadius: radii.xl,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing['2xl'],
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-
-  historyEmptyText: {
-    color: colors.text,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
-  },
-
-  historyEmptySub: {
-    marginTop: spacing.xs,
-    color: colors.subText,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-  },
-
-  historyList: {
-    gap: spacing.md,
-  },
-
-  historyCard: {
-    backgroundColor: colors.white,
-    borderRadius: radii.xl,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-
-  historyTitle: {
-    color: colors.text,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
-    lineHeight: ms(20),
-  },
-
-  historyDate: {
-    marginTop: spacing.xs,
-    color: colors.subText,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
   },
 });

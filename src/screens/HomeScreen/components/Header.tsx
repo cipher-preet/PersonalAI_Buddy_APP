@@ -121,11 +121,6 @@ const styles = StyleSheet.create({
   upgradeButton: {
     borderRadius: radii.pill,
     overflow: 'hidden',
-    shadowColor: colors.accentIndigo,
-    shadowOffset: { width: 0, height: ms(4) },
-    shadowOpacity: 0.28,
-    shadowRadius: ms(8),
-    elevation: 4,
   },
 
   upgradeGradient: {

@@ -1,6 +1,10 @@
 export const API_URLS = {
-  appApiBase: 'https://buddy-node-backend-710178903619.asia-south1.run.app/api/v1',
+  appApiBase: 'https://buddy-node-backend-scz7pyp3ha-el.a.run.app/api/v1',              // preet cloud run server
+  // appApiBase: 'https://buddy-node-backend-710178903619.asia-south1.run.app/api/v1',  //aditya cloud running
   // appApiBase: 'https://2f72-223-178-210-23.ngrok-free.app/api/v1',
+
+
+  // 
 
   // FastAPI AI_Orchestration server.
   // Run locally with:

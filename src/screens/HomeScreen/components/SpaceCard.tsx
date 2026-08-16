@@ -8,7 +8,6 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  UIManager,
   View,
 } from 'react-native';
 import Animated, {
@@ -29,13 +28,6 @@ import {
   radii,
   spacing,
 } from '../../../theme';
-
-if (
-  Platform.OS === 'android' &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const EXPAND_ANIM = {
   duration: 220,
@@ -177,7 +169,9 @@ const getSpaceIconColor = (spaceId: string) => {
 };
 
 const runExpandAnimation = () => {
-  LayoutAnimation.configureNext(EXPAND_ANIM);
+  if (Platform.OS === 'ios') {
+    LayoutAnimation.configureNext(EXPAND_ANIM);
+  }
 };
 
 const SpaceCard = ({

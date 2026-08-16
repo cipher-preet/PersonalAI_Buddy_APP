@@ -27,7 +27,7 @@ type Props = {
   onStop: () => void;
 };
 
-const WAVE_BARS = [10, 18, 28, 16, 34, 22, 40, 20, 30, 14, 24, 12];
+const WAVE_BARS = [12, 22, 34, 18, 40, 24, 30, 16];
 
 const CloseIcon = ({ color = colors.text }: { color?: string }) => (
   <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">

@@ -7,7 +7,7 @@ import React, {
 } from 'react';
 import {
   ActivityIndicator,
-  ScrollView,
+  FlatList,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -45,11 +45,32 @@ import {
   fontSize,
   fontWeight,
   layout,
+  listPerf,
   ms,
   mvs,
   radii,
   spacing,
 } from '../../theme';
+
+const TASKS_PAGE_SIZE = 20;
+
+const formatDate = (value: string | null) => {
+  if (!value) {
+    return 'Recently';
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+};
 
 const TaskScreen = () => {
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
@@ -105,7 +126,7 @@ const TaskScreen = () => {
     {
       userId,
       spaceId: selectedSpaceId,
-      limit: 20,
+      limit: TASKS_PAGE_SIZE,
       cursor: tasksCursor,
     },
     { skip: !userId || !selectedSpaceId },
@@ -299,57 +320,60 @@ const TaskScreen = () => {
     ],
   );
 
-  const formatDate = (value: string | null) => {
-    if (!value) {
-      return 'Recently';
-    }
+  const toTaskItem = useCallback(
+    (task: StagedTaskCard): TaskItem => {
+      const done = isTaskDone(task);
+      const status = done ? 'Done' : 'Not Done';
+      const body = task.body || task.descriptionPreview || '';
+      const preview = task.descriptionPreview || body;
+      const workspaceName = selectedSpace?.spacename || 'Space';
+      const confidencePercent =
+        typeof task.confidence === 'number'
+          ? Math.round(task.confidence * 100)
+          : null;
 
-    const date = new Date(value);
-
-    if (Number.isNaN(date.getTime())) {
-      return value;
-    }
-
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const toTaskItem = (task: StagedTaskCard): TaskItem => {
-    const done = isTaskDone(task);
-    const status = done ? 'Done' : 'Not Done';
-    const body = task.body || task.descriptionPreview || '';
-    const preview = task.descriptionPreview || body;
-    const workspaceName = selectedSpace?.spacename || 'Space';
-    const confidencePercent =
-      typeof task.confidence === 'number'
-        ? Math.round(task.confidence * 100)
-        : null;
-
-    return {
-      id: task.id,
-      title: task.title || 'Untitled task',
-      subtitle: preview,
-      tags: [
+      return {
+        id: task.id,
+        title: task.title || 'Untitled task',
+        subtitle: preview,
+        tags: [
+          status,
+          task.priority || 'Normal Priority',
+          confidencePercent ? `CONF ${confidencePercent}%` : '',
+        ].filter(Boolean),
         status,
-        task.priority || 'Normal Priority',
-        confidencePercent ? `CONF ${confidencePercent}%` : '',
-      ].filter(Boolean),
-      status,
-      priority: task.priority || 'Normal Priority',
-      dueDate: task.dueDate ? formatDate(task.dueDate) : 'No due date',
-      updatedAt: formatDate(task.updatedAt || task.createdAt),
-      createdAt: formatDate(task.createdAt),
-      project: workspaceName,
-      assignee: 'You',
-      summary: body,
-      evidence: task.evidence ?? null,
-    };
-  };
+        priority: task.priority || 'Normal Priority',
+        dueDate: task.dueDate ? formatDate(task.dueDate) : 'No due date',
+        updatedAt: formatDate(task.updatedAt || task.createdAt),
+        createdAt: formatDate(task.createdAt),
+        project: workspaceName,
+        assignee: 'You',
+        summary: body,
+        evidence: task.evidence ?? null,
+      };
+    },
+    [isTaskDone, selectedSpace?.spacename],
+  );
 
-  const renderTaskList = () => {
+  const renderTaskItem = useCallback(
+    ({ item: task }: { item: StagedTaskCard }) => {
+      const item = toTaskItem(task);
+      const completed = isTaskDone(task);
+
+      return (
+        <TaskCard
+          item={item}
+          completed={completed}
+          onPress={() => handleOpenTask(item)}
+          onToggleComplete={() => handleToggleTaskComplete(task)}
+          onDelete={() => handleDeleteTask(item)}
+        />
+      );
+    },
+    [handleDeleteTask, handleOpenTask, handleToggleTaskComplete, isTaskDone, toTaskItem],
+  );
+
+  const tasksListEmpty = useMemo(() => {
     if (isInitialTasksLoading) {
       return (
         <View style={styles.stateBox}>
@@ -392,57 +416,47 @@ const TaskScreen = () => {
       );
     }
 
-    if (displayedTasks.length === 0) {
-      return (
-        <View style={styles.stateBox}>
-          <Text style={styles.emptyTitle}>No matching tasks</Text>
-          <Text style={styles.stateText}>
-            Try a different search term or clear your filters.
-          </Text>
-        </View>
-      );
+    return (
+      <View style={styles.stateBox}>
+        <Text style={styles.emptyTitle}>No matching tasks</Text>
+        <Text style={styles.stateText}>
+          Try a different search term or clear your filters.
+        </Text>
+      </View>
+    );
+  }, [
+    isInitialTasksLoading,
+    isTasksError,
+    loadedTasks.length,
+    refetchTasks,
+    selectedSpaceId,
+  ]);
+
+  const tasksListFooter = useMemo(() => {
+    if (displayedTasks.length === 0 || !nextTasksCursor) {
+      return null;
     }
 
     return (
-      <>
-        {displayedTasks.map(task => {
-          const item = toTaskItem(task);
-          const completed = isTaskDone(task);
-
-          return (
-            <TaskCard
-              key={item.id}
-              item={item}
-              completed={completed}
-              onPress={() => handleOpenTask(item)}
-              onToggleComplete={() => handleToggleTaskComplete(task)}
-              onDelete={() => handleDeleteTask(item)}
-            />
-          );
-        })}
-
-        {nextTasksCursor ? (
-          <View style={styles.loadMoreWrap}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              disabled={isLoadingMoreTasks}
-              style={[
-                styles.loadMoreButton,
-                isLoadingMoreTasks && styles.loadMoreButtonDisabled,
-              ]}
-              onPress={() => setTasksCursor(nextTasksCursor)}
-            >
-              {isLoadingMoreTasks ? (
-                <ActivityIndicator size="small" color={colors.primary} />
-              ) : (
-                <Text style={styles.loadMoreText}>Load more</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        ) : null}
-      </>
+      <View style={styles.loadMoreWrap}>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          disabled={isLoadingMoreTasks}
+          style={[
+            styles.loadMoreButton,
+            isLoadingMoreTasks && styles.loadMoreButtonDisabled,
+          ]}
+          onPress={() => setTasksCursor(nextTasksCursor)}
+        >
+          {isLoadingMoreTasks ? (
+            <ActivityIndicator size="small" color={colors.primary} />
+          ) : (
+            <Text style={styles.loadMoreText}>Load more</Text>
+          )}
+        </TouchableOpacity>
+      </View>
     );
-  };
+  }, [displayedTasks.length, isLoadingMoreTasks, nextTasksCursor]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
@@ -472,15 +486,21 @@ const TaskScreen = () => {
         onNavigateNotes={() => navigation.navigate('Notes')}
       />
 
-      <ScrollView
+      <FlatList
+        data={
+          isInitialTasksLoading || isTasksError ? [] : displayedTasks
+        }
+        keyExtractor={item => item.id}
+        renderItem={renderTaskItem}
+        ListEmptyComponent={tasksListEmpty}
+        ListFooterComponent={tasksListFooter}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         style={styles.tasksScroll}
-      >
-        {renderTaskList()}
-      </ScrollView>
+        {...listPerf}
+      />
 
       <TaskDetailBottomSheet ref={taskSheetRef} task={selectedTask} />
 
@@ -500,13 +520,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    paddingTop: mvs(16),
-    paddingBottom: mvs(40),
+    paddingTop: layout.screenTop,
   },
 
   headerWrap: {
     paddingHorizontal: layout.screenPadding,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
 
   tasksScroll: {
@@ -520,17 +539,17 @@ const styles = StyleSheet.create({
 
   stateBox: {
     minHeight: mvs(120),
-    marginBottom: spacing.xl,
+    marginBottom: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.lg,
     backgroundColor: colors.white,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
 
   stateText: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     color: colors.gray,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
@@ -576,7 +595,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
 

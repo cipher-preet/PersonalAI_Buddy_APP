@@ -28,10 +28,13 @@ import PlansScreen from '../screens/PlansScreen/PlansScreen';
 import RemindersScreen from '../screens/RemindersScreen/RemindersScreen';
 import BriefingScreen from '../screens/BriefingScreen/BriefingScreen';
 import ShareScreen from '../screens/ShareScreen/ShareScreen';
+import CalendarScreen from '../screens/CalendarScreen/CalendarScreen';
+import GoalMonitorScreen from '../screens/GoalMonitorScreen/GoalMonitorScreen';
 import {
   colors,
   fontSize,
   fontWeight,
+  layout,
   ms,
   mvs,
   radii,
@@ -189,7 +192,9 @@ const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
     currentRoute.name === 'Plans' ||
     currentRoute.name === 'Reminders' ||
     currentRoute.name === 'Briefing' ||
-    currentRoute.name === 'Share'
+    currentRoute.name === 'Share' ||
+    currentRoute.name === 'Calendar' ||
+    currentRoute.name === 'GoalMonitor'
   ) {
     return null;
   }
@@ -247,8 +252,11 @@ const MainTabs = () => {
     <Tab.Navigator
       initialRouteName="Home"
       tabBar={props => <CustomTabBar {...props} />}
+      detachInactiveScreens
       screenOptions={{
         headerShown: false,
+        lazy: true,
+        freezeOnBlur: true,
       }}
     >
       <Tab.Screen name="Home" component={Home} />
@@ -260,6 +268,8 @@ const MainTabs = () => {
       <Tab.Screen name="Reminders" component={RemindersScreen} />
       <Tab.Screen name="Briefing" component={BriefingScreen} />
       <Tab.Screen name="Share" component={ShareScreen} />
+      <Tab.Screen name="Calendar" component={CalendarScreen} />
+      <Tab.Screen name="GoalMonitor" component={GoalMonitorScreen} />
     </Tab.Navigator>
   );
 };
@@ -270,13 +280,15 @@ const styles = StyleSheet.create({
     left: spacing['2xl'],
     right: spacing['2xl'],
     bottom: Platform.OS === 'ios' ? mvs(24) : mvs(16),
-    height: ms(80),
+    height: layout.tabBarHeight,
     backgroundColor: colors.white,
     borderRadius: radii.tabBar,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    ...shadows.elevated,
+    borderWidth: layout.hairline,
+    borderColor: colors.border,
+    ...shadows.soft,
   },
 
   tabButton: {

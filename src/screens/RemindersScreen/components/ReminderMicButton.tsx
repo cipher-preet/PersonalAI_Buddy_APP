@@ -73,9 +73,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#7C3AED',
-    shadowOffset: { width: 0, height: ms(8) },
-    shadowOpacity: 0.35,
-    shadowRadius: ms(14),
-    elevation: 8,
+    shadowOffset: { width: 0, height: ms(4) },
+    shadowOpacity: 0.22,
+    shadowRadius: ms(8),
+    elevation: 4,
   },
 });

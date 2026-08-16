@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { memo, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -14,6 +14,7 @@ import {
   colors,
   fontSize,
   fontWeight,
+  layout,
   ms,
   radii,
   spacing,
@@ -193,11 +194,11 @@ const NoteCard = ({ item, onPress, onDelete }: Props) => {
   );
 };
 
-export default NoteCard;
+export default memo(NoteCard);
 
 const styles = StyleSheet.create({
   shadowWrap: {
-    marginBottom: spacing.md,
+    marginBottom: layout.listGap,
     borderRadius: radii.xl,
     backgroundColor: colors.white,
     borderWidth: StyleSheet.hairlineWidth,
@@ -207,8 +208,8 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: radii.xl,
     backgroundColor: colors.white,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
+    paddingHorizontal: layout.cardPadding,
+    paddingTop: layout.cardPadding,
     paddingBottom: spacing.md,
     overflow: 'hidden',
   },

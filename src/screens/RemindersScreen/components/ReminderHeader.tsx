@@ -7,8 +7,8 @@ import {
   colors,
   fontSize,
   fontWeight,
+  layout,
   ms,
-  radii,
   spacing,
 } from '../../../theme';
 
@@ -57,12 +57,14 @@ const styles = StyleSheet.create({
   },
 
   backButton: {
-    width: ms(36),
-    height: ms(36),
-    borderRadius: ms(18),
+    width: layout.headerButton,
+    height: layout.headerButton,
+    borderRadius: layout.headerButton / 2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
+    borderWidth: layout.hairline,
+    borderColor: colors.border,
   },
 
   title: {
@@ -73,6 +75,6 @@ const styles = StyleSheet.create({
   },
 
   spacer: {
-    width: ms(36),
+    width: layout.headerButton,
   },
 });

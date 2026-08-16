@@ -26,6 +26,7 @@ import {
   fontSize,
   fontWeight,
   layout,
+  listPerf,
   ms,
   spacing,
 } from '../../theme';
@@ -126,19 +127,22 @@ const RemindersScreen = () => {
     });
   }, [showToast]);
 
-  const renderItem = ({ item }: { item: ReminderItem }) => (
-    <ReminderCard
-      item={item}
-      width={cardWidth}
-      onPress={() => handleOpenReminder(item)}
-      onDelete={() => handleDeleteReminder(item)}
-    />
+  const renderItem = useCallback(
+    ({ item }: { item: ReminderItem }) => (
+      <ReminderCard
+        item={item}
+        width={cardWidth}
+        onPress={() => handleOpenReminder(item)}
+        onDelete={() => handleDeleteReminder(item)}
+      />
+    ),
+    [cardWidth, handleDeleteReminder, handleOpenReminder],
   );
 
   return (
     <View style={styles.container}>
       <View
-        style={[styles.blurTarget, isListening && styles.blurTargetActive]}
+        style={styles.listTarget}
         pointerEvents={isListening ? 'none' : 'auto'}
       >
         <LinearGradient
@@ -183,6 +187,7 @@ const RemindersScreen = () => {
                 ) : null}
               </View>
             }
+            {...listPerf}
           />
 
           <View style={styles.micDock}>
@@ -215,13 +220,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
 
-  blurTarget: {
+  listTarget: {
     flex: 1,
-  },
-
-  // Native blur of the underlying screen while the mic overlay is active.
-  blurTargetActive: {
-    filter: [{ blur: 16 }],
   },
 
   safeArea: {

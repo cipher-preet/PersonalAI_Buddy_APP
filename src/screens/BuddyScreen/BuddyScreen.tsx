@@ -36,7 +36,7 @@ import type {
   ChatMessageDto,
   ChatSessionDto,
 } from '../../store/api/chat';
-import { ms, spacing } from '../../theme';
+import { chatListPerf, ms, spacing } from '../../theme';
 
 const SUGGESTIONS = [
   'Summarize my day',
@@ -148,6 +148,7 @@ const BuddyScreen = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [input, setInput] = useState('');
+  const [inputBarHeight, setInputBarHeight] = useState(INPUT_BAR_HEIGHT);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [historyVisible, setHistoryVisible] = useState(false);
   const [sessionsCursor, setSessionsCursor] = useState<string | null>(null);
@@ -585,7 +586,8 @@ const BuddyScreen = () => {
     ? keyboardHeight + KEYBOARD_INPUT_GAP
     : Math.max(insets.bottom, spacing.xl);
 
-  const fabBottom = inputSafeBottom + INPUT_BAR_HEIGHT + spacing.sm;
+  // Keep the FAB clear of the real input bar height (including padding / expansion).
+  const fabBottom = inputBarHeight + spacing.md;
 
   return (
     <LinearGradient
@@ -611,11 +613,7 @@ const BuddyScreen = () => {
             <BuddyLanding
               userName={userName}
               suggestions={SUGGESTIONS}
-              sessions={sessions}
-              loadingSessions={sessionsLoadingInitial}
               onSuggestionPress={handleSuggestionPress}
-              onSeeAllHistory={handleOpenHistory}
-              onSelectSession={handleSelectSession}
             />
           ) : (
             <View style={styles.listWrap}>
@@ -648,6 +646,7 @@ const BuddyScreen = () => {
                 onContentSizeChange={handleContentSizeChange}
                 onScroll={handleListScroll}
                 scrollEventThrottle={16}
+                {...chatListPerf}
               />
 
               <ScrollToBottomButton
@@ -658,7 +657,15 @@ const BuddyScreen = () => {
             </View>
           )}
 
-          <View style={[styles.inputBar, { paddingBottom: inputSafeBottom }]}>
+          <View
+            style={[styles.inputBar, { paddingBottom: inputSafeBottom }]}
+            onLayout={event => {
+              const nextHeight = event.nativeEvent.layout.height;
+              if (nextHeight > 0 && nextHeight !== inputBarHeight) {
+                setInputBarHeight(nextHeight);
+              }
+            }}
+          >
             <BottomInput
               ref={inputRef}
               value={input}
@@ -670,7 +677,9 @@ const BuddyScreen = () => {
           </View>
         </View>
 
-        <NewChatFab onPress={handleNewChat} bottom={fabBottom} />
+        {!keyboardOpen ? (
+          <NewChatFab onPress={handleNewChat} bottom={fabBottom} />
+        ) : null}
       </SafeAreaView>
 
       <ChatHistoryDrawer

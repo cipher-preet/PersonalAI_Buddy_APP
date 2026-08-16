@@ -1,4 +1,6 @@
-import { ms, mvs } from './responsive';
+import { StyleSheet } from 'react-native';
+
+import { isCompactHeight, isSmallDevice, ms, mvs } from './responsive';
 
 /**
  * Consistent spacing scale (padding / margin / gap).
@@ -47,8 +49,12 @@ export const vSpacing = {
 export const layout = {
   /** Horizontal padding for most screens */
   screenPadding: spacing['3xl'],
+  /** Top inset below the status/safe area */
+  screenTop: isCompactHeight ? mvs(4) : mvs(8),
+  /** Floating tab bar height */
+  tabBarHeight: isSmallDevice ? ms(72) : ms(80),
   /** Bottom padding above floating tab bar */
-  tabBarClearance: mvs(110),
+  tabBarClearance: isSmallDevice || isCompactHeight ? mvs(96) : mvs(110),
   /** Standard card padding */
   cardPadding: spacing['2xl'],
   /** Gap between major sections */
@@ -65,6 +71,10 @@ export const layout = {
   iconButton: ms(44),
   /** Compact icon button */
   iconButtonSm: ms(40),
+  /** Circular back / header control */
+  headerButton: ms(38),
+  /** Hairline borders — cheaper than shadows on Android */
+  hairline: StyleSheet.hairlineWidth,
 } as const;
 
 export const radii = {
@@ -79,33 +89,34 @@ export const radii = {
   tabBar: ms(30),
 } as const;
 
+/** Keep elevation low — Android rasterizes shadows on the GPU. */
 export const shadows = {
   soft: {
     shadowColor: '#64748B',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   card: {
     shadowColor: '#64748B',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.06,
-    shadowRadius: 18,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
   elevated: {
     shadowColor: '#162B75',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 24,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
   },
   primary: {
     shadowColor: '#4338CA',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.28,
-    shadowRadius: 14,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.16,
+    shadowRadius: 8,
+    elevation: 3,
   },
 } as const;

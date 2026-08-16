@@ -10,7 +10,7 @@ import {
 import Svg, { Path } from 'react-native-svg';
 
 import { Space } from '../../../store/api/home';
-import { MySpcaes } from '../../../../styles/icons';
+import { TaskIcons } from '../../../../styles/icons';
 import {
   colors,
   fontSize,
@@ -149,7 +149,7 @@ const CategoryTabs = ({
           <View
             style={[styles.iconWrap, { backgroundColor: colors.primaryLight }]}
           >
-            <MySpcaes width={ms(16)} height={ms(16)} color={colors.primary} />
+            <TaskIcons width={ms(16)} height={ms(16)} color={colors.primary} />
           </View>
           <Text style={styles.cardTitle}>No spaces</Text>
           <Text style={styles.cardMeta}>Create one from Home</Text>
@@ -181,7 +181,7 @@ const CategoryTabs = ({
             <View
               style={[styles.iconWrap, { backgroundColor: theme.iconBg }]}
             >
-              <MySpcaes
+              <TaskIcons
                 width={ms(15)}
                 height={ms(15)}
                 color={theme.icon}

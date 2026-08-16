@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
-  Platform,
   StyleSheet,
   View,
   Text,
@@ -57,6 +56,7 @@ import {
   fontSize,
   fontWeight,
   layout,
+  listPerf,
   ms,
   mvs,
   radii,
@@ -740,12 +740,8 @@ const Home = () => {
           overScrollMode="never"
           decelerationRate="normal"
           scrollEventThrottle={16}
-          removeClippedSubviews={Platform.OS === 'android'}
-          initialNumToRender={6}
-          maxToRenderPerBatch={6}
-          windowSize={7}
-          updateCellsBatchingPeriod={50}
           nestedScrollEnabled
+          {...listPerf}
         />
 
         <CreateSpaceBottomSheet ref={spaceSheetRef} />
@@ -768,7 +764,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.gradientStart,
-    paddingTop: mvs(4),
+    paddingTop: layout.screenTop,
   },
 
   scrollContainer: {

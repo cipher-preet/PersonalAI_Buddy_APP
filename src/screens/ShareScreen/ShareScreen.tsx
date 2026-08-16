@@ -580,13 +580,13 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
   },
   backButton: {
-    width: ms(38),
-    height: ms(38),
-    borderRadius: ms(19),
+    width: layout.headerButton,
+    height: layout.headerButton,
+    borderRadius: layout.headerButton / 2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: layout.hairline,
     borderColor: colors.border,
   },
   headerCopy: {

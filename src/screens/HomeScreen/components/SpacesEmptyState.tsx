@@ -9,7 +9,6 @@ import {
   ms,
   mvs,
   radii,
-  shadows,
   spacing,
 } from '../../../theme';
 
@@ -65,10 +64,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.white,
     borderRadius: radii['3xl'],
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.primaryLight,
     borderStyle: 'dashed',
-    ...shadows.soft,
   },
 
   iconRing: {
@@ -111,11 +109,6 @@ const styles = StyleSheet.create({
   buttonWrap: {
     borderRadius: radii.lg,
     overflow: 'hidden',
-    shadowColor: colors.primaryPurpleDark,
-    shadowOffset: { width: 0, height: ms(6) },
-    shadowOpacity: 0.2,
-    shadowRadius: ms(10),
-    elevation: 3,
   },
 
   button: {
