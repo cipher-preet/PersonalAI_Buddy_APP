@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -9,11 +9,13 @@ import {
 } from 'react-native';
 import Animated, {
   Easing,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import type { NoteSortOrder } from '../types/sort';
@@ -23,9 +25,9 @@ import {
   fontWeight,
   layout,
   ms,
-  mvs,
+  radii,
   shadows,
-  spacing
+  spacing,
 } from '../../../theme';
 
 type Props = {
@@ -35,103 +37,144 @@ type Props = {
   onSelect: (order: NoteSortOrder) => void;
 };
 
+const OPEN_SPRING = { damping: 24, stiffness: 320, mass: 0.72 };
+const CLOSE_DURATION = 180;
+
+const OPTIONS: { id: NoteSortOrder; label: string; description: string }[] = [
+  {
+    id: 'newest',
+    label: 'Newest first',
+    description: 'Recently updated notes on top',
+  },
+  {
+    id: 'oldest',
+    label: 'Oldest first',
+    description: 'Earliest notes on top',
+  },
+];
+
 const CheckIcon = () => (
-  <Svg width={ms(16)} height={ms(16)} viewBox="0 0 24 24" fill="none">
+  <Svg width={ms(12)} height={ms(12)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M20 6 9 17l-5-5"
-      stroke={colors.primaryDark}
-      strokeWidth={2.4}
+      stroke={colors.white}
+      strokeWidth={2.6}
       strokeLinecap="round"
       strokeLinejoin="round"
     />
   </Svg>
 );
 
-const OPTIONS: { id: NoteSortOrder; label: string; description: string }[] = [
-  {
-    id: 'newest',
-    label: 'Newest first',
-    description: 'Recently updated notes appear on top',
-  },
-  {
-    id: 'oldest',
-    label: 'Oldest first',
-    description: 'Earliest notes appear on top',
-  },
-];
-
 const NotesFilterMenu = ({ visible, sortOrder, onClose, onSelect }: Props) => {
+  const insets = useSafeAreaInsets();
   const progress = useSharedValue(0);
+  const [rendered, setRendered] = useState(visible);
 
   useEffect(() => {
-    progress.value = visible
-      ? withSpring(1, { damping: 20, stiffness: 260, mass: 0.85 })
-      : withTiming(0, { duration: 160, easing: Easing.out(Easing.cubic) });
-  }, [visible, progress]);
+    if (visible) {
+      setRendered(true);
+      progress.value = withSpring(1, OPEN_SPRING);
+      return undefined;
+    }
+
+    progress.value = withTiming(0, {
+      duration: CLOSE_DURATION,
+      easing: Easing.in(Easing.cubic),
+    });
+
+    const timer = setTimeout(() => setRendered(false), CLOSE_DURATION);
+    return () => clearTimeout(timer);
+  }, [progress, visible]);
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+  }));
 
   const menuStyle = useAnimatedStyle(() => ({
     opacity: progress.value,
     transform: [
-      { translateY: -8 + progress.value * 8 },
-      { scale: 0.96 + progress.value * 0.04 },
+      { translateY: interpolate(progress.value, [0, 1], [-10, 0]) },
+      { scale: interpolate(progress.value, [0, 1], [0.94, 1]) },
     ],
   }));
 
-  if (!visible) {
+  if (!rendered) {
     return null;
   }
 
   return (
     <Modal
-      visible={visible}
+      visible={rendered}
       transparent
       animationType="none"
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Animated.View style={[styles.menu, menuStyle]}>
-          <Pressable onPress={event => event.stopPropagation()}>
+      <View style={styles.overlay} pointerEvents="box-none">
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
+          <Animated.View style={[styles.backdrop, backdropStyle]} />
+        </Pressable>
+
+        <Animated.View
+          style={[
+            styles.menu,
+            menuStyle,
+            {
+              top:
+                insets.top +
+                layout.screenTop +
+                layout.iconButton +
+                spacing.md +
+                spacing.sm,
+            },
+          ]}
+        >
+          <View style={styles.header}>
             <Text style={styles.menuTitle}>Sort notes</Text>
+            <Text style={styles.menuSubtitle}>Choose the order of your list</Text>
+          </View>
 
-            {OPTIONS.map(option => {
-              const isActive = sortOrder === option.id;
+          {OPTIONS.map((option, index) => {
+            const isActive = sortOrder === option.id;
 
-              return (
-                <TouchableOpacity
-                  key={option.id}
-                  activeOpacity={0.82}
-                  style={[styles.option, isActive && styles.optionActive]}
-                  onPress={() => {
-                    onSelect(option.id);
-                    onClose();
-                  }}
+            return (
+              <TouchableOpacity
+                key={option.id}
+                activeOpacity={0.82}
+                style={[
+                  styles.option,
+                  isActive && styles.optionActive,
+                  index === OPTIONS.length - 1 && styles.optionLast,
+                ]}
+                onPress={() => {
+                  onSelect(option.id);
+                  onClose();
+                }}
+              >
+                <View
+                  style={[styles.radio, isActive && styles.radioActive]}
                 >
-                  <View style={styles.optionTextWrap}>
-                    <Text
-                      style={[
-                        styles.optionLabel,
-                        isActive && styles.optionLabelActive,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                    <Text style={styles.optionDescription}>
-                      {option.description}
-                    </Text>
-                  </View>
+                  {isActive ? <CheckIcon /> : null}
+                </View>
 
-                  {isActive ? (
-                    <View style={styles.checkWrap}>
-                      <CheckIcon />
-                    </View>
-                  ) : null}
-                </TouchableOpacity>
-              );
-            })}
-          </Pressable>
+                <View style={styles.optionTextWrap}>
+                  <Text
+                    style={[
+                      styles.optionLabel,
+                      isActive && styles.optionLabelActive,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                  <Text style={styles.optionDescription}>
+                    {option.description}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
         </Animated.View>
-      </Pressable>
+      </View>
     </Modal>
   );
 };
@@ -139,63 +182,99 @@ const NotesFilterMenu = ({ visible, sortOrder, onClose, onSelect }: Props) => {
 export default NotesFilterMenu;
 
 const styles = StyleSheet.create({
-  backdrop: {
+  overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.18)',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end',
-    paddingTop: mvs(118),
-    paddingRight: layout.screenPadding,
+  },
+
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.backdrop,
   },
 
   menu: {
-    width: ms(248),
-    borderRadius: ms(18),
+    position: 'absolute',
+    right: layout.screenPadding,
+    width: ms(256),
+    borderRadius: radii.xl,
     backgroundColor: colors.white,
-    paddingHorizontal: spacing.xl,
-    paddingTop: ms(14),
-    paddingBottom: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.md,
+    borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.card,
+    overflow: 'hidden',
+    transformOrigin: 'top right',
+    ...shadows.elevated,
+  },
+
+  header: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.lg,
+    marginBottom: spacing.xs,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
 
   menuTitle: {
-    fontSize: fontSize.xs,
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.extrabold,
-    color: colors.gray,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.xs,
+    color: colors.black,
+    letterSpacing: -0.2,
+  },
+
+  menuSubtitle: {
+    marginTop: spacing.xxs,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    color: colors.subText,
   },
 
   option: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: ms(14),
-    paddingHorizontal: spacing.lg,
-    paddingVertical: ms(11),
-    marginBottom: spacing.xs,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
   },
 
   optionActive: {
-    backgroundColor: colors.purpleLight,
+    backgroundColor: colors.primarySoft,
+  },
+
+  optionLast: {
+    marginBottom: 0,
+  },
+
+  radio: {
+    width: ms(22),
+    height: ms(22),
+    borderRadius: ms(11),
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.lg,
+  },
+
+  radioActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
   },
 
   optionTextWrap: {
     flex: 1,
-    paddingRight: spacing.md,
   },
 
   optionLabel: {
     fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
+    fontWeight: fontWeight.semibold,
     color: colors.black,
   },
 
   optionLabelActive: {
     color: colors.primaryDark,
+    fontWeight: fontWeight.bold,
   },
 
   optionDescription: {
@@ -203,17 +282,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     lineHeight: ms(15),
     fontWeight: fontWeight.medium,
-    color: colors.gray,
-  },
-
-  checkWrap: {
-    width: ms(24),
-    height: ms(24),
-    borderRadius: ms(12),
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderFocus,
+    color: colors.subText,
   },
 });

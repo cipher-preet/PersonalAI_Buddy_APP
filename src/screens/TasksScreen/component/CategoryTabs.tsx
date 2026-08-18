@@ -182,14 +182,14 @@ const CategoryTabs = ({
               style={[styles.iconWrap, { backgroundColor: theme.iconBg }]}
             >
               <TaskIcons
-                width={ms(15)}
-                height={ms(15)}
+                width={ms(13)}
+                height={ms(13)}
                 color={theme.icon}
               />
             </View>
           </View>
 
-          <Text numberOfLines={2} style={styles.cardTitle}>
+          <Text numberOfLines={1} style={styles.cardTitle}>
             {item.spacename}
           </Text>
 
@@ -248,12 +248,12 @@ const styles = StyleSheet.create({
 
   card: {
     width: CARD_WIDTH,
-    minHeight: ms(132),
+    minHeight: ms(108),
     borderRadius: radii.xl,
     backgroundColor: colors.white,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
     justifyContent: 'space-between',
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'transparent',
@@ -271,23 +271,23 @@ const styles = StyleSheet.create({
   },
 
   iconWrap: {
-    width: ms(32),
-    height: ms(32),
-    borderRadius: ms(11),
+    width: ms(26),
+    height: ms(26),
+    borderRadius: ms(9),
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   cardTitle: {
-    marginTop: spacing.md,
+    marginTop: spacing.xs,
     color: colors.black,
-    fontSize: fontSize.base,
+    fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
-    lineHeight: ms(18),
+    lineHeight: ms(16),
   },
 
   cardBottom: {
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: spacing.xs,
@@ -295,8 +295,8 @@ const styles = StyleSheet.create({
 
   cardValue: {
     color: colors.black,
-    fontSize: ms(22),
-    lineHeight: ms(26),
+    fontSize: ms(18),
+    lineHeight: ms(22),
     fontWeight: fontWeight.extrabold,
     letterSpacing: -0.4,
   },
@@ -309,12 +309,11 @@ const styles = StyleSheet.create({
   },
 
   notesLink: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: spacing.xs,
-    paddingTop: spacing.xs,
   },
 
   notesLinkText: {
@@ -324,7 +323,7 @@ const styles = StyleSheet.create({
 
   stateCard: {
     width: CARD_WIDTH,
-    minHeight: ms(132),
+    minHeight: ms(108),
     borderRadius: radii.xl,
     backgroundColor: colors.white,
     paddingHorizontal: spacing.lg,

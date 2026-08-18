@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -9,11 +9,13 @@ import {
 } from 'react-native';
 import Animated, {
   Easing,
+  interpolate,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import type { TaskFilter } from '../types/filter';
@@ -23,9 +25,9 @@ import {
   fontWeight,
   layout,
   ms,
-  mvs,
+  radii,
   shadows,
-  spacing
+  spacing,
 } from '../../../theme';
 
 type Props = {
@@ -35,29 +37,23 @@ type Props = {
   onSelect: (filter: TaskFilter) => void;
 };
 
-const CheckIcon = () => (
-  <Svg width={ms(16)} height={ms(16)} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M20 6 9 17l-5-5"
-      stroke={colors.primaryDark}
-      strokeWidth={2.4}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
+const OPEN_SPRING = { damping: 24, stiffness: 320, mass: 0.72 };
+const CLOSE_DURATION = 180;
 
-const OPTIONS: { id: TaskFilter; label: string; description: string }[] = [
+const SORT_OPTIONS: { id: TaskFilter; label: string; description: string }[] = [
   {
     id: 'newest',
     label: 'Newest first',
-    description: 'Recently updated tasks appear on top',
+    description: 'Recently updated tasks on top',
   },
   {
     id: 'oldest',
     label: 'Oldest first',
-    description: 'Earliest tasks appear on top',
+    description: 'Earliest tasks on top',
   },
+];
+
+const STATUS_OPTIONS: { id: TaskFilter; label: string; description: string }[] = [
   {
     id: 'done',
     label: 'Done',
@@ -70,78 +66,136 @@ const OPTIONS: { id: TaskFilter; label: string; description: string }[] = [
   },
 ];
 
+const CheckIcon = () => (
+  <Svg width={ms(12)} height={ms(12)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M20 6 9 17l-5-5"
+      stroke={colors.white}
+      strokeWidth={2.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 const TasksFilterMenu = ({ visible, taskFilter, onClose, onSelect }: Props) => {
+  const insets = useSafeAreaInsets();
   const progress = useSharedValue(0);
+  const [rendered, setRendered] = useState(visible);
 
   useEffect(() => {
-    progress.value = visible
-      ? withSpring(1, { damping: 20, stiffness: 260, mass: 0.85 })
-      : withTiming(0, { duration: 160, easing: Easing.out(Easing.cubic) });
-  }, [visible, progress]);
+    if (visible) {
+      setRendered(true);
+      progress.value = withSpring(1, OPEN_SPRING);
+      return undefined;
+    }
+
+    progress.value = withTiming(0, {
+      duration: CLOSE_DURATION,
+      easing: Easing.in(Easing.cubic),
+    });
+
+    const timer = setTimeout(() => setRendered(false), CLOSE_DURATION);
+    return () => clearTimeout(timer);
+  }, [progress, visible]);
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+  }));
 
   const menuStyle = useAnimatedStyle(() => ({
     opacity: progress.value,
     transform: [
-      { translateY: -8 + progress.value * 8 },
-      { scale: 0.96 + progress.value * 0.04 },
+      { translateY: interpolate(progress.value, [0, 1], [-10, 0]) },
+      { scale: interpolate(progress.value, [0, 1], [0.94, 1]) },
     ],
   }));
 
-  if (!visible) {
+  const renderOption = (
+    option: { id: TaskFilter; label: string; description: string },
+    isLast: boolean,
+  ) => {
+    const isActive = taskFilter === option.id;
+
+    return (
+      <TouchableOpacity
+        key={option.id}
+        activeOpacity={0.82}
+        style={[
+          styles.option,
+          isActive && styles.optionActive,
+          isLast && styles.optionLast,
+        ]}
+        onPress={() => {
+          onSelect(option.id);
+          onClose();
+        }}
+      >
+        <View style={[styles.radio, isActive && styles.radioActive]}>
+          {isActive ? <CheckIcon /> : null}
+        </View>
+
+        <View style={styles.optionTextWrap}>
+          <Text
+            style={[styles.optionLabel, isActive && styles.optionLabelActive]}
+          >
+            {option.label}
+          </Text>
+          <Text style={styles.optionDescription}>{option.description}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  if (!rendered) {
     return null;
   }
 
   return (
     <Modal
-      visible={visible}
+      visible={rendered}
       transparent
       animationType="none"
       statusBarTranslucent
       onRequestClose={onClose}
     >
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Animated.View style={[styles.menu, menuStyle]}>
-          <Pressable onPress={event => event.stopPropagation()}>
+      <View style={styles.overlay} pointerEvents="box-none">
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose}>
+          <Animated.View style={[styles.backdrop, backdropStyle]} />
+        </Pressable>
+
+        <Animated.View
+          style={[
+            styles.menu,
+            menuStyle,
+            {
+              top:
+                insets.top +
+                layout.screenTop +
+                layout.iconButton +
+                spacing.md +
+                spacing.sm,
+            },
+          ]}
+        >
+          <View style={styles.header}>
             <Text style={styles.menuTitle}>Filter tasks</Text>
+            <Text style={styles.menuSubtitle}>Sort and narrow your list</Text>
+          </View>
 
-            {OPTIONS.map(option => {
-              const isActive = taskFilter === option.id;
+          <Text style={styles.sectionLabel}>Sort</Text>
+          {SORT_OPTIONS.map((option, index) =>
+            renderOption(option, index === SORT_OPTIONS.length - 1),
+          )}
 
-              return (
-                <TouchableOpacity
-                  key={option.id}
-                  activeOpacity={0.82}
-                  style={[styles.option, isActive && styles.optionActive]}
-                  onPress={() => {
-                    onSelect(option.id);
-                    onClose();
-                  }}
-                >
-                  <View style={styles.optionTextWrap}>
-                    <Text
-                      style={[
-                        styles.optionLabel,
-                        isActive && styles.optionLabelActive,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                    <Text style={styles.optionDescription}>
-                      {option.description}
-                    </Text>
-                  </View>
-
-                  {isActive ? (
-                    <View style={styles.checkWrap}>
-                      <CheckIcon />
-                    </View>
-                  ) : null}
-                </TouchableOpacity>
-              );
-            })}
-          </Pressable>
+          <Text style={[styles.sectionLabel, styles.sectionLabelSpaced]}>
+            Status
+          </Text>
+          {STATUS_OPTIONS.map((option, index) =>
+            renderOption(option, index === STATUS_OPTIONS.length - 1),
+          )}
         </Animated.View>
-      </Pressable>
+      </View>
     </Modal>
   );
 };
@@ -149,63 +203,113 @@ const TasksFilterMenu = ({ visible, taskFilter, onClose, onSelect }: Props) => {
 export default TasksFilterMenu;
 
 const styles = StyleSheet.create({
-  backdrop: {
+  overlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.18)',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end',
-    paddingTop: mvs(118),
-    paddingRight: layout.screenPadding,
+  },
+
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.backdrop,
   },
 
   menu: {
-    width: ms(248),
-    borderRadius: ms(18),
+    position: 'absolute',
+    right: layout.screenPadding,
+    width: ms(256),
+    borderRadius: radii.xl,
     backgroundColor: colors.white,
-    paddingHorizontal: spacing.xl,
-    paddingTop: ms(14),
-    paddingBottom: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.md,
+    borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.card,
+    overflow: 'hidden',
+    transformOrigin: 'top right',
+    ...shadows.elevated,
+  },
+
+  header: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.lg,
+    marginBottom: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
 
   menuTitle: {
-    fontSize: fontSize.xs,
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.extrabold,
-    color: colors.gray,
-    letterSpacing: 0.6,
+    color: colors.black,
+    letterSpacing: -0.2,
+  },
+
+  menuSubtitle: {
+    marginTop: spacing.xxs,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    color: colors.subText,
+  },
+
+  sectionLabel: {
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.xs,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    color: colors.muted,
+    letterSpacing: 0.4,
     textTransform: 'uppercase',
-    marginBottom: spacing.md,
-    paddingHorizontal: spacing.xs,
+  },
+
+  sectionLabelSpaced: {
+    marginTop: spacing.md,
   },
 
   option: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: ms(14),
-    paddingHorizontal: spacing.lg,
-    paddingVertical: ms(11),
-    marginBottom: spacing.xs,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg,
   },
 
   optionActive: {
-    backgroundColor: colors.purpleLight,
+    backgroundColor: colors.primarySoft,
+  },
+
+  optionLast: {
+    marginBottom: 0,
+  },
+
+  radio: {
+    width: ms(22),
+    height: ms(22),
+    borderRadius: ms(11),
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.lg,
+  },
+
+  radioActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary,
   },
 
   optionTextWrap: {
     flex: 1,
-    paddingRight: spacing.md,
   },
 
   optionLabel: {
     fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
+    fontWeight: fontWeight.semibold,
     color: colors.black,
   },
 
   optionLabelActive: {
     color: colors.primaryDark,
+    fontWeight: fontWeight.bold,
   },
 
   optionDescription: {
@@ -213,17 +317,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     lineHeight: ms(15),
     fontWeight: fontWeight.medium,
-    color: colors.gray,
-  },
-
-  checkWrap: {
-    width: ms(24),
-    height: ms(24),
-    borderRadius: ms(12),
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: colors.borderFocus,
+    color: colors.subText,
   },
 });

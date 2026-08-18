@@ -26,18 +26,6 @@ type Props = {
   onDelete?: () => void;
 };
 
-const ArrowIcon = ({ color }: { color: string }) => (
-  <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M7 17 17 7M10 7h7v7"
-      stroke={color}
-      strokeWidth={2.2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
 const MoreIcon = ({ color = colors.text }: { color?: string }) => (
   <Svg width={ms(15)} height={ms(15)} viewBox="0 0 24 24" fill="none">
     <Circle cx="12" cy="5" r="1.6" fill={color} />
@@ -78,7 +66,7 @@ const ReminderCard = ({ item, width, onPress, onDelete }: Props) => {
 
           <TouchableOpacity
             activeOpacity={0.75}
-            style={[styles.moreButton, { backgroundColor: `${tone.arrow}18` }]}
+            style={styles.moreButton}
             onPress={event => {
               event.stopPropagation();
               setMenuVisible(true);
@@ -95,10 +83,6 @@ const ReminderCard = ({ item, width, onPress, onDelete }: Props) => {
           <Text style={[styles.timeLabel, { color: tone.muted }]}>
             {item.timeLabel}
           </Text>
-
-          <View style={[styles.arrowButton, { backgroundColor: tone.arrow }]}>
-            <ArrowIcon color="#FFFFFF" />
-          </View>
         </View>
       </TouchableOpacity>
 
@@ -159,7 +143,6 @@ const styles = StyleSheet.create({
   moreButton: {
     width: ms(28),
     height: ms(28),
-    borderRadius: ms(10),
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: ms(1),
@@ -183,14 +166,6 @@ const styles = StyleSheet.create({
   timeLabel: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
-  },
-
-  arrowButton: {
-    width: ms(34),
-    height: ms(34),
-    borderRadius: radii.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 
   menuBackdrop: {

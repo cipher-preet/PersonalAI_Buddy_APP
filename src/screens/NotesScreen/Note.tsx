@@ -29,7 +29,9 @@ import NotesFilterMenu from './component/NotesFilterMenu';
 import CategoryTabs from './component/CategoryTabs';
 import NoteCard from './component/NoteCard';
 import NoteDetailBottomSheet from './component/NoteDetailBottomSheet';
-import { NoteItem } from './types/note';
+import NotesCalendarStrip, { toDateKey } from './component/NotesCalendarStrip';
+import AddNoteBottomSheet from './component/AddNoteBottomSheet';
+import { LocalNote, NoteItem } from './types/note';
 import type { NoteSortOrder } from './types/sort';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { useToast } from '../../store/context/ToastContext';
@@ -90,16 +92,52 @@ const formatTime = (value: string | null) => {
   });
 };
 
+const formatDateKey = (value: string | null) => {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return toDateKey(date);
+};
+
+const formatFullDate = (date: Date) =>
+  date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+const toLocalStagedNote = (note: LocalNote): StagedNoteCard => ({
+  id: note.id,
+  title: note.title,
+  bodyPreview: note.description || 'No description added.',
+  confidence: null,
+  createdAt: note.createdAt,
+  updatedAt: note.createdAt,
+});
+
+const isLocalNoteId = (id: string) => id.startsWith('local-');
+
 const Notes = () => {
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
   const route = useRoute<RouteProp<MainTabParamList, 'Notes'>>();
   const noteSheetRef = useRef<BottomSheetModal>(null);
+  const addNoteSheetRef = useRef<BottomSheetModal>(null);
   const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
   const [selectedSpaceId, setSelectedSpaceId] = useState('');
   const [notesCursor, setNotesCursor] = useState('');
   const [loadedNotes, setLoadedNotes] = useState<StagedNoteCard[]>([]);
+  const [localNotes, setLocalNotes] = useState<LocalNote[]>([]);
   const [nextNotesCursor, setNextNotesCursor] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState('');
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [sortOrder, setSortOrder] = useState<NoteSortOrder>('newest');
@@ -147,9 +185,42 @@ const Notes = () => {
   const isInitialNotesLoading = isFetchingNotes && loadedNotes.length === 0;
   const isLoadingMoreNotes = isFetchingNotes && loadedNotes.length > 0;
 
+  const selectedDateKey = useMemo(() => toDateKey(selectedDate), [selectedDate]);
+
+  const spaceLocalNotes = useMemo(
+    () => localNotes.filter(note => note.spaceId === selectedSpaceId),
+    [localNotes, selectedSpaceId],
+  );
+
+  const markedDateKeys = useMemo(() => {
+    const keys = new Set<string>();
+
+    spaceLocalNotes.forEach(note => {
+      keys.add(note.dateKey);
+    });
+
+    loadedNotes.forEach(note => {
+      const key = formatDateKey(note.createdAt || note.updatedAt);
+      if (key) {
+        keys.add(key);
+      }
+    });
+
+    return keys;
+  }, [loadedNotes, spaceLocalNotes]);
+
   const displayedNotes = useMemo(() => {
+    const localForDate = spaceLocalNotes
+      .filter(note => note.dateKey === selectedDateKey)
+      .map(toLocalStagedNote);
+
+    const apiForDate = loadedNotes.filter(note => {
+      const key = formatDateKey(note.createdAt || note.updatedAt);
+      return key === selectedDateKey;
+    });
+
     const normalizedQuery = searchQuery.trim().toLowerCase();
-    let result = [...loadedNotes];
+    let result = [...localForDate, ...apiForDate];
 
     if (normalizedQuery) {
       result = result.filter(note => {
@@ -173,7 +244,7 @@ const Notes = () => {
     });
 
     return result;
-  }, [loadedNotes, searchQuery, sortOrder]);
+  }, [loadedNotes, searchQuery, selectedDateKey, sortOrder, spaceLocalNotes]);
 
   useFocusEffect(
     useCallback(() => {
@@ -237,13 +308,50 @@ const Notes = () => {
         noteSheetRef.current?.present();
       });
 
-      getStagedNoteById({ noteId: note.id });
+      if (!isLocalNoteId(note.id)) {
+        getStagedNoteById({ noteId: note.id });
+      }
     },
     [getStagedNoteById],
   );
 
+  const handleOpenAddNote = useCallback(() => {
+    if (!selectedSpaceId) {
+      showToast({
+        message: 'Select a space before adding a note.',
+        type: 'info',
+      });
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      addNoteSheetRef.current?.present();
+    });
+  }, [selectedSpaceId, showToast]);
+
+  const handleSaveLocalNote = useCallback(
+    (title: string, description: string) => {
+      const createdAt = new Date().toISOString();
+      const nextNote: LocalNote = {
+        id: `local-${Date.now()}`,
+        spaceId: selectedSpaceId,
+        title,
+        description,
+        dateKey: selectedDateKey,
+        createdAt,
+      };
+
+      setLocalNotes(prev => [nextNote, ...prev]);
+      showToast({
+        message: 'Note saved.',
+        type: 'success',
+      });
+    },
+    [selectedDateKey, selectedSpaceId, showToast],
+  );
+
   const handleRetryNoteDetail = useCallback(() => {
-    if (!selectedNoteId) {
+    if (!selectedNoteId || isLocalNoteId(selectedNoteId)) {
       return;
     }
 
@@ -255,6 +363,22 @@ const Notes = () => {
 
   const handleDeleteNote = useCallback(
     async (note: NoteItem) => {
+      if (isLocalNoteId(note.id)) {
+        setLocalNotes(prev => prev.filter(item => item.id !== note.id));
+
+        if (selectedNoteId === note.id) {
+          noteSheetRef.current?.dismiss();
+          setSelectedNote(null);
+          setSelectedNoteId('');
+        }
+
+        showToast({
+          message: 'Note deleted.',
+          type: 'success',
+        });
+        return;
+      }
+
       try {
         const response = await deleteStagedNote({
           noteId: note.id,
@@ -335,7 +459,7 @@ const Notes = () => {
       createdAt: formatDate(note.createdAt),
       workspace: workspaceName,
       readTime: 'Quick note',
-      tags: ['#Note', `#${workspaceName.replace(/\s+/g, '')}`],
+      tags: ['#Note'],
       summary: preview,
       highlights: [preview],
       sections: [
@@ -399,12 +523,23 @@ const Notes = () => {
       );
     }
 
-    if (loadedNotes.length === 0) {
+    if (loadedNotes.length === 0 && spaceLocalNotes.length === 0) {
       return (
         <View style={styles.stateBox}>
           <Text style={styles.emptyTitle}>No notes yet</Text>
           <Text style={styles.stateText}>
-            This space has no staged notes.
+            Tap + to add a note for this day.
+          </Text>
+        </View>
+      );
+    }
+
+    if (searchQuery.trim()) {
+      return (
+        <View style={styles.stateBox}>
+          <Text style={styles.emptyTitle}>No matching notes</Text>
+          <Text style={styles.stateText}>
+            Try a different search term or clear your filters.
           </Text>
         </View>
       );
@@ -412,9 +547,9 @@ const Notes = () => {
 
     return (
       <View style={styles.stateBox}>
-        <Text style={styles.emptyTitle}>No matching notes</Text>
+        <Text style={styles.emptyTitle}>No notes on this day</Text>
         <Text style={styles.stateText}>
-          Try a different search term or clear your filters.
+          Tap + to add a note for {formatFullDate(selectedDate)}.
         </Text>
       </View>
     );
@@ -423,7 +558,10 @@ const Notes = () => {
     isNotesError,
     loadedNotes.length,
     refetchNotes,
+    searchQuery,
+    selectedDate,
     selectedSpaceId,
+    spaceLocalNotes.length,
   ]);
 
   const notesListFooter = useMemo(() => {
@@ -507,9 +645,19 @@ const Notes = () => {
         onNavigateTasks={() => navigation.navigate('Tasks')}
       />
 
+      <NotesCalendarStrip
+        selectedDate={selectedDate}
+        markedDateKeys={markedDateKeys}
+        onSelectDate={setSelectedDate}
+        onAddPress={handleOpenAddNote}
+      />
+
       <FlatList
         data={
-          isInitialNotesLoading || isNotesError ? [] : displayedNotes
+          displayedNotes.length === 0 &&
+          (isInitialNotesLoading || isNotesError)
+            ? []
+            : displayedNotes
         }
         keyExtractor={item => item.id}
         renderItem={renderNoteItem}
@@ -526,10 +674,28 @@ const Notes = () => {
       <NoteDetailBottomSheet
         ref={noteSheetRef}
         note={selectedNote}
-        detail={stagedNoteDetailData?.data ?? null}
-        isLoading={isFetchingNoteDetail}
-        isError={isNoteDetailError}
+        detail={
+          selectedNoteId && isLocalNoteId(selectedNoteId)
+            ? null
+            : stagedNoteDetailData?.data ?? null
+        }
+        isLoading={
+          Boolean(selectedNoteId) &&
+          !isLocalNoteId(selectedNoteId) &&
+          isFetchingNoteDetail
+        }
+        isError={
+          Boolean(selectedNoteId) &&
+          !isLocalNoteId(selectedNoteId) &&
+          isNoteDetailError
+        }
         onRetry={handleRetryNoteDetail}
+      />
+
+      <AddNoteBottomSheet
+        ref={addNoteSheetRef}
+        dateLabel={formatFullDate(selectedDate)}
+        onSave={handleSaveLocalNote}
       />
 
       <NotesFilterMenu
@@ -568,6 +734,7 @@ const styles = StyleSheet.create({
   stateBox: {
     minHeight: mvs(120),
     marginBottom: spacing.lg,
+    paddingHorizontal: spacing['2xl'],
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.lg,

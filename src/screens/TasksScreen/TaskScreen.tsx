@@ -29,7 +29,11 @@ import TasksFilterMenu from './component/TasksFilterMenu';
 import CategoryTabs from './component/CategoryTabs';
 import TaskCard from './component/TaskCard';
 import TaskDetailBottomSheet from './component/TaskDetailBottomSheet';
-import { TaskItem } from './types/task';
+import AddTaskBottomSheet from './component/AddTaskBottomSheet';
+import NotesCalendarStrip, {
+  toDateKey,
+} from '../NotesScreen/component/NotesCalendarStrip';
+import { LocalTask, TaskItem } from './types/task';
 import type { TaskFilter } from './types/filter';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { useToast } from '../../store/context/ToastContext';
@@ -72,18 +76,59 @@ const formatDate = (value: string | null) => {
   });
 };
 
+const formatDateKey = (value: string | null) => {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return toDateKey(date);
+};
+
+const formatFullDate = (date: Date) =>
+  date.toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
+const toLocalStagedTask = (task: LocalTask): StagedTaskCard => ({
+  id: task.id,
+  title: task.title,
+  body: task.description,
+  descriptionPreview: task.description || 'No description added.',
+  evidence: null,
+  operation: null,
+  priority: null,
+  dueDate: task.dateKey,
+  confidence: null,
+  createdAt: task.createdAt,
+  updatedAt: task.createdAt,
+});
+
+const isLocalTaskId = (id: string) => id.startsWith('local-');
+
 const TaskScreen = () => {
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
   const route = useRoute<RouteProp<MainTabParamList, 'Tasks'>>();
   const taskSheetRef = useRef<BottomSheetModal>(null);
+  const addTaskSheetRef = useRef<BottomSheetModal>(null);
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
   const [selectedSpaceId, setSelectedSpaceId] = useState('');
   const [tasksCursor, setTasksCursor] = useState('');
   const [loadedTasks, setLoadedTasks] = useState<StagedTaskCard[]>([]);
+  const [localTasks, setLocalTasks] = useState<LocalTask[]>([]);
   const [nextTasksCursor, setNextTasksCursor] = useState<string | null>(null);
   const [taskCompletionOverrides, setTaskCompletionOverrides] = useState<
     Record<string, boolean>
   >({});
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [taskFilter, setTaskFilter] = useState<TaskFilter>('newest');
@@ -134,6 +179,31 @@ const TaskScreen = () => {
 
   const isInitialTasksLoading = isFetchingTasks && loadedTasks.length === 0;
   const isLoadingMoreTasks = isFetchingTasks && loadedTasks.length > 0;
+  const selectedDateKey = useMemo(() => toDateKey(selectedDate), [selectedDate]);
+
+  const spaceLocalTasks = useMemo(
+    () => localTasks.filter(task => task.spaceId === selectedSpaceId),
+    [localTasks, selectedSpaceId],
+  );
+
+  const markedDateKeys = useMemo(() => {
+    const keys = new Set<string>();
+
+    spaceLocalTasks.forEach(task => {
+      keys.add(task.dateKey);
+    });
+
+    loadedTasks.forEach(task => {
+      const key = formatDateKey(
+        task.dueDate || task.createdAt || task.updatedAt,
+      );
+      if (key) {
+        keys.add(key);
+      }
+    });
+
+    return keys;
+  }, [loadedTasks, spaceLocalTasks]);
 
   const isTaskDoneFromApi = (task: StagedTaskCard) =>
     String(task.operation ?? '').toUpperCase() === 'DONE';
@@ -145,8 +215,19 @@ const TaskScreen = () => {
   );
 
   const displayedTasks = useMemo(() => {
+    const localForDate = spaceLocalTasks
+      .filter(task => task.dateKey === selectedDateKey)
+      .map(toLocalStagedTask);
+
+    const apiForDate = loadedTasks.filter(task => {
+      const key = formatDateKey(
+        task.dueDate || task.createdAt || task.updatedAt,
+      );
+      return key === selectedDateKey;
+    });
+
     const normalizedQuery = searchQuery.trim().toLowerCase();
-    let result = [...loadedTasks];
+    let result = [...localForDate, ...apiForDate];
 
     if (normalizedQuery) {
       result = result.filter(task => {
@@ -178,7 +259,14 @@ const TaskScreen = () => {
     });
 
     return result;
-  }, [isTaskDone, loadedTasks, searchQuery, taskFilter]);
+  }, [
+    isTaskDone,
+    loadedTasks,
+    searchQuery,
+    selectedDateKey,
+    spaceLocalTasks,
+    taskFilter,
+  ]);
 
   useFocusEffect(
     useCallback(() => {
@@ -242,6 +330,41 @@ const TaskScreen = () => {
     });
   }, []);
 
+  const handleOpenAddTask = useCallback(() => {
+    if (!selectedSpaceId) {
+      showToast({
+        message: 'Select a space before adding a task.',
+        type: 'info',
+      });
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      addTaskSheetRef.current?.present();
+    });
+  }, [selectedSpaceId, showToast]);
+
+  const handleSaveLocalTask = useCallback(
+    (title: string, description: string) => {
+      const createdAt = new Date().toISOString();
+      const nextTask: LocalTask = {
+        id: `local-${Date.now()}`,
+        spaceId: selectedSpaceId,
+        title,
+        description,
+        dateKey: selectedDateKey,
+        createdAt,
+      };
+
+      setLocalTasks(prev => [nextTask, ...prev]);
+      showToast({
+        message: 'Task saved.',
+        type: 'success',
+      });
+    },
+    [selectedDateKey, selectedSpaceId, showToast],
+  );
+
   const handleToggleTaskComplete = useCallback(
     (task: StagedTaskCard) => {
       setTaskCompletionOverrides(prev => ({
@@ -257,6 +380,26 @@ const TaskScreen = () => {
 
   const handleDeleteTask = useCallback(
     async (task: TaskItem) => {
+      if (isLocalTaskId(task.id)) {
+        setLocalTasks(prev => prev.filter(item => item.id !== task.id));
+        setTaskCompletionOverrides(prev => {
+          const next = { ...prev };
+          delete next[task.id];
+          return next;
+        });
+
+        if (selectedTask?.id === task.id) {
+          taskSheetRef.current?.dismiss();
+          setSelectedTask(null);
+        }
+
+        showToast({
+          message: 'Task deleted.',
+          type: 'success',
+        });
+        return;
+      }
+
       try {
         const response = await deleteStagedTask({
           taskId: task.id,
@@ -407,20 +550,33 @@ const TaskScreen = () => {
       );
     }
 
-    if (loadedTasks.length === 0) {
+    if (loadedTasks.length === 0 && spaceLocalTasks.length === 0) {
       return (
         <View style={styles.stateBox}>
           <Text style={styles.emptyTitle}>No tasks yet</Text>
-          <Text style={styles.stateText}>This space has no staged tasks.</Text>
+          <Text style={styles.stateText}>
+            Tap + to add a task for this day.
+          </Text>
+        </View>
+      );
+    }
+
+    if (searchQuery.trim() || taskFilter === 'done' || taskFilter === 'pending') {
+      return (
+        <View style={styles.stateBox}>
+          <Text style={styles.emptyTitle}>No matching tasks</Text>
+          <Text style={styles.stateText}>
+            Try a different search term or clear your filters.
+          </Text>
         </View>
       );
     }
 
     return (
       <View style={styles.stateBox}>
-        <Text style={styles.emptyTitle}>No matching tasks</Text>
+        <Text style={styles.emptyTitle}>No tasks on this day</Text>
         <Text style={styles.stateText}>
-          Try a different search term or clear your filters.
+          Tap + to add a task for {formatFullDate(selectedDate)}.
         </Text>
       </View>
     );
@@ -429,7 +585,11 @@ const TaskScreen = () => {
     isTasksError,
     loadedTasks.length,
     refetchTasks,
+    searchQuery,
+    selectedDate,
     selectedSpaceId,
+    spaceLocalTasks.length,
+    taskFilter,
   ]);
 
   const tasksListFooter = useMemo(() => {
@@ -486,9 +646,19 @@ const TaskScreen = () => {
         onNavigateNotes={() => navigation.navigate('Notes')}
       />
 
+      <NotesCalendarStrip
+        selectedDate={selectedDate}
+        markedDateKeys={markedDateKeys}
+        onSelectDate={setSelectedDate}
+        onAddPress={handleOpenAddTask}
+      />
+
       <FlatList
         data={
-          isInitialTasksLoading || isTasksError ? [] : displayedTasks
+          displayedTasks.length === 0 &&
+          (isInitialTasksLoading || isTasksError)
+            ? []
+            : displayedTasks
         }
         keyExtractor={item => item.id}
         renderItem={renderTaskItem}
@@ -503,6 +673,12 @@ const TaskScreen = () => {
       />
 
       <TaskDetailBottomSheet ref={taskSheetRef} task={selectedTask} />
+
+      <AddTaskBottomSheet
+        ref={addTaskSheetRef}
+        dateLabel={formatFullDate(selectedDate)}
+        onSave={handleSaveLocalTask}
+      />
 
       <TasksFilterMenu
         visible={filterMenuVisible}
@@ -540,6 +716,7 @@ const styles = StyleSheet.create({
   stateBox: {
     minHeight: mvs(120),
     marginBottom: spacing.lg,
+    paddingHorizontal: spacing['2xl'],
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.lg,

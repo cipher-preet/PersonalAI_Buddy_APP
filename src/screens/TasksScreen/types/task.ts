@@ -1,3 +1,12 @@
+export type LocalTask = {
+  id: string;
+  spaceId: string;
+  title: string;
+  description: string;
+  dateKey: string;
+  createdAt: string;
+};
+
 export type TaskItem = {
   id: string;
   title: string;

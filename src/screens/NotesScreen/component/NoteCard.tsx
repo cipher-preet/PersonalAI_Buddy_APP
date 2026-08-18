@@ -122,22 +122,24 @@ const NoteCard = ({ item, onPress, onDelete }: Props) => {
             </Text>
           ) : null}
 
-          {(tags.length > 0 || item.workspace || item.readTime) && (
+          {tags.length > 0 ? (
             <View style={styles.metaRow}>
-              {tags.map(tag => (
-                <View key={tag} style={styles.pill}>
-                  <Text style={styles.pillText}>{tag}</Text>
-                </View>
-              ))}
-              {item.workspace ? (
-                <View style={styles.pill}>
-                  <Text style={styles.pillText} numberOfLines={1}>
-                    {item.workspace}
+              {tags.map((tag, index) => (
+                <View
+                  key={tag}
+                  style={[styles.pill, index === 0 && styles.pillFixed]}
+                >
+                  <Text
+                    style={styles.pillText}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {tag}
                   </Text>
                 </View>
-              ) : null}
+              ))}
             </View>
-          )}
+          ) : null}
 
           <View style={styles.dashedDivider} />
 
@@ -284,20 +286,26 @@ const styles = StyleSheet.create({
 
   metaRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
     alignItems: 'center',
     gap: spacing.sm,
     marginTop: spacing.md,
   },
 
   pill: {
+    flexShrink: 1,
+    minWidth: 0,
+    overflow: 'hidden',
     backgroundColor: colors.inputBg,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xxs,
     borderRadius: radii.sm,
-    maxWidth: ms(140),
+  },
+
+  pillFixed: {
+    flexShrink: 0,
   },
 
   pillText: {

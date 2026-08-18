@@ -1,3 +1,12 @@
+export type LocalNote = {
+  id: string;
+  spaceId: string;
+  title: string;
+  description: string;
+  dateKey: string;
+  createdAt: string;
+};
+
 export type NoteSection = {
   title: string;
   content: string;

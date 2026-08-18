@@ -96,7 +96,6 @@ const TaskCard = ({
   const statusLabel = completed ? 'Done' : 'Not done';
   const metaPills = [
     item.priority,
-    item.project,
     item.dueDate && item.dueDate !== 'No due date' ? item.dueDate : null,
   ].filter(Boolean) as string[];
 
@@ -182,9 +181,16 @@ const TaskCard = ({
 
           {metaPills.length > 0 ? (
             <View style={styles.metaRow}>
-              {metaPills.map(pill => (
-                <View key={pill} style={styles.pill}>
-                  <Text style={styles.pillText} numberOfLines={1}>
+              {metaPills.map((pill, index) => (
+                <View
+                  key={pill}
+                  style={[styles.pill, index === 0 && styles.pillFixed]}
+                >
+                  <Text
+                    style={styles.pillText}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
                     {pill}
                   </Text>
                 </View>
@@ -408,20 +414,26 @@ const styles = StyleSheet.create({
 
   metaRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexWrap: 'nowrap',
     alignItems: 'center',
     gap: spacing.sm,
     marginTop: spacing.md,
   },
 
   pill: {
+    flexShrink: 1,
+    minWidth: 0,
+    overflow: 'hidden',
     backgroundColor: colors.inputBg,
     borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xxs,
     borderRadius: radii.sm,
-    maxWidth: ms(140),
+  },
+
+  pillFixed: {
+    flexShrink: 0,
   },
 
   pillText: {

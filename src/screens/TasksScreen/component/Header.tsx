@@ -165,7 +165,7 @@ const Header = ({
               activeOpacity={0.78}
               onPress={onSearchOpen}
             >
-              <SearchIcon width={ms(18)} height={ms(18)} color={colors.icon} />
+              <SearchIcon width={ms(16)} height={ms(16)} color={colors.text} />
             </TouchableOpacity>
           ) : null}
         </View>
@@ -176,9 +176,9 @@ const Header = ({
           onPress={onFilterPress}
         >
           <FilterIcon
-            width={ms(18)}
-            height={ms(18)}
-            color={isFilterActive ? colors.primaryDark : colors.icon}
+            width={ms(16)}
+            height={ms(16)}
+            color={isFilterActive ? colors.primaryDark : colors.text}
           />
         </TouchableOpacity>
       </View>
@@ -281,12 +281,12 @@ const styles = StyleSheet.create({
   iconButton: {
     width: ICON_SIZE,
     height: ICON_SIZE,
-    borderRadius: ms(14),
+    borderRadius: radii.md,
     backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: colors.border,
   },
 
   iconButtonActive: {
