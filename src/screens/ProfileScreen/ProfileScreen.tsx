@@ -133,6 +133,7 @@ const ProfileScreen = () => {
         mediaType: 'photo',
         selectionLimit: 1,
         includeBase64: false,
+        includeExtra: false,
         maxWidth: 512,
         maxHeight: 512,
         quality: 0.5,
