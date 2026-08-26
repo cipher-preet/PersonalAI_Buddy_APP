@@ -13,7 +13,8 @@ import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 
 import Header from './components/Header';
-import QuickActionsStrip from './components/QuickActionsStrip';
+// Temporary: hide quick actions strip above My Spaces
+// import QuickActionsStrip from './components/QuickActionsStrip';
 import TopCard from './components/TopCard';
 import SpaceCard from './components/SpaceCard';
 import SpacesEmptyState from './components/SpacesEmptyState';
@@ -657,7 +658,9 @@ const Home = () => {
           />
         </View>
 
+        {/* Temporary: hide horizontal quick actions strip
         <QuickActionsStrip />
+        */}
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>My Spaces</Text>

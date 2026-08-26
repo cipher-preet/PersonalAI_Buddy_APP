@@ -37,10 +37,10 @@ const MONTH_NAMES = [
   'December',
 ];
 
-const DAY_LABELS = ['Su', 'Mo', 'Tu', 'Wed', 'Th', 'Fr', 'Sa'];
+const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const VISIBLE_DAYS = 7;
 const DAY_WIDTH = Math.round((screenWidth - layout.screenPadding * 2) / VISIBLE_DAYS);
-const DAY_HEIGHT = ms(62);
+const DAY_HEIGHT = ms(52);
 
 export const toDateKey = (date: Date) => {
   const year = date.getFullYear();
@@ -124,7 +124,7 @@ const DayCell = memo(({ item, selected, isToday, hasNotes, onPress }: DayCellPro
   <TouchableOpacity
     activeOpacity={0.82}
     onPress={() => onPress(item.date)}
-    style={[styles.dayCell, selected && styles.dayCellSelected]}
+    style={styles.dayCell}
     accessibilityRole="button"
     accessibilityLabel={`${item.dayLabel} ${item.dayNumber}`}
     accessibilityState={{ selected }}
@@ -132,7 +132,13 @@ const DayCell = memo(({ item, selected, isToday, hasNotes, onPress }: DayCellPro
     <Text style={[styles.dayLabel, selected && styles.dayLabelSelected]}>
       {item.dayLabel}
     </Text>
-    <View style={[styles.dateNumberWrap, isToday && !selected && styles.todayRing]}>
+    <View
+      style={[
+        styles.dateNumberWrap,
+        isToday && !selected && styles.todayRing,
+        selected && styles.dateNumberWrapSelected,
+      ]}
+    >
       <Text style={[styles.dateNumber, selected && styles.dateNumberSelected]}>
         {item.dayNumber}
       </Text>
@@ -377,8 +383,8 @@ export default memo(NotesCalendarStrip);
 const styles = StyleSheet.create({
   wrapper: {
     backgroundColor: colors.white,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.sm,
     marginBottom: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
@@ -399,27 +405,29 @@ const styles = StyleSheet.create({
   },
 
   monthTitle: {
-    color: colors.black,
-    fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.extrabold,
-    letterSpacing: -0.3,
+    color: colors.text,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: -0.2,
+    lineHeight: ms(22),
   },
 
   chevronWrap: {
-    marginLeft: spacing.sm,
+    marginLeft: spacing.xs,
     marginTop: spacing.xxs,
   },
 
   actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    justifyContent: 'flex-end',
+    marginLeft: spacing.md,
   },
 
   iconButton: {
-    width: layout.iconButtonSm,
+    width: ms(28),
     height: layout.iconButtonSm,
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'center',
   },
 
@@ -437,65 +445,71 @@ const styles = StyleSheet.create({
     height: DAY_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radii.lg,
-  },
-
-  dayCellSelected: {
-    backgroundColor: colors.lightGray,
   },
 
   dayLabel: {
     color: colors.muted,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    marginBottom: spacing.xs,
+    fontWeight: fontWeight.medium,
+    letterSpacing: 0.2,
+    marginBottom: spacing.xxs,
+    lineHeight: ms(14),
   },
 
   dayLabelSelected: {
-    color: colors.subText,
+    color: colors.primary,
+    fontWeight: fontWeight.semibold,
   },
 
   dateNumberWrap: {
-    width: ms(28),
-    height: ms(28),
+    width: ms(30),
+    height: ms(30),
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: ms(14),
-    borderWidth: 1.5,
+    borderRadius: ms(15),
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: 'transparent',
   },
 
   todayRing: {
-    borderColor: colors.border,
+    borderColor: colors.brandBorder,
+    backgroundColor: colors.primarySoft,
+  },
+
+  dateNumberWrapSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
 
   dateNumber: {
-    color: colors.black,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.extrabold,
-    letterSpacing: -0.3,
+    color: colors.text,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: -0.2,
+    lineHeight: ms(18),
   },
 
   dateNumberSelected: {
-    color: colors.black,
+    color: colors.white,
+    fontWeight: fontWeight.bold,
   },
 
   noteDot: {
-    width: ms(4),
-    height: ms(4),
+    width: ms(3.5),
+    height: ms(3.5),
     borderRadius: ms(2),
-    marginTop: spacing.xs,
+    marginTop: spacing.xxs,
     backgroundColor: colors.primary,
   },
 
   noteDotSelected: {
-    backgroundColor: colors.primaryDark,
+    backgroundColor: colors.primary,
   },
 
   noteDotSpacer: {
-    width: ms(4),
-    height: ms(4),
-    marginTop: spacing.xs,
+    width: ms(3.5),
+    height: ms(3.5),
+    marginTop: spacing.xxs,
   },
 
   pickerBackdrop: {
@@ -516,7 +530,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing['2xl'],
+    marginBottom: spacing.xl,
   },
 
   yearArrow: {
@@ -529,9 +543,10 @@ const styles = StyleSheet.create({
   },
 
   pickerYear: {
-    color: colors.black,
-    fontSize: fontSize['3xl'],
-    fontWeight: fontWeight.extrabold,
+    color: colors.text,
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.semibold,
+    letterSpacing: -0.2,
   },
 
   monthGrid: {
@@ -543,7 +558,7 @@ const styles = StyleSheet.create({
 
   monthChip: {
     width: '23.5%',
-    minHeight: ms(40),
+    minHeight: ms(36),
     borderRadius: radii.sm,
     alignItems: 'center',
     justifyContent: 'center',
@@ -564,10 +579,12 @@ const styles = StyleSheet.create({
   monthChipText: {
     color: colors.textSecondary,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
+    fontWeight: fontWeight.medium,
+    letterSpacing: 0.1,
   },
 
   monthChipTextSelected: {
     color: colors.primaryDark,
+    fontWeight: fontWeight.semibold,
   },
 });
