@@ -26,13 +26,20 @@ import {
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
 
-import ReminderDatePicker from './ReminderDatePicker';
-import ReminderTimePicker from './ReminderTimePicker';
+import ReminderDatePicker from '../../RemindersScreen/components/ReminderDatePicker';
+import ReminderTimePicker from '../../RemindersScreen/components/ReminderTimePicker';
+import type {
+  CalendarEventCard,
+  CalendarEventWritePayload,
+} from '../../../store/api/calendar';
 import {
-  REPEAT_LABELS,
-  ReminderItem,
-  ReminderRepeat,
-} from './mockReminders';
+  createDefaultEnd,
+  createDefaultStart,
+  formatDateLabel,
+  formatTimeLabel,
+  parseTimeLabelToDate,
+  toDateKey,
+} from '../calendarUtils';
 import {
   colors,
   fontSize,
@@ -43,24 +50,15 @@ import {
   spacing,
 } from '../../../theme';
 
-export type ReminderDraft = {
-  title: string;
-  description: string;
-  dateKey: string;
-  dateLabel: string;
-  timeLabel: string;
-  repeat: ReminderRepeat;
-  aiCalling: boolean;
-  notification: boolean;
-  beeping: boolean;
-  source?: 'ai' | 'manual';
-};
+export type EventDraft = CalendarEventWritePayload;
 
 type Props = {
-  reminder: ReminderItem | null;
+  event: CalendarEventCard | null;
   mode?: 'create' | 'edit';
+  initialDate?: Date;
   isSaving?: boolean;
-  onSave?: (draft: ReminderDraft) => Promise<void> | void;
+  onSave?: (draft: EventDraft) => Promise<void> | void;
+  onDelete?: () => void;
 };
 
 type IconProps = {
@@ -68,7 +66,7 @@ type IconProps = {
   size?: number;
 };
 
-type PickerMode = 'none' | 'date' | 'time';
+type PickerMode = 'none' | 'date' | 'start' | 'end';
 
 const STROKE = 1.7;
 
@@ -127,34 +125,27 @@ const ClockIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
   </Svg>
 );
 
-const RepeatIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
+const PinIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M17 1l4 4-4 4"
+      d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11Z"
       stroke={color}
       strokeWidth={STROKE}
-      strokeLinecap="round"
       strokeLinejoin="round"
     />
+    <Circle cx={12} cy={10} r={2.2} stroke={color} strokeWidth={STROKE} />
+  </Svg>
+);
+
+const SparkIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M3 11V9a4 4 0 0 1 4-4h14"
+      d="M12 3v4M12 17v4M4.2 6.2l2.8 2.8M17 15l2.8 2.8M3 12h4M17 12h4M4.2 17.8 7 15M17 9l2.8-2.8"
       stroke={color}
       strokeWidth={STROKE}
       strokeLinecap="round"
     />
-    <Path
-      d="m7 23-4-4 4-4"
-      stroke={color}
-      strokeWidth={STROKE}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M21 13v2a4 4 0 0 1-4 4H3"
-      stroke={color}
-      strokeWidth={STROKE}
-      strokeLinecap="round"
-    />
+    <Circle cx={12} cy={12} r={2.4} stroke={color} strokeWidth={STROKE} />
   </Svg>
 );
 
@@ -204,132 +195,75 @@ const BeepIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
   </Svg>
 );
 
-const REPEAT_OPTIONS: ReminderRepeat[] = [
-  'once',
-  'daily',
-  'weekly',
-  'weekdays',
-  'monthly',
-];
-
-const parseReminderDate = (reminder: ReminderItem) => {
-  const base = new Date(`${reminder.dateKey}T12:00:00`);
-  if (!Number.isNaN(base.getTime())) {
-    return base;
-  }
-  return new Date();
-};
-
-const parseReminderTime = (reminder: ReminderItem) => {
-  const base = parseReminderDate(reminder);
-  const match = reminder.timeLabel.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-
-  if (match) {
-    let hour = Number(match[1]);
-    const minute = Number(match[2]);
-    const period = match[3].toUpperCase();
-
-    if (period === 'PM' && hour < 12) {
-      hour += 12;
-    }
-    if (period === 'AM' && hour === 12) {
-      hour = 0;
-    }
-
-    base.setHours(hour, minute, 0, 0);
-    return base;
-  }
-
-  if (/morning/i.test(reminder.timeLabel)) {
-    base.setHours(8, 0, 0, 0);
-    return base;
-  }
-
-  base.setHours(9, 0, 0, 0);
-  return base;
-};
-
-const formatDateLabel = (date: Date) =>
-  date.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-
-const formatTimeLabel = (date: Date) => {
-  const hour24 = date.getHours();
-  const minute = date.getMinutes();
-  const period = hour24 >= 12 ? 'PM' : 'AM';
-  const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
-  return `${hour12}:${String(minute).padStart(2, '0')} ${period}`;
-};
-
-const toDateKey = (date: Date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-const createDefaultTime = () => {
-  const next = new Date();
-  next.setMinutes(next.getMinutes() + 30, 0, 0);
-  return next;
-};
-
-const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
-  ({ reminder, mode = 'edit', isSaving = false, onSave }, ref) => {
+const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
+  (
+    { event, mode = 'create', initialDate, isSaving = false, onSave, onDelete },
+    ref,
+  ) => {
     const isCreateMode = mode === 'create';
     const snapPoints = useMemo(() => ['92%'], []);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [pickerMode, setPickerMode] = useState<PickerMode>('none');
-    const [name, setName] = useState('');
+    const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
-    const [nameError, setNameError] = useState('');
-    const [descriptionError, setDescriptionError] = useState('');
-    const [selectedDate, setSelectedDate] = useState(new Date());
-    const [selectedTime, setSelectedTime] = useState(createDefaultTime);
-    const [repeat, setRepeat] = useState<ReminderRepeat>('once');
+    const [location, setLocation] = useState('');
+    const [titleError, setTitleError] = useState('');
+    const [timeError, setTimeError] = useState('');
+    const [selectedDate, setSelectedDate] = useState(
+      () => initialDate || new Date(),
+    );
+    const [startTime, setStartTime] = useState(() =>
+      createDefaultStart(initialDate || new Date()),
+    );
+    const [endTime, setEndTime] = useState(() =>
+      createDefaultEnd(createDefaultStart(initialDate || new Date())),
+    );
+    const [aiReminder, setAiReminder] = useState(false);
     const [aiCalling, setAiCalling] = useState(false);
     const [notification, setNotification] = useState(true);
     const [beeping, setBeeping] = useState(false);
 
     const resetCreateForm = useCallback(() => {
-      const now = new Date();
-      setName('');
+      const baseDate = initialDate || new Date();
+      const start = createDefaultStart(baseDate);
+      setTitle('');
       setDescription('');
-      setNameError('');
-      setDescriptionError('');
-      setSelectedDate(now);
-      setSelectedTime(createDefaultTime());
-      setRepeat('once');
+      setLocation('');
+      setTitleError('');
+      setTimeError('');
+      setSelectedDate(baseDate);
+      setStartTime(start);
+      setEndTime(createDefaultEnd(start));
+      setAiReminder(false);
       setAiCalling(false);
       setNotification(true);
       setBeeping(false);
       setPickerMode('none');
-    }, []);
+    }, [initialDate]);
 
     useEffect(() => {
       if (isCreateMode) {
         return;
       }
 
-      if (!reminder) {
+      if (!event) {
         return;
       }
 
-      setName(reminder.title);
-      setDescription(reminder.description);
-      setNameError('');
-      setDescriptionError('');
-      setSelectedDate(parseReminderDate(reminder));
-      setSelectedTime(parseReminderTime(reminder));
-      setRepeat(reminder.repeat);
-      setAiCalling(reminder.aiCalling);
-      setNotification(reminder.notification);
-      setBeeping(reminder.beeping);
+      setTitle(event.title);
+      setDescription(event.description);
+      setLocation(event.location);
+      setTitleError('');
+      setTimeError('');
+      setSelectedDate(new Date(`${event.dateKey}T12:00:00`));
+      setStartTime(parseTimeLabelToDate(event.dateKey, event.startTimeLabel));
+      setEndTime(parseTimeLabelToDate(event.dateKey, event.endTimeLabel));
+      setAiReminder(event.aiReminder);
+      setAiCalling(event.aiCalling);
+      setNotification(event.notification);
+      setBeeping(event.beeping);
       setPickerMode('none');
-    }, [isCreateMode, reminder]);
+    }, [event, isCreateMode]);
 
     const handleClose = useCallback(() => {
       if (isSaving) {
@@ -375,9 +309,9 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
       return () => subscription.remove();
     }, [handleClose, isSheetOpen, pickerMode]);
 
-    const togglePicker = (mode: PickerMode) => {
+    const togglePicker = (next: PickerMode) => {
       LayoutAnimation.configureNext(PICKER_TRANSITION);
-      setPickerMode(prev => (prev === mode ? 'none' : mode));
+      setPickerMode(prev => (prev === next ? 'none' : next));
     };
 
     const closePicker = () => {
@@ -385,17 +319,39 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
       setPickerMode('none');
     };
 
-    const handleDateChange = (date: Date) => {
-      const next = new Date(selectedTime);
-      next.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+    const applyDateToTimes = (date: Date) => {
+      const nextStart = new Date(startTime);
+      nextStart.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
+      const nextEnd = new Date(endTime);
+      nextEnd.setFullYear(date.getFullYear(), date.getMonth(), date.getDate());
       setSelectedDate(date);
-      setSelectedTime(next);
+      setStartTime(nextStart);
+      setEndTime(nextEnd);
     };
 
-    const handleTimeChange = (date: Date) => {
+    const handleStartChange = (date: Date) => {
       const next = new Date(selectedDate);
       next.setHours(date.getHours(), date.getMinutes(), 0, 0);
-      setSelectedTime(next);
+      setStartTime(next);
+      if (next.getTime() >= endTime.getTime()) {
+        setEndTime(createDefaultEnd(next));
+      }
+      setTimeError('');
+    };
+
+    const handleEndChange = (date: Date) => {
+      const next = new Date(selectedDate);
+      next.setHours(date.getHours(), date.getMinutes(), 0, 0);
+      setEndTime(next);
+      setTimeError('');
+    };
+
+    const handleAiReminderToggle = (value: boolean) => {
+      LayoutAnimation.configureNext(PICKER_TRANSITION);
+      setAiReminder(value);
+      if (value) {
+        setNotification(true);
+      }
     };
 
     const handleSave = async () => {
@@ -403,17 +359,16 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
         return;
       }
 
-      const trimmedName = name.trim();
-      const trimmedDescription = description.trim();
+      const trimmedTitle = title.trim();
       let hasError = false;
 
-      if (!trimmedName) {
-        setNameError('Enter a reminder name.');
+      if (!trimmedTitle) {
+        setTitleError('Enter a meeting title.');
         hasError = true;
       }
 
-      if (!trimmedDescription) {
-        setDescriptionError('Enter a description.');
+      if (endTime.getTime() <= startTime.getTime()) {
+        setTimeError('End time must be after the start time.');
         hasError = true;
       }
 
@@ -425,15 +380,17 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
 
       try {
         await onSave?.({
-          title: trimmedName,
-          description: trimmedDescription,
+          title: trimmedTitle,
+          description: description.trim(),
+          location: location.trim(),
           dateKey: toDateKey(selectedDate),
           dateLabel: formatDateLabel(selectedDate),
-          timeLabel: formatTimeLabel(selectedTime),
-          repeat,
-          aiCalling,
-          notification,
-          beeping,
+          startTimeLabel: formatTimeLabel(startTime),
+          endTimeLabel: formatTimeLabel(endTime),
+          aiReminder,
+          aiCalling: aiReminder ? aiCalling : false,
+          notification: aiReminder ? notification : true,
+          beeping: aiReminder ? beeping : false,
         });
         if (ref && 'current' in ref) {
           ref.current?.dismiss();
@@ -474,11 +431,7 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
           <View style={styles.headerRow}>
             <View style={styles.sourceBadge}>
               <Text style={styles.sourceText}>
-                {isCreateMode
-                  ? 'New reminder'
-                  : reminder?.source === 'ai'
-                    ? 'AI Reminder'
-                    : 'Manual'}
+                {isCreateMode ? 'New event' : 'Meeting'}
               </Text>
             </View>
 
@@ -496,62 +449,82 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
           </View>
 
           <Text style={styles.sheetTitle}>
-            {isCreateMode ? 'Add reminder' : 'Edit reminder'}
+            {isCreateMode ? 'Add event' : 'Event details'}
           </Text>
           <Text style={styles.sheetHint}>
             {isCreateMode
-              ? 'Fill in the details, schedule, and alerts for this reminder'
-              : 'Tap any field to update details, schedule, or alerts'}
+              ? 'Schedule a meeting and optionally let Buddy remind you.'
+              : 'Update the schedule, location, or AI reminder for this meeting.'}
           </Text>
 
           <View style={styles.section}>
             <View
-              style={[styles.fieldCard, nameError ? styles.fieldCardError : null]}
+              style={[styles.fieldCard, titleError ? styles.fieldCardError : null]}
             >
-              <Text style={styles.fieldLabel}>Reminder name</Text>
+              <Text style={styles.fieldLabel}>Title</Text>
               <BottomSheetTextInput
-                value={name}
+                value={title}
                 onChangeText={value => {
-                  setName(value);
-                  if (nameError) {
-                    setNameError('');
+                  setTitle(value);
+                  if (titleError) {
+                    setTitleError('');
                   }
                 }}
-                placeholder="Reminder name"
+                placeholder="Product review, standup…"
                 placeholderTextColor={colors.muted}
                 style={styles.input}
                 returnKeyType="next"
               />
             </View>
-            {nameError ? (
-              <Text style={styles.errorText}>{nameError}</Text>
-            ) : null}
+            {titleError ? <Text style={styles.errorText}>{titleError}</Text> : null}
 
-            <View
-              style={[
-                styles.fieldCard,
-                descriptionError ? styles.fieldCardError : null,
-              ]}
-            >
+            <View style={styles.fieldCard}>
               <Text style={styles.fieldLabel}>Description</Text>
               <BottomSheetTextInput
                 value={description}
-                onChangeText={value => {
-                  setDescription(value);
-                  if (descriptionError) {
-                    setDescriptionError('');
-                  }
-                }}
-                placeholder="Add a short description"
+                onChangeText={setDescription}
+                placeholder="Agenda, notes, or context"
                 placeholderTextColor={colors.muted}
                 style={[styles.input, styles.multilineInput]}
                 multiline
                 textAlignVertical="top"
               />
             </View>
-            {descriptionError ? (
-              <Text style={styles.errorText}>{descriptionError}</Text>
-            ) : null}
+
+            <View style={styles.fieldCard}>
+              <View style={styles.inlineLabelRow}>
+                <PinIcon size={ms(15)} />
+                <Text style={styles.fieldLabelInline}>Location</Text>
+              </View>
+              <BottomSheetTextInput
+                value={location}
+                onChangeText={setLocation}
+                placeholder="Office, Zoom, or leave blank"
+                placeholderTextColor={colors.muted}
+                style={styles.input}
+                returnKeyType="done"
+              />
+            </View>
+
+            <TouchableOpacity
+              activeOpacity={0.88}
+              style={[
+                styles.fieldCard,
+                styles.metaRowCard,
+                pickerMode === 'date' && styles.metaCardActive,
+              ]}
+              onPress={() => togglePicker('date')}
+            >
+              <View style={styles.metaIcon}>
+                <CalendarIcon />
+              </View>
+              <View style={styles.metaCopy}>
+                <Text style={styles.fieldLabel}>Date</Text>
+                <Text style={styles.fieldValue}>
+                  {formatDateLabel(selectedDate)}
+                </Text>
+              </View>
+            </TouchableOpacity>
 
             <View style={styles.metaRow}>
               <TouchableOpacity
@@ -559,17 +532,17 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
                 style={[
                   styles.fieldCard,
                   styles.metaCard,
-                  pickerMode === 'time' && styles.metaCardActive,
+                  pickerMode === 'start' && styles.metaCardActive,
                 ]}
-                onPress={() => togglePicker('time')}
+                onPress={() => togglePicker('start')}
               >
                 <View style={styles.metaIcon}>
-                  <ClockIcon color={colors.primary} />
+                  <ClockIcon />
                 </View>
                 <View style={styles.metaCopy}>
-                  <Text style={styles.fieldLabel}>Time</Text>
+                  <Text style={styles.fieldLabel}>Starts</Text>
                   <Text style={styles.fieldValue}>
-                    {formatTimeLabel(selectedTime)}
+                    {formatTimeLabel(startTime)}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -579,143 +552,141 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
                 style={[
                   styles.fieldCard,
                   styles.metaCard,
-                  pickerMode === 'date' && styles.metaCardActive,
+                  pickerMode === 'end' && styles.metaCardActive,
                 ]}
-                onPress={() => togglePicker('date')}
+                onPress={() => togglePicker('end')}
               >
                 <View style={styles.metaIcon}>
-                  <CalendarIcon color={colors.primary} />
+                  <ClockIcon color={colors.primaryPurple} />
                 </View>
                 <View style={styles.metaCopy}>
-                  <Text style={styles.fieldLabel}>Date</Text>
+                  <Text style={styles.fieldLabel}>Ends</Text>
                   <Text style={styles.fieldValue}>
-                    {formatDateLabel(selectedDate)}
+                    {formatTimeLabel(endTime)}
                   </Text>
                 </View>
               </TouchableOpacity>
             </View>
-
-            {pickerMode === 'time' ? (
-              <ReminderTimePicker
-                value={selectedTime}
-                onChange={handleTimeChange}
-                onComplete={closePicker}
-              />
-            ) : null}
+            {timeError ? <Text style={styles.errorText}>{timeError}</Text> : null}
 
             {pickerMode === 'date' ? (
               <ReminderDatePicker
                 value={selectedDate}
-                onChange={handleDateChange}
+                onChange={applyDateToTimes}
+                onComplete={closePicker}
+              />
+            ) : null}
+
+            {pickerMode === 'start' ? (
+              <ReminderTimePicker
+                value={startTime}
+                onChange={handleStartChange}
+                onComplete={closePicker}
+              />
+            ) : null}
+
+            {pickerMode === 'end' ? (
+              <ReminderTimePicker
+                value={endTime}
+                onChange={handleEndChange}
                 onComplete={closePicker}
               />
             ) : null}
           </View>
 
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionIcon}>
-                <RepeatIcon color={colors.primary} />
-              </View>
-              <View>
-                <Text style={[styles.sectionLabel, styles.sectionLabelInline]}>
-                  Repeat
-                </Text>
-                <Text style={styles.sectionHint}>
-                  Choose how often this reminder repeats
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.chipGrid}>
-              {REPEAT_OPTIONS.map(option => {
-                const isActive = repeat === option;
-
-                return (
-                  <TouchableOpacity
-                    key={option}
-                    activeOpacity={0.85}
-                    style={[styles.chip, isActive && styles.chipActive]}
-                    onPress={() => setRepeat(option)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isActive }}
-                  >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        isActive && styles.chipTextActive,
-                      ]}
-                    >
-                      {REPEAT_LABELS[option]}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Smart features</Text>
-
             <View style={styles.featureCard}>
               <View style={styles.featureLeft}>
-                <View style={[styles.featureIcon, styles.featureIconCall]}>
-                  <PhoneIcon color="#7C3AED" />
+                <View style={[styles.featureIcon, styles.featureIconAi]}>
+                  <SparkIcon color={colors.primaryMid} />
                 </View>
                 <View style={styles.featureCopy}>
-                  <Text style={styles.featureTitle}>AI Calling</Text>
+                  <Text style={styles.featureTitle}>AI reminder</Text>
                   <Text style={styles.featureSubtitle}>
-                    Buddy can call you for this reminder
+                    Buddy will remind you when this meeting starts
                   </Text>
                 </View>
               </View>
               <Switch
-                value={aiCalling}
-                onValueChange={setAiCalling}
-                trackColor={{ false: colors.border, true: '#C4B5FD' }}
-                thumbColor={aiCalling ? '#7C3AED' : colors.white}
+                value={aiReminder}
+                onValueChange={handleAiReminderToggle}
+                trackColor={{ false: colors.border, true: colors.brandBorder }}
+                thumbColor={aiReminder ? colors.primaryMid : colors.white}
               />
             </View>
 
-            <View style={styles.featureCard}>
-              <View style={styles.featureLeft}>
-                <View style={[styles.featureIcon, styles.featureIconNotify]}>
-                  <BellIcon color="#2563EB" />
+            {aiReminder ? (
+              <>
+                <View style={styles.featureCard}>
+                  <View style={styles.featureLeft}>
+                    <View style={[styles.featureIcon, styles.featureIconCall]}>
+                      <PhoneIcon color={colors.primaryPurple} />
+                    </View>
+                    <View style={styles.featureCopy}>
+                      <Text style={styles.featureTitle}>AI calling</Text>
+                      <Text style={styles.featureSubtitle}>
+                        Buddy can call you for this meeting
+                      </Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={aiCalling}
+                    onValueChange={setAiCalling}
+                    trackColor={{
+                      false: colors.border,
+                      true: colors.brandBorder,
+                    }}
+                    thumbColor={aiCalling ? colors.primaryPurple : colors.white}
+                  />
                 </View>
-                <View style={styles.featureCopy}>
-                  <Text style={styles.featureTitle}>Notification</Text>
-                  <Text style={styles.featureSubtitle}>
-                    Push alert when it’s time
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={notification}
-                onValueChange={setNotification}
-                trackColor={{ false: colors.border, true: '#93C5FD' }}
-                thumbColor={notification ? '#2563EB' : colors.white}
-              />
-            </View>
 
-            <View style={styles.featureCard}>
-              <View style={styles.featureLeft}>
-                <View style={[styles.featureIcon, styles.featureIconBeep]}>
-                  <BeepIcon color="#0D9488" />
+                <View style={styles.featureCard}>
+                  <View style={styles.featureLeft}>
+                    <View style={[styles.featureIcon, styles.featureIconNotify]}>
+                      <BellIcon color={colors.info} />
+                    </View>
+                    <View style={styles.featureCopy}>
+                      <Text style={styles.featureTitle}>Notification</Text>
+                      <Text style={styles.featureSubtitle}>
+                        Push alert at the start time
+                      </Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={notification}
+                    onValueChange={setNotification}
+                    trackColor={{
+                      false: colors.border,
+                      true: colors.brandBorder,
+                    }}
+                    thumbColor={notification ? colors.info : colors.white}
+                  />
                 </View>
-                <View style={styles.featureCopy}>
-                  <Text style={styles.featureTitle}>Beeping</Text>
-                  <Text style={styles.featureSubtitle}>
-                    Gentle sound cue with the alert
-                  </Text>
+
+                <View style={styles.featureCard}>
+                  <View style={styles.featureLeft}>
+                    <View style={[styles.featureIcon, styles.featureIconBeep]}>
+                      <BeepIcon color={colors.success} />
+                    </View>
+                    <View style={styles.featureCopy}>
+                      <Text style={styles.featureTitle}>Beeping</Text>
+                      <Text style={styles.featureSubtitle}>
+                        Gentle sound cue with the alert
+                      </Text>
+                    </View>
+                  </View>
+                  <Switch
+                    value={beeping}
+                    onValueChange={setBeeping}
+                    trackColor={{
+                      false: colors.border,
+                      true: colors.successSoft,
+                    }}
+                    thumbColor={beeping ? colors.success : colors.white}
+                  />
                 </View>
-              </View>
-              <Switch
-                value={beeping}
-                onValueChange={setBeeping}
-                trackColor={{ false: colors.border, true: '#5EEAD4' }}
-                thumbColor={beeping ? '#0D9488' : colors.white}
-              />
-            </View>
+              </>
+            ) : null}
           </View>
 
           <TouchableOpacity
@@ -728,19 +699,30 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
               <ActivityIndicator color={colors.white} />
             ) : (
               <Text style={styles.saveButtonText}>
-                {isCreateMode ? 'Save reminder' : 'Save changes'}
+                {isCreateMode ? 'Save event' : 'Save changes'}
               </Text>
             )}
           </TouchableOpacity>
+
+          {!isCreateMode && onDelete ? (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.deleteButton}
+              onPress={onDelete}
+              disabled={isSaving}
+            >
+              <Text style={styles.deleteButtonText}>Delete event</Text>
+            </TouchableOpacity>
+          ) : null}
         </BottomSheetScrollView>
       </BottomSheetModal>
     );
   },
 );
 
-ReminderDetailBottomSheet.displayName = 'ReminderDetailBottomSheet';
+EventBottomSheet.displayName = 'EventBottomSheet';
 
-export default ReminderDetailBottomSheet;
+export default EventBottomSheet;
 
 const styles = StyleSheet.create({
   sheetBackground: {
@@ -748,41 +730,35 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: ms(28),
     borderTopRightRadius: ms(28),
   },
-
   indicator: {
     backgroundColor: colors.border,
     width: ms(48),
     height: ms(5),
     borderRadius: radii.pill,
   },
-
   scrollContent: {
     paddingHorizontal: ms(20),
     paddingTop: spacing.xs,
     paddingBottom: Platform.OS === 'ios' ? mvs(32) : mvs(24),
   },
-
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: spacing.md,
   },
-
   sourceBadge: {
     backgroundColor: colors.primarySoft,
     paddingHorizontal: spacing.lg,
     paddingVertical: ms(5),
     borderRadius: ms(8),
   },
-
   sourceText: {
     color: colors.primaryDark,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
     letterSpacing: 0.3,
   },
-
   closeButton: {
     width: ms(34),
     height: ms(34),
@@ -791,21 +767,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   closeIcon: {
     fontSize: fontSize['2xl'] + ms(4),
     lineHeight: ms(24),
     color: colors.muted,
     marginTop: -1,
   },
-
   sheetTitle: {
     color: colors.text,
     fontSize: fontSize['2xl'],
     fontWeight: fontWeight.extrabold,
     letterSpacing: -0.4,
   },
-
   sheetHint: {
     marginTop: spacing.sm,
     marginBottom: spacing.xl,
@@ -814,44 +787,9 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
     lineHeight: ms(18),
   },
-
   section: {
     marginBottom: spacing.xl,
   },
-
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-
-  sectionIcon: {
-    width: ms(34),
-    height: ms(34),
-    borderRadius: ms(11),
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  sectionLabel: {
-    color: colors.text,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    marginBottom: spacing.xs,
-  },
-
-  sectionLabelInline: {
-    marginBottom: spacing.xxs,
-  },
-
-  sectionHint: {
-    color: colors.muted,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-  },
-
   fieldCard: {
     backgroundColor: colors.inputBg,
     borderRadius: radii.xl,
@@ -861,12 +799,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     marginBottom: spacing.sm,
   },
-
   fieldCardError: {
     borderColor: colors.error,
     backgroundColor: colors.errorSoft,
   },
-
   errorText: {
     marginTop: -spacing.xs,
     marginBottom: spacing.sm,
@@ -875,7 +811,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
   },
-
   fieldLabel: {
     color: colors.muted,
     fontSize: fontSize.xs,
@@ -883,14 +818,24 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     letterSpacing: 0.2,
   },
-
+  fieldLabelInline: {
+    color: colors.muted,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: 0.2,
+  },
+  inlineLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.xs,
+  },
   fieldValue: {
     color: colors.text,
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
     lineHeight: ms(20),
   },
-
   input: {
     color: colors.text,
     fontSize: fontSize.base,
@@ -899,18 +844,20 @@ const styles = StyleSheet.create({
     margin: 0,
     minHeight: ms(22),
   },
-
   multilineInput: {
-    minHeight: ms(72),
+    minHeight: ms(68),
     lineHeight: ms(20),
     fontWeight: fontWeight.medium,
   },
-
   metaRow: {
     flexDirection: 'row',
     gap: spacing.sm,
   },
-
+  metaRowCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   metaCard: {
     flex: 1,
     flexDirection: 'row',
@@ -918,119 +865,76 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.sm,
   },
-
   metaCardActive: {
     borderColor: colors.brandBorder,
     backgroundColor: colors.primarySoft,
   },
-
   metaIcon: {
     width: ms(34),
     height: ms(34),
-    borderRadius: ms(11),
+    borderRadius: ms(10),
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  metaCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  chipGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-
-  chip: {
-    minHeight: ms(34),
-    paddingHorizontal: spacing.lg,
-    borderRadius: radii.pill,
-    backgroundColor: colors.inputBg,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
-
-  chipActive: {
-    backgroundColor: colors.text,
-    borderColor: colors.text,
+  metaCopy: {
+    flex: 1,
   },
-
-  chipText: {
-    color: colors.subText,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-  },
-
-  chipTextActive: {
-    color: colors.white,
-  },
-
   featureCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.white,
+    backgroundColor: colors.inputBg,
     borderRadius: radii.xl,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     marginBottom: spacing.sm,
-    gap: spacing.md,
   },
-
   featureLeft: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    minWidth: 0,
+    marginRight: spacing.md,
   },
-
   featureIcon: {
     width: ms(36),
     height: ms(36),
-    borderRadius: ms(12),
+    borderRadius: ms(10),
     alignItems: 'center',
     justifyContent: 'center',
   },
-
+  featureIconAi: {
+    backgroundColor: colors.primarySoft,
+  },
   featureIconCall: {
-    backgroundColor: '#F3EEFF',
+    backgroundColor: colors.purpleLight,
   },
-
   featureIconNotify: {
-    backgroundColor: '#E8F1FE',
+    backgroundColor: colors.primaryLight,
   },
-
   featureIconBeep: {
-    backgroundColor: '#E3F8F5',
+    backgroundColor: colors.successSoft,
   },
-
   featureCopy: {
     flex: 1,
-    minWidth: 0,
   },
-
   featureTitle: {
     color: colors.text,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
-    marginBottom: spacing.xxs,
-  },
-
-  featureSubtitle: {
-    color: colors.subText,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    lineHeight: ms(18),
+    fontWeight: fontWeight.bold,
   },
-
+  featureSubtitle: {
+    marginTop: spacing.xxs,
+    color: colors.subText,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    lineHeight: ms(16),
+  },
   saveButton: {
     minHeight: ms(52),
     borderRadius: radii.xl,
@@ -1039,14 +943,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: spacing.sm,
   },
-
   saveButtonDisabled: {
     opacity: 0.7,
   },
-
   saveButtonText: {
     color: colors.white,
     fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+  },
+  deleteButton: {
+    minHeight: ms(48),
+    borderRadius: radii.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.md,
+  },
+  deleteButtonText: {
+    color: colors.error,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
   },
 });

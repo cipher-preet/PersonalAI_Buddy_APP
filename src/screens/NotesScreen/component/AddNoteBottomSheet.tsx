@@ -5,6 +5,7 @@ import React, {
   useState,
 } from 'react';
 import {
+  ActivityIndicator,
   BackHandler,
   Keyboard,
   KeyboardEvent,
@@ -34,30 +35,37 @@ import {
 
 type Props = {
   dateLabel: string;
-  onSave: (title: string, description: string) => void;
+  isSaving?: boolean;
+  onSave: (title: string, description: string) => Promise<void> | void;
 };
 
 const KEYBOARD_BUTTON_GAP = ms(24);
 
 const AddNoteBottomSheet = forwardRef<BottomSheetModal, Props>(
-  ({ dateLabel, onSave }, ref) => {
+  ({ dateLabel, isSaving = false, onSave }, ref) => {
     const insets = useSafeAreaInsets();
     const [title, setTitle] = useState('');
     const [description, setDescription] = useState('');
     const [titleError, setTitleError] = useState('');
+    const [descriptionError, setDescriptionError] = useState('');
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [keyboardHeight, setKeyboardHeight] = useState(0);
 
     const handleClose = useCallback(() => {
+      if (isSaving) {
+        return;
+      }
+
       if (ref && 'current' in ref) {
         ref.current?.dismiss();
       }
-    }, [ref]);
+    }, [isSaving, ref]);
 
     const resetForm = useCallback(() => {
       setTitle('');
       setDescription('');
       setTitleError('');
+      setDescriptionError('');
       setKeyboardHeight(0);
     }, []);
 
@@ -67,11 +75,11 @@ const AddNoteBottomSheet = forwardRef<BottomSheetModal, Props>(
           {...props}
           appearsOnIndex={0}
           disappearsOnIndex={-1}
-          pressBehavior="close"
+          pressBehavior={isSaving ? 'none' : 'close'}
           opacity={0.45}
         />
       ),
-      [],
+      [isSaving],
     );
 
     useEffect(() => {
@@ -120,19 +128,47 @@ const AddNoteBottomSheet = forwardRef<BottomSheetModal, Props>(
       }
     };
 
-    const handleSave = () => {
+    const handleDescriptionChange = (value: string) => {
+      setDescription(value);
+      if (descriptionError) {
+        setDescriptionError('');
+      }
+    };
+
+    const handleSave = async () => {
+      if (isSaving) {
+        return;
+      }
+
       const trimmedTitle = title.trim();
       const trimmedDescription = description.trim();
+      let hasError = false;
 
       if (!trimmedTitle) {
         setTitleError('Enter a title to save this note.');
+        hasError = true;
+      }
+
+      if (!trimmedDescription) {
+        setDescriptionError('Enter a description to save this note.');
+        hasError = true;
+      }
+
+      if (hasError) {
         return;
       }
 
       Keyboard.dismiss();
-      onSave(trimmedTitle, trimmedDescription);
-      resetForm();
-      handleClose();
+
+      try {
+        await onSave(trimmedTitle, trimmedDescription);
+        resetForm();
+        if (ref && 'current' in ref) {
+          ref.current?.dismiss();
+        }
+      } catch {
+        // Parent surfaces the error; keep the sheet open.
+      }
     };
 
     const bottomPadding =
@@ -140,13 +176,14 @@ const AddNoteBottomSheet = forwardRef<BottomSheetModal, Props>(
         ? keyboardHeight - insets.bottom + KEYBOARD_BUTTON_GAP
         : spacing['2xl'] + insets.bottom;
 
-    const canSave = title.trim().length > 0;
+    const canSave =
+      title.trim().length > 0 && description.trim().length > 0 && !isSaving;
 
     return (
       <BottomSheetModal
         ref={ref}
         enableDynamicSizing
-        enablePanDownToClose
+        enablePanDownToClose={!isSaving}
         keyboardBehavior="interactive"
         keyboardBlurBehavior="restore"
         android_keyboardInputMode="adjustResize"
@@ -166,6 +203,7 @@ const AddNoteBottomSheet = forwardRef<BottomSheetModal, Props>(
               style={styles.closeButton}
               onPress={handleClose}
               activeOpacity={0.75}
+              disabled={isSaving}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
               <Text style={styles.closeIcon}>×</Text>
@@ -182,6 +220,7 @@ const AddNoteBottomSheet = forwardRef<BottomSheetModal, Props>(
             autoFocus={isSheetOpen}
             returnKeyType="next"
             maxLength={80}
+            editable={!isSaving}
           />
           {titleError ? (
             <Text style={styles.errorText}>{titleError}</Text>
@@ -192,14 +231,21 @@ const AddNoteBottomSheet = forwardRef<BottomSheetModal, Props>(
           </Text>
           <BottomSheetTextInput
             value={description}
-            onChangeText={setDescription}
+            onChangeText={handleDescriptionChange}
             placeholder="Write a short description..."
             placeholderTextColor={colors.muted}
-            style={styles.descriptionInput}
+            style={[
+              styles.descriptionInput,
+              descriptionError && styles.inputError,
+            ]}
             multiline
             textAlignVertical="top"
             maxLength={500}
+            editable={!isSaving}
           />
+          {descriptionError ? (
+            <Text style={styles.errorText}>{descriptionError}</Text>
+          ) : null}
 
           <TouchableOpacity
             activeOpacity={0.86}
@@ -207,7 +253,11 @@ const AddNoteBottomSheet = forwardRef<BottomSheetModal, Props>(
             onPress={handleSave}
             disabled={!canSave}
           >
-            <Text style={styles.buttonText}>Save note</Text>
+            {isSaving ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.buttonText}>Save note</Text>
+            )}
           </TouchableOpacity>
         </BottomSheetView>
       </BottomSheetModal>

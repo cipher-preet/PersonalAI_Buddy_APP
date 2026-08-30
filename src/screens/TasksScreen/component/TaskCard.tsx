@@ -140,30 +140,30 @@ const TaskCard = ({
               </View>
             </View>
 
-            <View style={styles.topRight}>
-              {displayDate ? (
-                <View style={styles.dateRow}>
-                  <CalendarIcon />
-                  <Text style={styles.dateText} numberOfLines={1}>
-                    {displayDate}
-                  </Text>
-                </View>
-              ) : null}
+            {displayDate ? (
+              <View style={styles.dateRow}>
+                <CalendarIcon />
+                <Text style={styles.dateText} numberOfLines={1}>
+                  {displayDate}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.dateSpacer} />
+            )}
 
-              <TouchableOpacity
-                activeOpacity={0.75}
-                style={styles.moreButton}
-                onPress={event => {
-                  event.stopPropagation();
-                  setMenuVisible(true);
-                }}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                accessibilityRole="button"
-                accessibilityLabel="Task options"
-              >
-                <MoreIcon />
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              activeOpacity={0.75}
+              style={styles.moreButton}
+              onPress={event => {
+                event.stopPropagation();
+                setMenuVisible(true);
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Task options"
+            >
+              <MoreIcon />
+            </TouchableOpacity>
           </View>
 
           <Text
@@ -287,8 +287,8 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: radii.xl,
     backgroundColor: colors.white,
-    paddingHorizontal: layout.cardPadding,
-    paddingTop: layout.cardPadding,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
     paddingBottom: spacing.md,
     overflow: 'hidden',
   },
@@ -296,8 +296,6 @@ const styles = StyleSheet.create({
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
     marginBottom: spacing.md,
   },
 
@@ -363,18 +361,18 @@ const styles = StyleSheet.create({
     color: colors.successText,
   },
 
-  topRight: {
+  dateRow: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: spacing.xs,
-    flexShrink: 1,
+    marginHorizontal: spacing.sm,
+    minWidth: 0,
   },
 
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    maxWidth: ms(110),
+  dateSpacer: {
+    flex: 1,
   },
 
   dateText: {
@@ -389,6 +387,8 @@ const styles = StyleSheet.create({
     borderRadius: ms(13),
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
+    marginRight: -spacing.xs,
   },
 
   title: {

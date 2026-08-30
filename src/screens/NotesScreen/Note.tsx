@@ -38,11 +38,14 @@ import { useToast } from '../../store/context/ToastContext';
 import {
   homeApi,
   StagedNoteCard,
+  useCreateStagedNoteMutation,
   useDeleteStagedNoteMutation,
   useGetNoteWorkspacesQuery,
   useGetStagedNotesBySpaceQuery,
   useLazyGetStagedNoteByIdQuery,
 } from '../../store/api/home';
+import UpgradePlanPromptModal from '../../components/UpgradePlanPromptModal';
+import { isPlanLimitError } from '../../utils/planLimitError';
 import {
   colors,
   fontSize,
@@ -142,9 +145,12 @@ const Notes = () => {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [sortOrder, setSortOrder] = useState<NoteSortOrder>('newest');
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const userId = useAppSelector(state => state.auth.userId) ?? '';
   const dispatch = useAppDispatch();
   const { showToast } = useToast();
+  const [createStagedNote, { isLoading: isCreatingNote }] =
+    useCreateStagedNoteMutation();
   const [deleteStagedNote] = useDeleteStagedNoteMutation();
   const [
     getStagedNoteById,
@@ -329,25 +335,71 @@ const Notes = () => {
     });
   }, [selectedSpaceId, showToast]);
 
-  const handleSaveLocalNote = useCallback(
-    (title: string, description: string) => {
-      const createdAt = new Date().toISOString();
-      const nextNote: LocalNote = {
-        id: `local-${Date.now()}`,
-        spaceId: selectedSpaceId,
-        title,
-        description,
-        dateKey: selectedDateKey,
-        createdAt,
-      };
+  const getApiErrorMessage = (error: any, fallback: string) =>
+    error?.data?.message || error?.message || fallback;
 
-      setLocalNotes(prev => [nextNote, ...prev]);
-      showToast({
-        message: 'Note saved.',
-        type: 'success',
-      });
+  const handleSaveNote = useCallback(
+    async (title: string, description: string) => {
+      if (!selectedSpaceId) {
+        showToast({
+          message: 'Select a space before adding a note.',
+          type: 'info',
+        });
+        throw new Error('Missing space');
+      }
+
+      try {
+        const response = await createStagedNote({
+          spaceId: selectedSpaceId,
+          title,
+          description,
+          date: selectedDateKey,
+        }).unwrap();
+
+        const createdNote = response?.data?.note;
+
+        if (createdNote) {
+          setLoadedNotes(prev => [
+            createdNote,
+            ...prev.filter(item => item.id !== createdNote.id),
+          ]);
+        }
+
+        if (userId) {
+          dispatch(
+            homeApi.util.updateQueryData(
+              'getNoteWorkspaces',
+              { userId },
+              draft => {
+                const space = draft?.data?.spaces?.find(
+                  item => item.id === selectedSpaceId,
+                );
+                if (space) {
+                  space.notesCount += 1;
+                }
+              },
+            ),
+          );
+        }
+
+        showToast({
+          message: response?.data?.message || 'Note saved.',
+          type: 'success',
+        });
+      } catch (error: any) {
+        if (isPlanLimitError(error)) {
+          setShowUpgradePrompt(true);
+          throw error;
+        }
+
+        showToast({
+          message: getApiErrorMessage(error, 'Unable to save note.'),
+          type: 'error',
+        });
+        throw error;
+      }
     },
-    [selectedDateKey, selectedSpaceId, showToast],
+    [createStagedNote, dispatch, selectedDateKey, selectedSpaceId, showToast, userId],
   );
 
   const handleRetryNoteDetail = useCallback(() => {
@@ -357,9 +409,6 @@ const Notes = () => {
 
     getStagedNoteById({ noteId: selectedNoteId });
   }, [getStagedNoteById, selectedNoteId]);
-
-  const getApiErrorMessage = (error: any, fallback: string) =>
-    error?.data?.message || error?.message || fallback;
 
   const handleDeleteNote = useCallback(
     async (note: NoteItem) => {
@@ -442,16 +491,12 @@ const Notes = () => {
   }, [isLoadingMoreNotes, nextNotesCursor]);
 
   const toNoteItem = useCallback((note: StagedNoteCard): NoteItem => {
-    const confidencePercent =
-      typeof note.confidence === 'number'
-        ? Math.round(note.confidence * 100)
-        : null;
     const preview = note.bodyPreview || 'No note preview available.';
     const workspaceName = selectedSpace?.name || 'Space';
 
     return {
       id: note.id,
-      tag: confidencePercent ? `CONF ${confidencePercent}%` : 'NOTE',
+      tag: 'NOTE',
       title: note.title || 'Untitled note',
       desc: preview,
       time: formatTime(note.updatedAt || note.createdAt),
@@ -695,7 +740,8 @@ const Notes = () => {
       <AddNoteBottomSheet
         ref={addNoteSheetRef}
         dateLabel={formatFullDate(selectedDate)}
-        onSave={handleSaveLocalNote}
+        isSaving={isCreatingNote}
+        onSave={handleSaveNote}
       />
 
       <NotesFilterMenu
@@ -703,6 +749,16 @@ const Notes = () => {
         sortOrder={sortOrder}
         onClose={() => setFilterMenuVisible(false)}
         onSelect={setSortOrder}
+      />
+
+      <UpgradePlanPromptModal
+        visible={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+        onUpgrade={() => {
+          setShowUpgradePrompt(false);
+          addNoteSheetRef.current?.dismiss();
+          navigation.navigate('Plans' as never);
+        }}
       />
     </SafeAreaView>
   );
@@ -718,7 +774,7 @@ const styles = StyleSheet.create({
   },
 
   headerWrap: {
-    paddingHorizontal: layout.screenPadding,
+    paddingHorizontal: spacing['2xl'],
     marginBottom: spacing.md,
   },
 
@@ -727,7 +783,7 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingHorizontal: layout.screenPadding,
+    paddingHorizontal: spacing['2xl'],
     paddingBottom: layout.tabBarClearance,
   },
 

@@ -108,7 +108,7 @@ export const authApi = baseApi.injectEndpoints({
 
     verifyOtp: builder.mutation<
       OtpVerifyResponse,
-      { phone: string; otp: string; username?: string }
+      { phone: string; otp: string; username?: string; fcmToken?: string; platform?: string }
     >({
       query: body => ({
         url: 'auth/verify-otp',
@@ -118,7 +118,10 @@ export const authApi = baseApi.injectEndpoints({
       transformResponse: response => unwrapApiData<OtpVerifyResponse>(response),
     }),
 
-    googleLogin: builder.mutation<GoogleAuthResponse, { idToken: string }>({
+    googleLogin: builder.mutation<
+      GoogleAuthResponse,
+      { idToken: string; fcmToken?: string; platform?: string }
+    >({
       query: body => ({
         url: 'auth/google',
         method: 'POST',
@@ -182,7 +185,10 @@ export const authApi = baseApi.injectEndpoints({
       transformResponse: response => unwrapApiData<{ message?: string }>(response),
     }),
 
-    login: builder.mutation<{ token: string }, { email: string; password: string }>({
+    login: builder.mutation<
+      { token: string },
+      { email: string; password: string; fcmToken?: string; platform?: string }
+    >({
       query: credentials => ({
         url: 'auth/login',
         method: 'POST',

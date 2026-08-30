@@ -40,10 +40,13 @@ import { useToast } from '../../store/context/ToastContext';
 import {
   homeApi,
   StagedTaskCard,
+  useCreateStagedTaskMutation,
   useDeleteStagedTaskMutation,
   useGetStagedTasksBySpaceQuery,
   useGetUserSpacesQuery,
 } from '../../store/api/home';
+import UpgradePlanPromptModal from '../../components/UpgradePlanPromptModal';
+import { isPlanLimitError } from '../../utils/planLimitError';
 import {
   colors,
   fontSize,
@@ -133,9 +136,12 @@ const TaskScreen = () => {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [taskFilter, setTaskFilter] = useState<TaskFilter>('newest');
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const userId = useAppSelector(state => state.auth.userId) ?? '';
   const dispatch = useAppDispatch();
   const { showToast } = useToast();
+  const [createStagedTask, { isLoading: isCreatingTask }] =
+    useCreateStagedTaskMutation();
   const [deleteStagedTask] = useDeleteStagedTaskMutation();
 
   const {
@@ -344,25 +350,74 @@ const TaskScreen = () => {
     });
   }, [selectedSpaceId, showToast]);
 
-  const handleSaveLocalTask = useCallback(
-    (title: string, description: string) => {
-      const createdAt = new Date().toISOString();
-      const nextTask: LocalTask = {
-        id: `local-${Date.now()}`,
-        spaceId: selectedSpaceId,
-        title,
-        description,
-        dateKey: selectedDateKey,
-        createdAt,
-      };
+  const getApiErrorMessage = (error: any, fallback: string) =>
+    error?.data?.message || error?.message || fallback;
 
-      setLocalTasks(prev => [nextTask, ...prev]);
-      showToast({
-        message: 'Task saved.',
-        type: 'success',
-      });
+  const handleSaveTask = useCallback(
+    async (title: string, description: string) => {
+      if (!selectedSpaceId) {
+        showToast({
+          message: 'Select a space before adding a task.',
+          type: 'info',
+        });
+        throw new Error('Missing space');
+      }
+
+      try {
+        const response = await createStagedTask({
+          spaceId: selectedSpaceId,
+          title,
+          description,
+          date: selectedDateKey,
+        }).unwrap();
+
+        const createdTask = response?.data?.task;
+
+        if (createdTask) {
+          setLoadedTasks(prev => [
+            createdTask,
+            ...prev.filter(item => item.id !== createdTask.id),
+          ]);
+        }
+
+        if (userId) {
+          dispatch(
+            homeApi.util.updateQueryData(
+              'getUserSpaces',
+              { userId, limit: 50 },
+              draft => {
+                const space = draft?.data?.data?.spaces?.find(
+                  item => item._id === selectedSpaceId,
+                );
+                if (space) {
+                  space.tasksCount =
+                    (typeof space.tasksCount === 'number'
+                      ? space.tasksCount
+                      : 0) + 1;
+                }
+              },
+            ),
+          );
+        }
+
+        showToast({
+          message: response?.data?.message || 'Task saved.',
+          type: 'success',
+        });
+      } catch (error: any) {
+        if (isPlanLimitError(error)) {
+          setShowUpgradePrompt(true);
+          throw error;
+        }
+
+        showToast({
+          message: getApiErrorMessage(error, 'Unable to save task.'),
+          type: 'error',
+        });
+        throw error;
+      }
     },
-    [selectedDateKey, selectedSpaceId, showToast],
+    [createStagedTask, dispatch, selectedDateKey, selectedSpaceId, showToast, userId],
   );
 
   const handleToggleTaskComplete = useCallback(
@@ -374,9 +429,6 @@ const TaskScreen = () => {
     },
     [],
   );
-
-  const getApiErrorMessage = (error: any, fallback: string) =>
-    error?.data?.message || error?.message || fallback;
 
   const handleDeleteTask = useCallback(
     async (task: TaskItem) => {
@@ -677,7 +729,8 @@ const TaskScreen = () => {
       <AddTaskBottomSheet
         ref={addTaskSheetRef}
         dateLabel={formatFullDate(selectedDate)}
-        onSave={handleSaveLocalTask}
+        isSaving={isCreatingTask}
+        onSave={handleSaveTask}
       />
 
       <TasksFilterMenu
@@ -685,6 +738,16 @@ const TaskScreen = () => {
         taskFilter={taskFilter}
         onClose={() => setFilterMenuVisible(false)}
         onSelect={setTaskFilter}
+      />
+
+      <UpgradePlanPromptModal
+        visible={showUpgradePrompt}
+        onClose={() => setShowUpgradePrompt(false)}
+        onUpgrade={() => {
+          setShowUpgradePrompt(false);
+          addTaskSheetRef.current?.dismiss();
+          navigation.navigate('Plans' as never);
+        }}
       />
     </SafeAreaView>
   );
@@ -700,7 +763,7 @@ const styles = StyleSheet.create({
   },
 
   headerWrap: {
-    paddingHorizontal: layout.screenPadding,
+    paddingHorizontal: spacing['2xl'],
     marginBottom: spacing.md,
   },
 
@@ -709,7 +772,7 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    paddingHorizontal: layout.screenPadding,
+    paddingHorizontal: spacing['2xl'],
     paddingBottom: layout.tabBarClearance,
   },
 

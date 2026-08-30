@@ -44,7 +44,7 @@ export const isPlanLimitError = (error: unknown) => {
 
   return (
     Number(status) === 403 ||
-    /free plan limit|limit reached|upgrade to pro|create more spaces/i.test(
+    /free plan limit|limit reached|upgrade to pro|create more (spaces|notes|tasks)/i.test(
       message,
     )
   );

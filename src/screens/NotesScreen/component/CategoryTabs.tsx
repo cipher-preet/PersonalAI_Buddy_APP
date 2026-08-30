@@ -15,7 +15,6 @@ import {
   colors,
   fontSize,
   fontWeight,
-  layout,
   ms,
   radii,
   spacing,
@@ -239,8 +238,8 @@ const styles = StyleSheet.create({
   },
 
   container: {
-    paddingLeft: layout.screenPadding,
-    paddingRight: layout.screenPadding,
+    paddingLeft: spacing['2xl'],
+    paddingRight: spacing['2xl'],
     gap: CARD_GAP,
   },
 

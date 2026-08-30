@@ -12,7 +12,7 @@ export type ReminderRepeat =
 export type ReminderItem = {
   id: string;
   title: string;
-  emoji: string;
+  emoji?: string;
   description: string;
   timeLabel: string;
   dateLabel: string;

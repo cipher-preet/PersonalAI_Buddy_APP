@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Animated,
   BackHandler,
   Easing,
@@ -19,22 +20,36 @@ import {
   fontSize,
   fontWeight,
   ms,
+  radii,
   spacing,
 } from '../../../theme';
 
+type OverlayPhase =
+  | 'idle'
+  | 'speaking'
+  | 'listening'
+  | 'thinking'
+  | 'saving'
+  | 'error';
+
 type Props = {
   visible: boolean;
+  phase?: OverlayPhase;
+  statusText?: string;
+  hintText?: string;
+  errorText?: string;
   onStop: () => void;
+  onRetry?: () => void;
 };
 
 const WAVE_BARS = [12, 22, 34, 18, 40, 24, 30, 16];
 
-const CloseIcon = ({ color = colors.text }: { color?: string }) => (
-  <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
+const CheckIcon = ({ color = colors.white }: { color?: string }) => (
+  <Svg width={ms(22)} height={ms(22)} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M18 6 6 18M6 6l12 12"
+      d="m5 12 5 5L19 7"
       stroke={color}
-      strokeWidth={2.2}
+      strokeWidth={2.4}
       strokeLinecap="round"
       strokeLinejoin="round"
     />
@@ -99,7 +114,15 @@ const WaveBar = ({
   );
 };
 
-const ReminderListeningOverlay = ({ visible, onStop }: Props) => {
+const ReminderListeningOverlay = ({
+  visible,
+  phase = 'listening',
+  statusText = 'Listening…',
+  hintText = 'Speak your reminder. Tap cut to stop.',
+  errorText = '',
+  onStop,
+  onRetry,
+}: Props) => {
   const insets = useSafeAreaInsets();
   const overlay = useRef(new Animated.Value(0)).current;
   const glow = useRef(new Animated.Value(0)).current;
@@ -181,13 +204,16 @@ const ReminderListeningOverlay = ({ visible, onStop }: Props) => {
     const subscription = BackHandler.addEventListener(
       'hardwareBackPress',
       () => {
+        if (phase === 'saving') {
+          return true;
+        }
         onStop();
         return true;
       },
     );
 
     return () => subscription.remove();
-  }, [onStop, visible]);
+  }, [onStop, phase, visible]);
 
   const glowScale = glow.interpolate({
     inputRange: [0, 1],
@@ -210,6 +236,19 @@ const ReminderListeningOverlay = ({ visible, onStop }: Props) => {
   });
 
   const waveBars = useMemo(() => WAVE_BARS, []);
+  const isBusy = phase === 'thinking' || phase === 'saving';
+  const canDismiss = phase !== 'saving';
+  const label =
+    statusText ||
+    (phase === 'speaking'
+      ? 'Buddy is speaking'
+      : phase === 'thinking'
+        ? 'Understanding…'
+        : phase === 'saving'
+          ? 'Saving reminder…'
+          : phase === 'error'
+            ? 'Something went wrong'
+            : 'Listening…');
 
   if (!mounted) {
     return null;
@@ -230,7 +269,10 @@ const ReminderListeningOverlay = ({ visible, onStop }: Props) => {
           <View style={styles.frost} />
         </Animated.View>
 
-        <Pressable style={StyleSheet.absoluteFill} onPress={onStop} />
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={canDismiss ? onStop : undefined}
+        />
 
         <Animated.View
           pointerEvents="box-none"
@@ -258,14 +300,28 @@ const ReminderListeningOverlay = ({ visible, onStop }: Props) => {
             />
             <View style={styles.glowInner} />
             <View style={styles.micWrap}>
-              <MicIcon width={ms(28)} height={ms(28)} color={colors.text} />
+              {isBusy ? (
+                <ActivityIndicator size="small" color={colors.text} />
+              ) : (
+                <MicIcon width={ms(28)} height={ms(28)} color={colors.text} />
+              )}
             </View>
           </View>
 
-          <Text style={styles.listeningLabel}>Listening…</Text>
-          <Text style={styles.listeningHint}>
-            Speak your reminder. Tap cut to stop.
-          </Text>
+          <Text style={styles.listeningLabel}>{label}</Text>
+          <Text style={styles.listeningHint}>{hintText}</Text>
+          {phase === 'error' && errorText ? (
+            <Text style={styles.errorText}>{errorText}</Text>
+          ) : null}
+          {phase === 'error' && onRetry ? (
+            <TouchableOpacity
+              activeOpacity={0.85}
+              style={styles.retryButton}
+              onPress={onRetry}
+            >
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          ) : null}
 
           <View style={styles.bottomControls}>
             <View style={styles.sideSpacer} />
@@ -276,19 +332,23 @@ const ReminderListeningOverlay = ({ visible, onStop }: Props) => {
                   key={`wave-${index}`}
                   baseHeight={height}
                   delay={index * 35}
-                  active={visible}
+                  active={visible && phase === 'listening'}
                 />
               ))}
             </View>
 
             <TouchableOpacity
               activeOpacity={0.85}
-              style={styles.stopButton}
-              onPress={onStop}
+              style={[
+                styles.stopButton,
+                phase === 'saving' && styles.stopButtonDisabled,
+              ]}
+              onPress={canDismiss ? onStop : undefined}
+              disabled={!canDismiss}
               accessibilityRole="button"
-              accessibilityLabel="Stop listening"
+              accessibilityLabel="Done"
             >
-              <CloseIcon color={colors.text} />
+              <CheckIcon />
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -380,7 +440,34 @@ const styles = StyleSheet.create({
     color: colors.subText,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
-    marginBottom: spacing['5xl'],
+    textAlign: 'center',
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.xl,
+  },
+
+  errorText: {
+    color: colors.errorDark,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    textAlign: 'center',
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.xl,
+  },
+
+  retryButton: {
+    marginBottom: spacing['4xl'],
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.sm,
+    borderRadius: radii.pill,
+    backgroundColor: colors.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+
+  retryText: {
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
   },
 
   bottomControls: {
@@ -416,10 +503,12 @@ const styles = StyleSheet.create({
     width: ms(52),
     height: ms(52),
     borderRadius: ms(26),
-    backgroundColor: 'rgba(255,255,255,0.72)',
-    borderWidth: 1,
-    borderColor: 'rgba(15,23,42,0.08)',
+    backgroundColor: colors.success,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  stopButtonDisabled: {
+    opacity: 0.4,
   },
 });

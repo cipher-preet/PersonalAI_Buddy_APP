@@ -47,7 +47,7 @@ const TrashIcon = () => (
 );
 
 const ReminderCard = ({ item, width, onPress, onDelete }: Props) => {
-  const tone = REMINDER_TONES[item.tone];
+  const tone = REMINDER_TONES[item.tone] ?? REMINDER_TONES.lavender;
   const [menuVisible, setMenuVisible] = useState(false);
 
   return (
@@ -59,24 +59,36 @@ const ReminderCard = ({ item, width, onPress, onDelete }: Props) => {
         accessibilityRole="button"
         accessibilityLabel={item.title}
       >
-        <View style={styles.headerRow}>
-          <Text numberOfLines={3} style={[styles.title, { color: tone.text }]}>
-            {item.title} {item.emoji}
-          </Text>
+        <View style={styles.body}>
+          <View style={styles.headerRow}>
+            <Text numberOfLines={2} style={[styles.title, { color: tone.text }]}>
+              {item.title}
+            </Text>
 
-          <TouchableOpacity
-            activeOpacity={0.75}
-            style={styles.moreButton}
-            onPress={event => {
-              event.stopPropagation();
-              setMenuVisible(true);
-            }}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            accessibilityRole="button"
-            accessibilityLabel="Reminder options"
-          >
-            <MoreIcon color={tone.arrow} />
-          </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.75}
+              style={styles.moreButton}
+              onPress={event => {
+                event.stopPropagation();
+                setMenuVisible(true);
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel="Reminder options"
+            >
+              <MoreIcon color={tone.arrow} />
+            </TouchableOpacity>
+          </View>
+
+          {item.description ? (
+            <Text
+              numberOfLines={2}
+              ellipsizeMode="tail"
+              style={[styles.description, { color: tone.muted }]}
+            >
+              {item.description}
+            </Text>
+          ) : null}
         </View>
 
         <View style={styles.footer}>
@@ -140,6 +152,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
 
+  body: {
+    gap: spacing.xxs,
+  },
+
   moreButton: {
     width: ms(28),
     height: ms(28),
@@ -154,6 +170,13 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
     lineHeight: ms(22),
     letterSpacing: -0.3,
+  },
+
+  description: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    lineHeight: ms(18),
+    paddingRight: ms(28),
   },
 
   footer: {

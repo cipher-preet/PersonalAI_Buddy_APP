@@ -39,7 +39,8 @@ const MONTH_NAMES = [
 
 const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const VISIBLE_DAYS = 7;
-const DAY_WIDTH = Math.round((screenWidth - layout.screenPadding * 2) / VISIBLE_DAYS);
+const SCREEN_INSET = spacing['2xl'];
+const DAY_WIDTH = Math.round((screenWidth - SCREEN_INSET * 2) / VISIBLE_DAYS);
 const DAY_HEIGHT = ms(52);
 
 export const toDateKey = (date: Date) => {
@@ -244,7 +245,7 @@ const NotesCalendarStrip = ({
   const getItemLayout = useCallback(
     (_: ArrayLike<CalendarDay> | null | undefined, index: number) => ({
       length: DAY_WIDTH,
-      offset: layout.screenPadding + DAY_WIDTH * index,
+      offset: SCREEN_INSET + DAY_WIDTH * index,
       index,
     }),
     [],
@@ -394,7 +395,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: layout.screenPadding,
+    paddingHorizontal: SCREEN_INSET,
     marginBottom: spacing.sm,
   },
 
@@ -432,7 +433,7 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    paddingHorizontal: layout.screenPadding,
+    paddingHorizontal: SCREEN_INSET,
   },
 
   dateList: {
@@ -516,7 +517,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.backdrop,
     justifyContent: 'center',
-    paddingHorizontal: layout.screenPadding,
+    paddingHorizontal: SCREEN_INSET,
   },
 
   pickerCard: {

@@ -165,6 +165,36 @@ interface GetStagedTasksBySpaceResponse {
   };
 }
 
+interface CreateStagedNotePayload {
+  spaceId: string;
+  title: string;
+  description: string;
+  date?: string;
+}
+
+interface CreateStagedNoteResponse {
+  success: boolean;
+  data: {
+    message?: string;
+    note: StagedNoteCard;
+  };
+}
+
+interface CreateStagedTaskPayload {
+  spaceId: string;
+  title: string;
+  description: string;
+  date?: string;
+}
+
+interface CreateStagedTaskResponse {
+  success: boolean;
+  data: {
+    message?: string;
+    task: StagedTaskCard;
+  };
+}
+
 interface GetUserSpacesArgs {
   userId: string;
   limit?: number;
@@ -369,11 +399,48 @@ export const homeApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Spaces'],
     }),
+
+    createStagedNote: builder.mutation<
+      CreateStagedNoteResponse,
+      CreateStagedNotePayload
+    >({
+      query: data => ({
+        url: 'home/create-staged-note',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Spaces', 'Plans'],
+    }),
+
+    createStagedTask: builder.mutation<
+      CreateStagedTaskResponse,
+      CreateStagedTaskPayload
+    >({
+      query: data => ({
+        url: 'home/create-staged-task',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Spaces', 'Plans'],
+    }),
+
+    registerDeviceToken: builder.mutation<
+      { success: boolean },
+      { token: string; platform?: 'android' | 'ios' | 'web' }
+    >({
+      query: data => ({
+        url: 'home/register-device-token',
+        method: 'POST',
+        body: data,
+      }),
+    }),
   }),
 });
 
 export const {
   useCreateSpaceMutation,
+  useCreateStagedNoteMutation,
+  useCreateStagedTaskMutation,
   useDeleteSpaceMutation,
   useDeleteStagedNoteMutation,
   useDeleteStagedTaskMutation,
@@ -386,4 +453,5 @@ export const {
   useGetStagedNotesBySpaceQuery,
   useLazyGetStagedNoteByIdQuery,
   useGetStagedTasksBySpaceQuery,
+  useRegisterDeviceTokenMutation,
 } = homeApi;

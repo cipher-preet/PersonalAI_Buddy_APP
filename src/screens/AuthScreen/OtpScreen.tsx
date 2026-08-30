@@ -30,6 +30,7 @@ import {
   useVerifyOtpMutation,
 } from '../../store/api/auth';
 import { useToast } from '../../store/context/ToastContext';
+import { getAuthDevicePayload } from '../../services/fcmTokenService';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Otp'>;
 
@@ -79,7 +80,13 @@ const OtpScreen = ({ navigation, route }: Props) => {
     verifyingRef.current = true;
 
     try {
-      const result = await verifyOtp({ phone, otp, username }).unwrap();
+      const devicePayload = await getAuthDevicePayload();
+      const result = await verifyOtp({
+        phone,
+        otp,
+        username,
+        ...devicePayload,
+      }).unwrap();
 
       dispatch(
         loginSuccess({

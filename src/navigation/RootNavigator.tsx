@@ -6,7 +6,9 @@ import MainTabs from './MainTabs';
 import AuthStack from './AuthStack';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { useCheckAuthQuery } from '../store/api/auth';
+import { useRegisterDeviceTokenMutation } from '../store/api/home';
 import { checkAuthSuccess, logout } from '../store/slices/authSlice';
+import { getDevicePlatform, getFcmToken } from '../services/fcmTokenService';
 import { colors } from '../theme';
 
 const RootNavigator = () => {
@@ -16,6 +18,7 @@ const RootNavigator = () => {
     state => state.auth.hasCompletedOnboarding,
   );
   const { data, isFetching, isError } = useCheckAuthQuery();
+  const [registerDeviceToken] = useRegisterDeviceTokenMutation();
 
   useEffect(() => {
     if (data?.authenticated) {
@@ -38,6 +41,36 @@ const RootNavigator = () => {
       dispatch(logout());
     }
   }, [dispatch, isAuthenticated, isError]);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const syncDeviceToken = async () => {
+      const token = await getFcmToken();
+      if (!token || cancelled) {
+        return;
+      }
+
+      try {
+        await registerDeviceToken({
+          token,
+          platform: getDevicePlatform(),
+        }).unwrap();
+      } catch {
+        // Login should still succeed if token sync fails.
+      }
+    };
+
+    void syncDeviceToken();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, registerDeviceToken]);
 
   const showMainApp = isAuthenticated && hasCompletedOnboarding;
 

@@ -1,16 +1,46 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  FlatList,
+  Modal,
+  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  type ListRenderItemInfo,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import LinearGradient from 'react-native-linear-gradient';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
+import Svg, { Circle, Path } from 'react-native-svg';
 
+import EventBottomSheet, {
+  type EventDraft,
+} from './components/EventBottomSheet';
+import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
+import { useToast } from '../../store/context/ToastContext';
+import { useAppSelector } from '../../store/hooks';
+import {
+  useCreateCalendarEventMutation,
+  useDeleteCalendarEventMutation,
+  useGetCalendarEventsQuery,
+  useUpdateCalendarEventMutation,
+  type CalendarEventCard,
+} from '../../store/api/calendar';
+import {
+  DAY_NAMES,
+  MONTH_NAMES,
+  addDays,
+  eventToneColors,
+  isSameDay,
+  parseTimeToHours,
+  startOfDay,
+  toDateKey,
+} from './calendarUtils';
 import {
   colors,
   fontSize,
@@ -18,106 +48,19 @@ import {
   layout,
   ms,
   radii,
+  shadows,
   spacing,
 } from '../../theme';
 
-type CalendarEvent = {
-  id: string;
-  title: string;
-  start: number;
-  end: number;
-  tone: 'primary' | 'blue' | 'green';
-};
-
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
-const START_HOUR = 8;
-const END_HOUR = 20;
-const HOUR_HEIGHT = ms(68);
-const TIME_COLUMN_WIDTH = ms(52);
-
-const addDays = (date: Date, amount: number) => {
-  const next = new Date(date);
-  next.setDate(next.getDate() + amount);
-  return next;
-};
-
-const isSameDay = (first: Date, second: Date) =>
-  first.getFullYear() === second.getFullYear() &&
-  first.getMonth() === second.getMonth() &&
-  first.getDate() === second.getDate();
-
-const formatHour = (hour: number) => {
-  if (hour === 12) {
-    return '12 PM';
-  }
-  if (hour > 12) {
-    return `${hour - 12} PM`;
-  }
-  return `${hour} AM`;
-};
-
-const formatTime = (value: number) => {
-  const hours = Math.floor(value);
-  const minutes = Math.round((value - hours) * 60);
-  const period = hours >= 12 ? 'PM' : 'AM';
-  const displayHour = hours % 12 || 12;
-  return `${String(displayHour).padStart(2, '0')}:${String(minutes).padStart(
-    2,
-    '0',
-  )} ${period}`;
-};
-
-const getEventsForDate = (date: Date): CalendarEvent[] => {
-  const dayVariant = date.getDate() % 3;
-  const titles =
-    dayVariant === 0
-      ? ['Product design review', 'Buddy roadmap planning', 'Weekly wrap-up']
-      : dayVariant === 1
-        ? ['Design system audit', 'Launch planning', 'Research synthesis']
-        : [
-            'Front-end development',
-            'Startup & product development',
-            'Digital product creation',
-          ];
-
-  return [
-    {
-      id: `${date.toDateString()}-morning`,
-      title: titles[0],
-      start: 9.25,
-      end: 11.75,
-      tone: 'primary',
-    },
-    {
-      id: `${date.toDateString()}-afternoon`,
-      title: titles[1],
-      start: 12.75,
-      end: 15,
-      tone: 'blue',
-    },
-    {
-      id: `${date.toDateString()}-evening`,
-      title: titles[2],
-      start: 16.5,
-      end: 19,
-      tone: 'green',
-    },
-  ];
-};
+const TIME_COLUMN_WIDTH = ms(68);
+const EVENT_CARD_HEIGHT = ms(108);
+const EVENT_ROW_GAP = spacing.xl;
+const PAST_DAYS = 21;
+const FUTURE_DAYS = 60;
+const DAY_CHIP_WIDTH = ms(54);
+const DAY_CHIP_GAP = spacing.sm;
+const DAY_ITEM_WIDTH = DAY_CHIP_WIDTH + DAY_CHIP_GAP;
+const DATE_STRIP_PADDING = layout.screenPadding;
 
 const BackIcon = () => (
   <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
@@ -131,43 +74,407 @@ const BackIcon = () => (
   </Svg>
 );
 
+const PlusIcon = () => (
+  <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 5v14M5 12h14"
+      stroke={colors.white}
+      strokeWidth={2.4}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
+const PinMiniIcon = ({ color = colors.subText }: { color?: string }) => (
+  <Svg width={ms(12)} height={ms(12)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 21s6-4.8 6-10a6 6 0 1 0-12 0c0 5.2 6 10 6 10Z"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M12 11.2a1.2 1.2 0 1 0 0-2.4 1.2 1.2 0 0 0 0 2.4Z"
+      fill={color}
+    />
+  </Svg>
+);
+
+const SparkMiniIcon = ({ color = colors.primaryMid }: { color?: string }) => (
+  <Svg width={ms(12)} height={ms(12)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 4v3M12 17v3M6 6l2 2M16 16l2 2M4 12h3M17 12h3M6 18l2-2M16 8l2-2"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
+const MoreIcon = ({ color = colors.text }: { color?: string }) => (
+  <Svg width={ms(15)} height={ms(15)} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="5" r="1.6" fill={color} />
+    <Circle cx="12" cy="12" r="1.6" fill={color} />
+    <Circle cx="12" cy="19" r="1.6" fill={color} />
+  </Svg>
+);
+
+const TrashIcon = () => (
+  <Svg width={ms(15)} height={ms(15)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"
+      stroke={colors.error}
+      strokeWidth={1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+type StripDay = {
+  key: string;
+  date: Date;
+};
+
+type DayChipProps = {
+  item: StripDay;
+  selected: boolean;
+  isToday: boolean;
+  hasEvents: boolean;
+  onPress: (date: Date) => void;
+};
+
+const DayChip = React.memo(
+  ({ item, selected, isToday, hasEvents, onPress }: DayChipProps) => (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      style={[styles.dayChip, selected && styles.dayChipSelected]}
+      onPress={() => onPress(item.date)}
+      accessibilityRole="button"
+      accessibilityLabel={`${DAY_NAMES[item.date.getDay()]} ${item.date.getDate()}`}
+      accessibilityState={{ selected }}
+    >
+      <Text style={[styles.dayName, selected && styles.dayNameSelected]}>
+        {DAY_NAMES[item.date.getDay()]}
+      </Text>
+      <Text style={[styles.dayNumber, selected && styles.dayNumberSelected]}>
+        {item.date.getDate()}
+      </Text>
+      {hasEvents ? (
+        <View style={[styles.eventDot, selected && styles.eventDotSelected]} />
+      ) : isToday && !selected ? (
+        <View style={styles.todayDot} />
+      ) : (
+        <View style={styles.dotSpacer} />
+      )}
+    </TouchableOpacity>
+  ),
+);
+
+DayChip.displayName = 'DayChip';
+
+type MeetingCardProps = {
+  event: CalendarEventCard;
+  onPress: () => void;
+  onDelete: () => void;
+};
+
+const MeetingCard = React.memo(
+  ({ event, onPress, onDelete }: MeetingCardProps) => {
+    const tone = eventToneColors(event.tone);
+    const [menuVisible, setMenuVisible] = useState(false);
+
+    return (
+      <View style={styles.eventCardWrap}>
+        <TouchableOpacity
+          activeOpacity={0.88}
+          onPress={onPress}
+          style={styles.eventCardPress}
+          accessibilityRole="button"
+          accessibilityLabel={`${event.title}, ${event.startTimeLabel} to ${event.endTimeLabel}`}
+        >
+          <View style={[styles.eventCard, { backgroundColor: tone.background }]}>
+            <View
+              style={[styles.eventAccent, { backgroundColor: tone.accent }]}
+            />
+            <View style={styles.eventBody}>
+              <View style={styles.eventTopRow}>
+                <Text
+                  numberOfLines={1}
+                  style={[styles.eventTime, { color: tone.time }]}
+                >
+                  {event.startTimeLabel} – {event.endTimeLabel}
+                </Text>
+                <TouchableOpacity
+                  activeOpacity={0.75}
+                  style={styles.moreButton}
+                  onPress={pressEvent => {
+                    pressEvent.stopPropagation();
+                    setMenuVisible(true);
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Event options"
+                >
+                  <MoreIcon color={tone.time} />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.titleRow}>
+                <Text numberOfLines={1} style={styles.eventTitle}>
+                  {event.title}
+                </Text>
+                {event.aiReminder ? (
+                  <View style={styles.aiMark}>
+                    <SparkMiniIcon color={tone.accent} />
+                  </View>
+                ) : null}
+              </View>
+              <View style={styles.eventMetaRow}>
+                <PinMiniIcon
+                  color={event.location ? tone.accent : colors.muted}
+                />
+                <Text numberOfLines={1} style={styles.eventMeta}>
+                  {event.location || 'No location'}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        <Modal
+          visible={menuVisible}
+          transparent
+          animationType="fade"
+          statusBarTranslucent
+          onRequestClose={() => setMenuVisible(false)}
+        >
+          <Pressable
+            style={styles.menuBackdrop}
+            onPress={() => setMenuVisible(false)}
+          >
+            <Pressable style={styles.menuCard}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.menuItem}
+                onPress={() => {
+                  setMenuVisible(false);
+                  onDelete();
+                }}
+              >
+                <TrashIcon />
+                <Text style={styles.menuItemText}>Delete event</Text>
+              </TouchableOpacity>
+            </Pressable>
+          </Pressable>
+        </Modal>
+      </View>
+    );
+  },
+);
+
+MeetingCard.displayName = 'MeetingCard';
+
 const CalendarScreen = () => {
   const navigation = useNavigation();
-  const today = useMemo(() => new Date(), []);
+  const { showToast } = useToast();
+  const insets = useSafeAreaInsets();
+  const eventSheetRef = useRef<BottomSheetModal>(null);
+  const dateListRef = useRef<FlatList<StripDay>>(null);
+  const hasScrolledToInitialDate = useRef(false);
+  const userId = useAppSelector(state => state.auth.userId) ?? '';
+  const today = useMemo(() => startOfDay(new Date()), []);
+  const todayKey = useMemo(() => toDateKey(today), [today]);
   const [selectedDate, setSelectedDate] = useState(today);
-  const weekDays = useMemo(
-    () => Array.from({ length: 9 }, (_, index) => addDays(today, index - 3)),
+  const [sheetMode, setSheetMode] = useState<'create' | 'edit'>('create');
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEventCard | null>(
+    null,
+  );
+  const [eventPendingDelete, setEventPendingDelete] =
+    useState<CalendarEventCard | null>(null);
+
+  const stripDays = useMemo<StripDay[]>(
+    () =>
+      Array.from({ length: PAST_DAYS + FUTURE_DAYS + 1 }, (_, index) => {
+        const date = addDays(today, index - PAST_DAYS);
+        return { key: toDateKey(date), date };
+      }),
     [today],
   );
-  const hours = useMemo(
+
+  const range = useMemo(
+    () => ({
+      from: stripDays[0]?.key ?? toDateKey(today),
+      to: stripDays[stripDays.length - 1]?.key ?? toDateKey(today),
+    }),
+    [stripDays, today],
+  );
+
+  const selectedKey = toDateKey(selectedDate);
+  const selectedIndex = useMemo(() => {
+    const index = stripDays.findIndex(item => item.key === selectedKey);
+    return index >= 0 ? index : PAST_DAYS;
+  }, [selectedKey, stripDays]);
+
+  const scrollToDateIndex = useCallback((index: number, animated: boolean) => {
+    if (index < 0) {
+      return;
+    }
+
+    requestAnimationFrame(() => {
+      dateListRef.current?.scrollToIndex({
+        index,
+        animated,
+        viewPosition: 0.45,
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!hasScrolledToInitialDate.current) {
+      hasScrolledToInitialDate.current = true;
+      return;
+    }
+
+    scrollToDateIndex(selectedIndex, true);
+  }, [scrollToDateIndex, selectedIndex]);
+
+  const handleSelectDate = useCallback((date: Date) => {
+    setSelectedDate(startOfDay(date));
+  }, []);
+
+  const {
+    data: eventsData,
+    isFetching,
+    isError,
+    refetch,
+  } = useGetCalendarEventsQuery(range, { skip: !userId });
+
+  const [createEvent, { isLoading: isCreating }] =
+    useCreateCalendarEventMutation();
+  const [updateEvent, { isLoading: isUpdating }] =
+    useUpdateCalendarEventMutation();
+  const [deleteEvent, { isLoading: isDeleting }] =
+    useDeleteCalendarEventMutation();
+
+  const isSaving = isCreating || isUpdating;
+  const allEvents = eventsData?.data?.events ?? [];
+  const dayEvents = useMemo(
     () =>
-      Array.from(
-        { length: END_HOUR - START_HOUR + 1 },
-        (_, index) => START_HOUR + index,
-      ),
+      allEvents
+        .filter(event => event.dateKey === selectedKey)
+        .slice()
+        .sort((first, second) => {
+          const startA = parseTimeToHours(first.startTimeLabel) ?? 0;
+          const startB = parseTimeToHours(second.startTimeLabel) ?? 0;
+          return startA - startB;
+        }),
+    [allEvents, selectedKey],
+  );
+  const daysWithEvents = useMemo(
+    () => new Set(allEvents.map(event => event.dateKey)),
+    [allEvents],
+  );
+
+  const openCreateSheet = () => {
+    setSheetMode('create');
+    setSelectedEvent(null);
+    eventSheetRef.current?.present();
+  };
+
+  const openEditSheet = (event: CalendarEventCard) => {
+    setSheetMode('edit');
+    setSelectedEvent(event);
+    eventSheetRef.current?.present();
+  };
+
+  const requestDeleteEvent = (event: CalendarEventCard) => {
+    eventSheetRef.current?.dismiss();
+    setEventPendingDelete(event);
+  };
+
+  const handleSaveEvent = async (draft: EventDraft) => {
+    try {
+      if (sheetMode === 'edit' && selectedEvent) {
+        await updateEvent({ ...draft, eventId: selectedEvent.id }).unwrap();
+        showToast({ message: 'Event updated' });
+      } else {
+        await createEvent(draft).unwrap();
+        showToast({
+          message: 'Event added',
+          description: draft.aiReminder
+            ? 'AI reminder is set for this meeting.'
+            : undefined,
+        });
+      }
+      const [year, month, day] = draft.dateKey.split('-').map(Number);
+      setSelectedDate(new Date(year, month - 1, day));
+    } catch (error: any) {
+      showToast({
+        message: 'Could not save event',
+        description: error?.data?.message || error?.message || 'Please try again.',
+        type: 'error',
+      });
+      throw error;
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!eventPendingDelete) {
+      return;
+    }
+
+    try {
+      const response = await deleteEvent({
+        eventId: eventPendingDelete.id,
+      }).unwrap();
+      eventSheetRef.current?.dismiss();
+      setEventPendingDelete(null);
+      setSelectedEvent(null);
+      showToast({
+        message:
+          response?.data?.message ||
+          response?.message ||
+          'Event deleted',
+      });
+    } catch (error: any) {
+      showToast({
+        message: 'Could not delete event',
+        description: error?.data?.message || error?.message || 'Please try again.',
+        type: 'error',
+      });
+    }
+  };
+
+  const renderDay = useCallback(
+    ({ item }: ListRenderItemInfo<StripDay>) => (
+      <DayChip
+        item={item}
+        selected={item.key === selectedKey}
+        isToday={item.key === todayKey}
+        hasEvents={daysWithEvents.has(item.key)}
+        onPress={handleSelectDate}
+      />
+    ),
+    [daysWithEvents, handleSelectDate, selectedKey, todayKey],
+  );
+
+  const getDayLayout = useCallback(
+    (_: ArrayLike<StripDay> | null | undefined, index: number) => ({
+      length: DAY_ITEM_WIDTH,
+      offset: DATE_STRIP_PADDING + DAY_ITEM_WIDTH * index,
+      index,
+    }),
     [],
   );
-  const events = useMemo(() => getEventsForDate(selectedDate), [selectedDate]);
-  const timelineHeight = (END_HOUR - START_HOUR) * HOUR_HEIGHT;
 
-  const eventTone = (tone: CalendarEvent['tone']) => {
-    if (tone === 'blue') {
-      return {
-        background: colors.primaryLight,
-        accent: colors.info,
-      };
-    }
-    if (tone === 'green') {
-      return {
-        background: colors.successSoft,
-        accent: colors.successBright,
-      };
-    }
-    return {
-      background: colors.primarySoft,
-      accent: colors.primaryPurple,
-    };
-  };
+  const handleDateScrollFailed = useCallback(
+    (info: { index: number }) => {
+      setTimeout(() => {
+        scrollToDateIndex(info.index, false);
+      }, 80);
+    },
+    [scrollToDateIndex],
+  );
 
   return (
     <View style={styles.screen}>
@@ -189,124 +496,181 @@ const CalendarScreen = () => {
               {MONTH_NAMES[selectedDate.getMonth()]} {selectedDate.getFullYear()}
             </Text>
           </View>
-          <TouchableOpacity
-            activeOpacity={0.78}
-            style={styles.todayButton}
-            onPress={() => setSelectedDate(today)}
+          <Pressable
+            onPress={openCreateSheet}
+            accessibilityRole="button"
+            accessibilityLabel="Add event"
+            style={({ pressed }) => [
+              styles.addPressable,
+              pressed && styles.addPressableActive,
+            ]}
           >
-            <Text style={styles.todayButtonText}>Today</Text>
-          </TouchableOpacity>
+            <LinearGradient
+              colors={[colors.primary, colors.primaryMid, colors.accentCyan]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.addButton}
+            >
+              <PlusIcon />
+            </LinearGradient>
+          </Pressable>
         </View>
 
         <View style={styles.dateStrip}>
-          <ScrollView
+          <FlatList
+            ref={dateListRef}
+            data={stripDays}
+            keyExtractor={item => item.key}
+            renderItem={renderDay}
+            extraData={`${selectedKey}-${daysWithEvents.size}`}
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.dateStripContent}
-          >
-            {weekDays.map(date => {
-              const selected = isSameDay(date, selectedDate);
-              const currentDay = isSameDay(date, today);
-              return (
-                <TouchableOpacity
-                  key={date.toISOString()}
-                  activeOpacity={0.8}
-                  style={[styles.dayChip, selected && styles.dayChipSelected]}
-                  onPress={() => setSelectedDate(date)}
-                >
-                  <Text
-                    style={[
-                      styles.dayNumber,
-                      selected && styles.dayNumberSelected,
-                    ]}
-                  >
-                    {date.getDate()}
-                  </Text>
-                  <Text
-                    style={[
-                      styles.dayName,
-                      selected && styles.dayNameSelected,
-                    ]}
-                  >
-                    {DAY_NAMES[date.getDay()]}
-                  </Text>
-                  {currentDay && !selected ? <View style={styles.todayDot} /> : null}
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+            getItemLayout={getDayLayout}
+            initialScrollIndex={PAST_DAYS}
+            onScrollToIndexFailed={handleDateScrollFailed}
+            initialNumToRender={14}
+            windowSize={5}
+            maxToRenderPerBatch={12}
+          />
         </View>
 
         <View style={styles.agendaHeader}>
-          <View>
+          <View style={styles.agendaCopy}>
             <Text style={styles.agendaTitle}>
               {isSameDay(selectedDate, today)
-                ? "Today's schedule"
+                ? "Today's meetings"
                 : `${DAY_NAMES[selectedDate.getDay()]}, ${
                     MONTH_NAMES[selectedDate.getMonth()]
                   } ${selectedDate.getDate()}`}
             </Text>
-            <Text style={styles.agendaSubtitle}>{events.length} events planned</Text>
+            <Text style={styles.agendaSubtitle}>
+              {dayEvents.length === 0
+                ? 'No meetings scheduled'
+                : `${dayEvents.length} meeting${
+                    dayEvents.length === 1 ? '' : 's'
+                  }`}
+            </Text>
           </View>
-          <View style={styles.eventCountPill}>
-            <Text style={styles.eventCountText}>{events.length} events</Text>
-          </View>
+          {!isSameDay(selectedDate, today) ? (
+            <TouchableOpacity
+              activeOpacity={0.8}
+              style={styles.jumpToday}
+              onPress={() => handleSelectDate(today)}
+            >
+              <Text style={styles.jumpTodayText}>Today</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.eventCountPill}>
+              <Text style={styles.eventCountText}>
+                {dayEvents.length} up next
+              </Text>
+            </View>
+          )}
         </View>
 
         <ScrollView
           style={styles.timelineScroll}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.timelineScrollContent}
+          contentContainerStyle={[
+            styles.timelineScrollContent,
+            { paddingBottom: insets.bottom + spacing['6xl'] },
+          ]}
         >
-          <View style={[styles.timeline, { height: timelineHeight }]}>
-            {hours.map(hour => (
-              <React.Fragment key={hour}>
-                <Text
-                  style={[
-                    styles.timeLabel,
-                    { top: (hour - START_HOUR) * HOUR_HEIGHT - ms(7) },
-                  ]}
-                >
-                  {formatHour(hour)}
-                </Text>
-                <View
-                  style={[
-                    styles.hourLine,
-                    { top: (hour - START_HOUR) * HOUR_HEIGHT },
-                  ]}
-                />
-              </React.Fragment>
-            ))}
-
-            {events.map(event => {
-              const tone = eventTone(event.tone);
-              const top = (event.start - START_HOUR) * HOUR_HEIGHT;
-              const height = (event.end - event.start) * HOUR_HEIGHT - spacing.sm;
-              return (
-                <View
-                  key={event.id}
-                  style={[
-                    styles.eventCard,
-                    {
-                      top,
-                      height,
-                      backgroundColor: tone.background,
-                      borderLeftColor: tone.accent,
-                    },
-                  ]}
-                >
-                  <Text style={styles.eventTime}>
-                    {formatTime(event.start)} – {formatTime(event.end)}
-                  </Text>
-                  <Text numberOfLines={2} style={styles.eventTitle}>
-                    {event.title}
-                  </Text>
+          {!userId ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>Sign in required</Text>
+              <Text style={styles.emptyCopy}>
+                Sign in to add meetings and see them on your calendar.
+              </Text>
+            </View>
+          ) : isFetching && allEvents.length === 0 ? (
+            <View style={styles.emptyState}>
+              <ActivityIndicator color={colors.primary} />
+              <Text style={styles.emptyCopy}>Loading your schedule…</Text>
+            </View>
+          ) : isError ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyTitle}>Couldn’t load events</Text>
+              <Text style={styles.emptyCopy}>
+                Check your connection, then try again.
+              </Text>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={() => refetch()}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.retryText}>Retry</Text>
+              </TouchableOpacity>
+            </View>
+          ) : dayEvents.length === 0 ? (
+            <View style={styles.emptyState}>
+              <TouchableOpacity
+                style={styles.emptyIconWrap}
+                onPress={openCreateSheet}
+                activeOpacity={0.88}
+              >
+                <PlusIcon />
+              </TouchableOpacity>
+              <Text style={styles.emptyTitle}>No meetings yet</Text>
+              <Text style={styles.emptyCopy}>
+                Add an event to see it on this day, including time, location, and
+                AI reminder.
+              </Text>
+              <TouchableOpacity
+                style={styles.emptyCta}
+                onPress={openCreateSheet}
+                activeOpacity={0.88}
+              >
+                <Text style={styles.emptyCtaText}>Add event</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <View style={styles.agendaList}>
+              {dayEvents.map((event, index) => (
+                <View key={event.id} style={styles.agendaRow}>
+                  <View style={styles.agendaTimeCol}>
+                    <Text numberOfLines={2} style={styles.agendaStartTime}>
+                      {event.startTimeLabel}
+                    </Text>
+                    {index < dayEvents.length - 1 ? (
+                      <View style={styles.agendaRail} />
+                    ) : null}
+                  </View>
+                  <MeetingCard
+                    event={event}
+                    onPress={() => openEditSheet(event)}
+                    onDelete={() => requestDeleteEvent(event)}
+                  />
                 </View>
-              );
-            })}
-          </View>
+              ))}
+            </View>
+          )}
         </ScrollView>
       </SafeAreaView>
+
+      <EventBottomSheet
+        ref={eventSheetRef}
+        mode={sheetMode}
+        event={selectedEvent}
+        initialDate={selectedDate}
+        isSaving={isSaving}
+        onSave={handleSaveEvent}
+        onDelete={
+          selectedEvent
+            ? () => requestDeleteEvent(selectedEvent)
+            : undefined
+        }
+      />
+
+      <DeleteConfirmationModal
+        visible={Boolean(eventPendingDelete)}
+        itemType="event"
+        itemTitle={eventPendingDelete?.title}
+        loading={isDeleting}
+        onCancel={() => setEventPendingDelete(null)}
+        onConfirm={handleConfirmDelete}
+      />
     </View>
   );
 };
@@ -354,18 +718,20 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
   },
-  todayButton: {
-    minHeight: ms(36),
-    paddingHorizontal: spacing.xl,
+  addPressable: {
+    borderRadius: radii.pill,
+    ...shadows.primary,
+  },
+  addPressableActive: {
+    opacity: 0.88,
+    transform: [{ scale: 0.96 }],
+  },
+  addButton: {
+    width: ms(42),
+    height: ms(42),
+    borderRadius: ms(21),
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radii.pill,
-    backgroundColor: colors.primaryLight,
-  },
-  todayButtonText: {
-    color: colors.primary,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
   },
   dateStrip: {
     backgroundColor: colors.white,
@@ -374,14 +740,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   dateStripContent: {
-    paddingHorizontal: layout.screenPadding,
+    paddingHorizontal: DATE_STRIP_PADDING,
     paddingVertical: spacing.xl,
-    gap: spacing.sm,
   },
   dayChip: {
-    position: 'relative',
-    width: ms(52),
-    height: ms(72),
+    width: DAY_CHIP_WIDTH,
+    height: ms(78),
+    marginRight: DAY_CHIP_GAP,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.xl,
@@ -394,6 +759,7 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
   },
   dayNumber: {
+    marginTop: spacing.xs,
     color: colors.text,
     fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
@@ -402,21 +768,35 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
   dayName: {
-    marginTop: spacing.xs,
     color: colors.subText,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   dayNameSelected: {
     color: colors.white,
   },
+  eventDot: {
+    marginTop: spacing.sm,
+    width: ms(6),
+    height: ms(6),
+    borderRadius: ms(3),
+    backgroundColor: colors.primaryPurple,
+  },
+  eventDotSelected: {
+    backgroundColor: colors.white,
+  },
   todayDot: {
-    position: 'absolute',
-    bottom: spacing.sm,
-    width: ms(4),
-    height: ms(4),
-    borderRadius: ms(2),
+    marginTop: spacing.sm,
+    width: ms(6),
+    height: ms(6),
+    borderRadius: ms(3),
     backgroundColor: colors.primary,
+  },
+  dotSpacer: {
+    marginTop: spacing.sm,
+    height: ms(6),
   },
   agendaHeader: {
     flexDirection: 'row',
@@ -425,6 +805,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing['2xl'],
     paddingBottom: spacing.lg,
+    gap: spacing.md,
+  },
+  agendaCopy: {
+    flex: 1,
   },
   agendaTitle: {
     color: colors.text,
@@ -436,6 +820,19 @@ const styles = StyleSheet.create({
     color: colors.subText,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
+  },
+  jumpToday: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primaryLight,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.brandBorder,
+  },
+  jumpTodayText: {
+    color: colors.primary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
   },
   eventCountPill: {
     paddingHorizontal: spacing.sm,
@@ -454,49 +851,203 @@ const styles = StyleSheet.create({
   timelineScrollContent: {
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.sm,
-    paddingBottom: spacing['5xl'],
+    flexGrow: 1,
   },
-  timeline: {
-    position: 'relative',
+  agendaList: {
+    gap: EVENT_ROW_GAP,
   },
-  timeLabel: {
-    position: 'absolute',
-    left: 0,
-    width: TIME_COLUMN_WIDTH - spacing.sm,
-    color: colors.muted,
+  agendaRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    minHeight: EVENT_CARD_HEIGHT,
+  },
+  agendaTimeCol: {
+    width: TIME_COLUMN_WIDTH,
+    paddingTop: spacing.sm,
+    paddingRight: spacing.sm,
+    alignItems: 'flex-end',
+  },
+  agendaStartTime: {
+    width: '100%',
+    color: colors.subText,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
+    fontWeight: fontWeight.bold,
+    textAlign: 'right',
+    lineHeight: ms(16),
+    includeFontPadding: false,
   },
-  hourLine: {
-    position: 'absolute',
-    left: TIME_COLUMN_WIDTH,
-    right: 0,
-    height: StyleSheet.hairlineWidth,
+  agendaRail: {
+    flex: 1,
+    width: ms(2),
+    marginTop: spacing.sm,
+    marginRight: spacing.sm,
+    alignSelf: 'flex-end',
+    borderRadius: radii.pill,
     backgroundColor: colors.border,
   },
+  eventCardWrap: {
+    flex: 1,
+    height: EVENT_CARD_HEIGHT,
+  },
+  eventCardPress: {
+    flex: 1,
+    ...shadows.soft,
+  },
   eventCard: {
-    position: 'absolute',
-    left: TIME_COLUMN_WIDTH + spacing['2xl'],
-    right: 0,
-    minHeight: ms(72),
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: radii.xl,
+    flex: 1,
+    flexDirection: 'row',
+    borderRadius: radii.lg,
+    overflow: 'hidden',
+    backgroundColor: colors.white,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    borderLeftWidth: ms(5),
+  },
+  eventAccent: {
+    width: ms(4),
+    alignSelf: 'stretch',
+  },
+  eventBody: {
+    flex: 1,
+    minWidth: 0,
+    justifyContent: 'center',
+    paddingLeft: spacing.lg,
+    paddingRight: spacing.sm,
+    paddingVertical: spacing.md,
+    gap: spacing.xs,
+  },
+  eventTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  moreButton: {
+    width: ms(28),
+    height: ms(28),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   eventTime: {
+    flex: 1,
+    minWidth: 0,
+    color: colors.subText,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: 0.1,
+    includeFontPadding: false,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  eventTitle: {
+    flex: 1,
+    minWidth: 0,
+    color: colors.text,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+    lineHeight: ms(20),
+    includeFontPadding: false,
+  },
+  aiMark: {
+    flexShrink: 0,
+  },
+  eventMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  eventMeta: {
+    flex: 1,
+    minWidth: 0,
     color: colors.subText,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
+    includeFontPadding: false,
   },
-  eventTitle: {
-    marginTop: spacing.xs,
+  menuBackdrop: {
+    flex: 1,
+    backgroundColor: colors.backdrop,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing['4xl'],
+  },
+  menuCard: {
+    width: '100%',
+    maxWidth: ms(260),
+    borderRadius: radii.xl,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: spacing.sm,
+    overflow: 'hidden',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xl,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.xl,
+  },
+  menuItemText: {
+    color: colors.error,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing['4xl'],
+    paddingTop: spacing['6xl'],
+    gap: spacing.md,
+  },
+  emptyIconWrap: {
+    width: ms(56),
+    height: ms(56),
+    borderRadius: ms(28),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    marginBottom: spacing.sm,
+  },
+  emptyTitle: {
     color: colors.text,
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
-    lineHeight: ms(21),
+  },
+  emptyCopy: {
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    textAlign: 'center',
+    lineHeight: ms(20),
+  },
+  emptyCta: {
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing['2xl'],
+    minHeight: ms(44),
+    borderRadius: radii.pill,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyCtaText: {
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+  retryButton: {
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing['2xl'],
+    minHeight: ms(40),
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  retryText: {
+    color: colors.white,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
   },
 });

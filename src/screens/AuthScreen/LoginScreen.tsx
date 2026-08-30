@@ -34,6 +34,7 @@ import {
   useSendOtpMutation,
 } from '../../store/api/auth';
 import { signInWithGoogle } from '../../services/googleSignInService';
+import { getAuthDevicePayload } from '../../services/fcmTokenService';
 import { useToast } from '../../store/context/ToastContext';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
@@ -113,8 +114,10 @@ const LoginScreen = ({ navigation }: Props) => {
 
     try {
       const googleData = await signInWithGoogle();
+      const devicePayload = await getAuthDevicePayload();
       const response = await googleLogin({
         idToken: googleData.idToken,
+        ...devicePayload,
       }).unwrap();
       const payload = {
         token: response.token,
