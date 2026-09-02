@@ -7,7 +7,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.CAMERA" />
 
     <!-- Profile photos use the system Photo Picker — do not request gallery access. -->
@@ -37,10 +40,24 @@
       android:theme="@style/AppTheme"
       android:usesCleartextTraffic="${usesCleartextTraffic}"
       android:supportsRtl="true">
+      <meta-data
+        android:name="com.google.firebase.messaging.default_notification_channel_id"
+        android:value="buddy_reminders"
+        tools:replace="android:value" />
+      <meta-data
+        android:name="com.google.firebase.messaging.default_notification_icon"
+        android:resource="@drawable/ic_stat_buddy_mic" />
       <service
         android:name=".voice.BuddyListeningForegroundService"
         android:exported="false"
         android:foregroundServiceType="microphone" />
+      <service
+        android:name=".notifications.ReminderAlertService"
+        android:exported="false"
+        android:foregroundServiceType="mediaPlayback" />
+      <receiver
+        android:name=".notifications.ReminderAlertReceiver"
+        android:exported="false" />
       <!-- Install the AndroidX Photo Picker backport on older devices. -->
       <service
         android:name="com.google.android.gms.metadata.ModuleDependencies"
@@ -60,6 +77,8 @@
         android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
         android:launchMode="singleTask"
         android:windowSoftInputMode="adjustNothing"
+        android:showWhenLocked="true"
+        android:turnScreenOn="true"
         android:exported="true">
         <intent-filter>
             <action android:name="android.intent.action.MAIN" />

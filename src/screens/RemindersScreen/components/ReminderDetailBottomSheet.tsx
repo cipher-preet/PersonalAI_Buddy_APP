@@ -9,16 +9,15 @@ import {
   ActivityIndicator,
   BackHandler,
   Keyboard,
-  LayoutAnimation,
   Platform,
   StyleSheet,
   Switch,
   Text,
   TouchableOpacity,
-  UIManager,
   View,
 } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import { Pressable as SheetPressable } from 'react-native-gesture-handler';
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -27,9 +26,9 @@ import {
 } from '@gorhom/bottom-sheet';
 
 import ReminderDatePicker from './ReminderDatePicker';
+import ReminderPickerPopup from './ReminderPickerPopup';
 import ReminderTimePicker from './ReminderTimePicker';
 import {
-  REPEAT_LABELS,
   ReminderItem,
   ReminderRepeat,
 } from './mockReminders';
@@ -37,6 +36,7 @@ import {
   colors,
   fontSize,
   fontWeight,
+  layout,
   ms,
   mvs,
   radii,
@@ -72,28 +72,6 @@ type PickerMode = 'none' | 'date' | 'time';
 
 const STROKE = 1.7;
 
-if (
-  Platform.OS === 'android' &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-const PICKER_TRANSITION = {
-  duration: 240,
-  create: {
-    type: LayoutAnimation.Types.easeInEaseOut,
-    property: LayoutAnimation.Properties.opacity,
-  },
-  update: {
-    type: LayoutAnimation.Types.easeInEaseOut,
-  },
-  delete: {
-    type: LayoutAnimation.Types.easeInEaseOut,
-    property: LayoutAnimation.Properties.opacity,
-  },
-};
-
 const CalendarIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Rect
@@ -127,33 +105,14 @@ const ClockIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
   </Svg>
 );
 
-const RepeatIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
+const ChevronIcon = ({ color = colors.muted, size = ms(16) }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M17 1l4 4-4 4"
+      d="m9 18 6-6-6-6"
       stroke={color}
       strokeWidth={STROKE}
       strokeLinecap="round"
       strokeLinejoin="round"
-    />
-    <Path
-      d="M3 11V9a4 4 0 0 1 4-4h14"
-      stroke={color}
-      strokeWidth={STROKE}
-      strokeLinecap="round"
-    />
-    <Path
-      d="m7 23-4-4 4-4"
-      stroke={color}
-      strokeWidth={STROKE}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M21 13v2a4 4 0 0 1-4 4H3"
-      stroke={color}
-      strokeWidth={STROKE}
-      strokeLinecap="round"
     />
   </Svg>
 );
@@ -211,6 +170,25 @@ const REPEAT_OPTIONS: ReminderRepeat[] = [
   'weekdays',
   'monthly',
 ];
+
+const REPEAT_LABELS: Record<ReminderRepeat, string> = {
+  once: 'Once',
+  daily: 'Daily',
+  weekly: 'Weekly',
+  weekdays: 'Weekdays',
+  monthly: 'Monthly',
+};
+
+const CloseIcon = () => (
+  <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M18 6 6 18M6 6l12 12"
+      stroke={colors.subText}
+      strokeWidth={2.2}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
 
 const parseReminderDate = (reminder: ReminderItem) => {
   const base = new Date(`${reminder.dateKey}T12:00:00`);
@@ -277,6 +255,22 @@ const createDefaultTime = () => {
   return next;
 };
 
+const formatRelativeDate = (date: Date) => {
+  const todayKey = toDateKey(new Date());
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  if (toDateKey(date) === todayKey) {
+    return 'Today';
+  }
+
+  if (toDateKey(date) === toDateKey(tomorrow)) {
+    return 'Tomorrow';
+  }
+
+  return formatDateLabel(date);
+};
+
 const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
   ({ reminder, mode = 'edit', isSaving = false, onSave }, ref) => {
     const isCreateMode = mode === 'create';
@@ -286,7 +280,6 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [nameError, setNameError] = useState('');
-    const [descriptionError, setDescriptionError] = useState('');
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [selectedTime, setSelectedTime] = useState(createDefaultTime);
     const [repeat, setRepeat] = useState<ReminderRepeat>('once');
@@ -299,7 +292,6 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
       setName('');
       setDescription('');
       setNameError('');
-      setDescriptionError('');
       setSelectedDate(now);
       setSelectedTime(createDefaultTime());
       setRepeat('once');
@@ -321,7 +313,6 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
       setName(reminder.title);
       setDescription(reminder.description);
       setNameError('');
-      setDescriptionError('');
       setSelectedDate(parseReminderDate(reminder));
       setSelectedTime(parseReminderTime(reminder));
       setRepeat(reminder.repeat);
@@ -363,7 +354,6 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
         'hardwareBackPress',
         () => {
           if (pickerMode !== 'none') {
-            LayoutAnimation.configureNext(PICKER_TRANSITION);
             setPickerMode('none');
             return true;
           }
@@ -376,12 +366,11 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
     }, [handleClose, isSheetOpen, pickerMode]);
 
     const togglePicker = (mode: PickerMode) => {
-      LayoutAnimation.configureNext(PICKER_TRANSITION);
+      Keyboard.dismiss();
       setPickerMode(prev => (prev === mode ? 'none' : mode));
     };
 
     const closePicker = () => {
-      LayoutAnimation.configureNext(PICKER_TRANSITION);
       setPickerMode('none');
     };
 
@@ -408,12 +397,7 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
       let hasError = false;
 
       if (!trimmedName) {
-        setNameError('Enter a reminder name.');
-        hasError = true;
-      }
-
-      if (!trimmedDescription) {
-        setDescriptionError('Enter a description.');
+        setNameError('Give this reminder a name.');
         hasError = true;
       }
 
@@ -443,12 +427,15 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
       }
     };
 
+    const hasAnyAlert = notification || beeping || aiCalling;
+
     return (
+      <>
       <BottomSheetModal
         ref={ref}
         index={0}
         snapPoints={snapPoints}
-        enablePanDownToClose={!isSaving}
+        enablePanDownToClose={!isSaving && pickerMode === 'none'}
         keyboardBehavior="interactive"
         keyboardBlurBehavior="restore"
         android_keyboardInputMode="adjustResize"
@@ -472,16 +459,9 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.headerRow}>
-            <View style={styles.sourceBadge}>
-              <Text style={styles.sourceText}>
-                {isCreateMode
-                  ? 'New reminder'
-                  : reminder?.source === 'ai'
-                    ? 'AI Reminder'
-                    : 'Manual'}
-              </Text>
-            </View>
-
+            <Text style={styles.sheetTitle}>
+              {isCreateMode ? 'Add reminder' : 'Edit reminder'}
+            </Text>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={handleClose}
@@ -491,24 +471,15 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
               accessibilityRole="button"
               accessibilityLabel="Close"
             >
-              <Text style={styles.closeIcon}>×</Text>
+              <CloseIcon />
             </TouchableOpacity>
           </View>
-
-          <Text style={styles.sheetTitle}>
-            {isCreateMode ? 'Add reminder' : 'Edit reminder'}
-          </Text>
-          <Text style={styles.sheetHint}>
-            {isCreateMode
-              ? 'Fill in the details, schedule, and alerts for this reminder'
-              : 'Tap any field to update details, schedule, or alerts'}
-          </Text>
 
           <View style={styles.section}>
             <View
               style={[styles.fieldCard, nameError ? styles.fieldCardError : null]}
             >
-              <Text style={styles.fieldLabel}>Reminder name</Text>
+              <Text style={styles.fieldLabel}>Name</Text>
               <BottomSheetTextInput
                 value={name}
                 onChangeText={value => {
@@ -517,7 +488,7 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
                     setNameError('');
                   }
                 }}
-                placeholder="Reminder name"
+                placeholder="Take medicine, call mom..."
                 placeholderTextColor={colors.muted}
                 style={styles.input}
                 returnKeyType="next"
@@ -527,41 +498,55 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
               <Text style={styles.errorText}>{nameError}</Text>
             ) : null}
 
-            <View
-              style={[
-                styles.fieldCard,
-                descriptionError ? styles.fieldCardError : null,
-              ]}
-            >
-              <Text style={styles.fieldLabel}>Description</Text>
+            <View style={styles.fieldCard}>
+              <Text style={styles.fieldLabel}>Notes (optional)</Text>
               <BottomSheetTextInput
                 value={description}
-                onChangeText={value => {
-                  setDescription(value);
-                  if (descriptionError) {
-                    setDescriptionError('');
-                  }
-                }}
-                placeholder="Add a short description"
+                onChangeText={setDescription}
+                placeholder="Add extra context if you need it"
                 placeholderTextColor={colors.muted}
                 style={[styles.input, styles.multilineInput]}
                 multiline
                 textAlignVertical="top"
               />
             </View>
-            {descriptionError ? (
-              <Text style={styles.errorText}>{descriptionError}</Text>
-            ) : null}
+          </View>
 
-            <View style={styles.metaRow}>
-              <TouchableOpacity
-                activeOpacity={0.88}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>When</Text>
+
+            <View style={styles.scheduleCard}>
+              <SheetPressable
                 style={[
-                  styles.fieldCard,
-                  styles.metaCard,
-                  pickerMode === 'time' && styles.metaCardActive,
+                  styles.scheduleRow,
+                  pickerMode === 'date' && styles.scheduleRowActive,
+                ]}
+                onPress={() => togglePicker('date')}
+                accessibilityRole="button"
+                accessibilityLabel="Set reminder date"
+              >
+                <View style={styles.metaIcon}>
+                  <CalendarIcon color={colors.primary} />
+                </View>
+                <View style={styles.metaCopy}>
+                  <Text style={styles.fieldLabel}>Date</Text>
+                  <Text style={styles.fieldValue}>
+                    {formatRelativeDate(selectedDate)}
+                  </Text>
+                </View>
+                <ChevronIcon />
+              </SheetPressable>
+
+              <View style={styles.scheduleDivider} />
+
+              <SheetPressable
+                style={[
+                  styles.scheduleRow,
+                  pickerMode === 'time' && styles.scheduleRowActive,
                 ]}
                 onPress={() => togglePicker('time')}
+                accessibilityRole="button"
+                accessibilityLabel="Set reminder time"
               >
                 <View style={styles.metaIcon}>
                   <ClockIcon color={colors.primary} />
@@ -572,60 +557,13 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
                     {formatTimeLabel(selectedTime)}
                   </Text>
                 </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.88}
-                style={[
-                  styles.fieldCard,
-                  styles.metaCard,
-                  pickerMode === 'date' && styles.metaCardActive,
-                ]}
-                onPress={() => togglePicker('date')}
-              >
-                <View style={styles.metaIcon}>
-                  <CalendarIcon color={colors.primary} />
-                </View>
-                <View style={styles.metaCopy}>
-                  <Text style={styles.fieldLabel}>Date</Text>
-                  <Text style={styles.fieldValue}>
-                    {formatDateLabel(selectedDate)}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+                <ChevronIcon />
+              </SheetPressable>
             </View>
-
-            {pickerMode === 'time' ? (
-              <ReminderTimePicker
-                value={selectedTime}
-                onChange={handleTimeChange}
-                onComplete={closePicker}
-              />
-            ) : null}
-
-            {pickerMode === 'date' ? (
-              <ReminderDatePicker
-                value={selectedDate}
-                onChange={handleDateChange}
-                onComplete={closePicker}
-              />
-            ) : null}
           </View>
 
           <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionIcon}>
-                <RepeatIcon color={colors.primary} />
-              </View>
-              <View>
-                <Text style={[styles.sectionLabel, styles.sectionLabelInline]}>
-                  Repeat
-                </Text>
-                <Text style={styles.sectionHint}>
-                  Choose how often this reminder repeats
-                </Text>
-              </View>
-            </View>
+            <Text style={styles.sectionLabel}>Repeat</Text>
 
             <View style={styles.chipGrid}>
               {REPEAT_OPTIONS.map(option => {
@@ -655,67 +593,73 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Smart features</Text>
+            <Text style={styles.sectionLabel}>How Buddy should reach you</Text>
 
-            <View style={styles.featureCard}>
-              <View style={styles.featureLeft}>
-                <View style={[styles.featureIcon, styles.featureIconCall]}>
-                  <PhoneIcon color="#7C3AED" />
-                </View>
-                <View style={styles.featureCopy}>
-                  <Text style={styles.featureTitle}>AI Calling</Text>
-                  <Text style={styles.featureSubtitle}>
-                    Buddy can call you for this reminder
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={aiCalling}
-                onValueChange={setAiCalling}
-                trackColor={{ false: colors.border, true: '#C4B5FD' }}
-                thumbColor={aiCalling ? '#7C3AED' : colors.white}
-              />
-            </View>
-
-            <View style={styles.featureCard}>
-              <View style={styles.featureLeft}>
+            <View style={styles.alertCard}>
+              <View style={styles.alertRow}>
                 <View style={[styles.featureIcon, styles.featureIconNotify]}>
-                  <BellIcon color="#2563EB" />
+                  <BellIcon color={colors.primary} />
                 </View>
                 <View style={styles.featureCopy}>
                   <Text style={styles.featureTitle}>Notification</Text>
                   <Text style={styles.featureSubtitle}>
-                    Push alert when it’s time
+                    A banner on your phone at the scheduled time.
                   </Text>
                 </View>
+                <Switch
+                  value={notification}
+                  onValueChange={setNotification}
+                  trackColor={{ false: colors.border, true: colors.brandBorder }}
+                  thumbColor={notification ? colors.primary : colors.white}
+                />
               </View>
-              <Switch
-                value={notification}
-                onValueChange={setNotification}
-                trackColor={{ false: colors.border, true: '#93C5FD' }}
-                thumbColor={notification ? '#2563EB' : colors.white}
-              />
-            </View>
 
-            <View style={styles.featureCard}>
-              <View style={styles.featureLeft}>
+              <View style={styles.alertDivider} />
+
+              <View style={styles.alertRow}>
                 <View style={[styles.featureIcon, styles.featureIconBeep]}>
-                  <BeepIcon color="#0D9488" />
+                  <BeepIcon color={colors.success} />
                 </View>
                 <View style={styles.featureCopy}>
-                  <Text style={styles.featureTitle}>Beeping</Text>
+                  <Text style={styles.featureTitle}>Alarm sound</Text>
                   <Text style={styles.featureSubtitle}>
-                    Gentle sound cue with the alert
+                    Play a sound with the reminder so it is harder to miss.
                   </Text>
                 </View>
+                <Switch
+                  value={beeping}
+                  onValueChange={setBeeping}
+                  trackColor={{ false: colors.border, true: colors.successSoft }}
+                  thumbColor={beeping ? colors.success : colors.white}
+                />
               </View>
-              <Switch
-                value={beeping}
-                onValueChange={setBeeping}
-                trackColor={{ false: colors.border, true: '#5EEAD4' }}
-                thumbColor={beeping ? '#0D9488' : colors.white}
-              />
+
+              <View style={styles.alertDivider} />
+
+              <View style={styles.alertRow}>
+                <View style={[styles.featureIcon, styles.featureIconCall]}>
+                  <PhoneIcon color={colors.primaryMid} />
+                </View>
+                <View style={styles.featureCopy}>
+                  <Text style={styles.featureTitle}>Buddy call</Text>
+                  <Text style={styles.featureSubtitle}>
+                    Buddy calls you and reads the reminder aloud.
+                  </Text>
+                </View>
+                <Switch
+                  value={aiCalling}
+                  onValueChange={setAiCalling}
+                  trackColor={{ false: colors.border, true: colors.brandBorder }}
+                  thumbColor={aiCalling ? colors.primaryMid : colors.white}
+                />
+              </View>
             </View>
+
+            {hasAnyAlert ? null : (
+              <Text style={styles.alertWarning}>
+                No alert is on. Turn on at least one so you do not miss this.
+              </Text>
+            )}
           </View>
 
           <TouchableOpacity
@@ -734,6 +678,33 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
           </TouchableOpacity>
         </BottomSheetScrollView>
       </BottomSheetModal>
+
+      <ReminderPickerPopup
+        visible={pickerMode === 'time'}
+        title="Set time"
+        onClose={closePicker}
+        onDone={closePicker}
+      >
+        <ReminderTimePicker
+          embedded
+          value={selectedTime}
+          onChange={handleTimeChange}
+        />
+      </ReminderPickerPopup>
+
+      <ReminderPickerPopup
+        visible={pickerMode === 'date'}
+        title="Select date"
+        onClose={closePicker}
+        onDone={closePicker}
+      >
+        <ReminderDatePicker
+          embedded
+          value={selectedDate}
+          onChange={handleDateChange}
+        />
+      </ReminderPickerPopup>
+      </>
     );
   },
 );
@@ -744,14 +715,14 @@ export default ReminderDetailBottomSheet;
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.background,
     borderTopLeftRadius: ms(28),
     borderTopRightRadius: ms(28),
   },
 
   indicator: {
     backgroundColor: colors.border,
-    width: ms(48),
+    width: ms(44),
     height: ms(5),
     borderRadius: radii.pill,
   },
@@ -766,94 +737,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-
-  sourceBadge: {
-    backgroundColor: colors.primarySoft,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: ms(5),
-    borderRadius: ms(8),
-  },
-
-  sourceText: {
-    color: colors.primaryDark,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 0.3,
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
 
   closeButton: {
-    width: ms(34),
-    height: ms(34),
-    borderRadius: ms(17),
-    backgroundColor: colors.lightGray,
+    width: ms(32),
+    height: ms(32),
+    borderRadius: ms(16),
+    backgroundColor: colors.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  closeIcon: {
-    fontSize: fontSize['2xl'] + ms(4),
-    lineHeight: ms(24),
-    color: colors.muted,
-    marginTop: -1,
   },
 
   sheetTitle: {
     color: colors.text,
-    fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.extrabold,
-    letterSpacing: -0.4,
-  },
-
-  sheetHint: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.xl,
-    color: colors.subText,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    lineHeight: ms(18),
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
   },
 
   section: {
-    marginBottom: spacing.xl,
-  },
-
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginBottom: spacing.md,
-  },
-
-  sectionIcon: {
-    width: ms(34),
-    height: ms(34),
-    borderRadius: ms(11),
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: spacing['2xl'],
   },
 
   sectionLabel: {
     color: colors.text,
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
-    marginBottom: spacing.xs,
-  },
-
-  sectionLabelInline: {
-    marginBottom: spacing.xxs,
-  },
-
-  sectionHint: {
-    color: colors.muted,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
+    marginBottom: spacing.md,
   },
 
   fieldCard: {
-    backgroundColor: colors.inputBg,
+    backgroundColor: colors.white,
     borderRadius: radii.xl,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
@@ -891,6 +808,42 @@ const styles = StyleSheet.create({
     lineHeight: ms(20),
   },
 
+  scheduleCard: {
+    backgroundColor: colors.white,
+    borderRadius: radii.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+
+  scheduleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    minHeight: ms(64),
+  },
+
+  scheduleRowActive: {
+    backgroundColor: colors.primarySoft,
+  },
+
+  scheduleDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginLeft: ms(58),
+  },
+
+  metaIcon: {
+    width: ms(34),
+    height: ms(34),
+    borderRadius: ms(11),
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   input: {
     color: colors.text,
     fontSize: fontSize.base,
@@ -901,36 +854,9 @@ const styles = StyleSheet.create({
   },
 
   multilineInput: {
-    minHeight: ms(72),
+    minHeight: ms(56),
     lineHeight: ms(20),
     fontWeight: fontWeight.medium,
-  },
-
-  metaRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-
-  metaCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-
-  metaCardActive: {
-    borderColor: colors.brandBorder,
-    backgroundColor: colors.primarySoft,
-  },
-
-  metaIcon: {
-    width: ms(34),
-    height: ms(34),
-    borderRadius: ms(11),
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 
   metaCopy: {
@@ -945,10 +871,10 @@ const styles = StyleSheet.create({
   },
 
   chip: {
-    minHeight: ms(34),
+    minHeight: layout.chipHeight,
     paddingHorizontal: spacing.lg,
     borderRadius: radii.pill,
-    backgroundColor: colors.inputBg,
+    backgroundColor: colors.white,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     alignItems: 'center',
@@ -956,8 +882,8 @@ const styles = StyleSheet.create({
   },
 
   chipActive: {
-    backgroundColor: colors.text,
-    borderColor: colors.text,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
 
   chipText: {
@@ -970,26 +896,34 @@ const styles = StyleSheet.create({
     color: colors.white,
   },
 
-  featureCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  alertCard: {
     backgroundColor: colors.white,
     borderRadius: radii.xl,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.sm,
-    gap: spacing.md,
+    overflow: 'hidden',
   },
 
-  featureLeft: {
-    flex: 1,
+  alertRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    minWidth: 0,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+
+  alertDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginLeft: ms(62),
+  },
+
+  alertWarning: {
+    marginTop: spacing.md,
+    color: colors.warningText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+    lineHeight: ms(18),
   },
 
   featureIcon: {
@@ -1001,15 +935,15 @@ const styles = StyleSheet.create({
   },
 
   featureIconCall: {
-    backgroundColor: '#F3EEFF',
+    backgroundColor: colors.purpleLight,
   },
 
   featureIconNotify: {
-    backgroundColor: '#E8F1FE',
+    backgroundColor: colors.primarySoft,
   },
 
   featureIconBeep: {
-    backgroundColor: '#E3F8F5',
+    backgroundColor: colors.successSoft,
   },
 
   featureCopy: {
@@ -1032,7 +966,7 @@ const styles = StyleSheet.create({
   },
 
   saveButton: {
-    minHeight: ms(52),
+    minHeight: layout.buttonHeight,
     borderRadius: radii.xl,
     backgroundColor: colors.primary,
     alignItems: 'center',

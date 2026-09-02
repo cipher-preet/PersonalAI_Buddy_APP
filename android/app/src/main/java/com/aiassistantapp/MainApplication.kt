@@ -1,6 +1,7 @@
 package com.aiassistantapp
 
 import android.app.Application
+import com.aiassistantapp.notifications.ReminderNotificationHelper
 import com.aiassistantapp.voice.BuddyListeningPackage
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
@@ -23,6 +24,7 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
+    ReminderNotificationHelper.ensureChannels(this)
     loadReactNative(this)
   }
 }

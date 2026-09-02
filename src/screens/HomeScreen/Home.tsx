@@ -15,8 +15,9 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import Header from './components/Header';
 import QuickActionsStrip from './components/QuickActionsStrip';
 import TopCard from './components/TopCard';
-import SpaceCard from './components/SpaceCard';
+import SpacesGrid from './components/SpacesGrid';
 import SpacesEmptyState from './components/SpacesEmptyState';
+import SpaceDetailBottomSheet from './components/spacedetail/SpaceDetailBottomSheet';
 import {
   AddSpace,
   MicIcon,
@@ -35,6 +36,7 @@ import {
   useDeleteSpaceMutation,
   useGetUserActiveSpaceQuery,
   useGetUserSpacesQuery,
+  useGetSpaceStatsQuery,
 } from '../../store/api/home';
 import {
   endListeningSession,
@@ -112,26 +114,6 @@ const isTerminalProcessingStatus = (state?: SpaceProcessingState) => {
   return primaryStatus ? TERMINAL_PROCESSING_STATUSES.has(primaryStatus) : false;
 };
 
-const getSpaceProcessingDescription = (state?: SpaceProcessingState) => {
-  const label = getStatusLabel(getPrimaryProcessingStatus(state));
-
-  return label ? `Current conversation: ${label}` : undefined;
-};
-
-const formatCreatedAt = (createdAt: string) => {
-  const date = new Date(createdAt);
-
-  if (Number.isNaN(date.getTime())) {
-    return '';
-  }
-
-  return date.toLocaleDateString('en-GB', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
-};
-
 type VoiceStartData = {
   space?: Space;
   mode?: string;
@@ -149,6 +131,7 @@ const Home = () => {
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const spaceSheetRef = useRef<BottomSheetModal>(null);
+  const spaceDetailRef = useRef<BottomSheetModal>(null);
 
   const recordingContextRef = useRef<RecordingContext | null>(null);
   const uploadQueueRef = useRef<Promise<void>>(Promise.resolve());
@@ -166,6 +149,7 @@ const Home = () => {
   const [deletingSpaceId, setDeletingSpaceId] = useState('');
   const [cursor, setCursor] = useState('');
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
   const userId = useAppSelector(state => state.auth.userId) ?? '';
   const authToken = useAppSelector(state => state.auth.token);
   const { showToast } = useToast();
@@ -190,6 +174,15 @@ const Home = () => {
     { skip: !userId },
   );
   const isInitialSpacesLoading = isFetchingSpaces && spaces.length === 0;
+  const {
+    data: selectedSpaceStatsData,
+    isFetching: isFetchingSelectedSpaceStats,
+    isError: isSelectedSpaceStatsError,
+    refetch: refetchSelectedSpaceStats,
+  } = useGetSpaceStatsQuery(
+    { userId, spaceId: selectedSpace?._id ?? '' },
+    { skip: !userId || !selectedSpace?._id },
+  );
 
   useEffect(() => {
     const response = spacesData?.data?.data;
@@ -569,49 +562,49 @@ const Home = () => {
   );
 
   const handleAskBuddy = useCallback(() => {
-    navigation.navigate('AI');
-  }, [navigation]);
+    if (selectedSpace) {
+      navigation.navigate('AI', {
+        spaceId: selectedSpace._id,
+        spaceName: selectedSpace.spacename,
+      });
+      return;
+    }
 
-  const renderSpaceItem = useCallback(
-    ({ item }: { item: Space }) => {
-      const processingState = spaceProcessing[item._id];
-      const processingDescription =
-        getSpaceProcessingDescription(processingState);
+    navigation.navigate({
+      name: 'AI',
+      params: {},
+      merge: false,
+    });
+  }, [navigation, selectedSpace]);
 
-      return (
-        <SpaceCard
-          spaceId={item._id}
-          title={item.spacename}
-          description={
-            processingDescription ||
-            item.description ||
-            'AI memory workspace for notes and tasks'
-          }
-          badgeText={getStatusLabel(
-            getPrimaryProcessingStatus(processingState),
-          )}
-          time={formatCreatedAt(item.createdAt)}
-          isListening={item.isListning}
-          isDeleting={deletingSpaceId === item._id}
-          onDelete={() => handleDeleteSpace(item)}
-          onOpenNotes={() =>
-            navigation.navigate('Notes', { spaceId: item._id })
-          }
-          onOpenTasks={() =>
-            navigation.navigate('Tasks', { spaceId: item._id })
-          }
-          onAskBuddy={handleAskBuddy}
-        />
+  const getSpaceSubtitle = useCallback(
+    (space: Space) => {
+      if (space.isListning) {
+        return 'Listening';
+      }
+
+      const processingLabel = getStatusLabel(
+        getPrimaryProcessingStatus(spaceProcessing[space._id]),
       );
+      if (processingLabel) {
+        return processingLabel;
+      }
+
+      if (typeof space.tasksCount === 'number') {
+        return `${space.tasksCount} task${space.tasksCount === 1 ? '' : 's'}`;
+      }
+
+      return 'Workspace';
     },
-    [
-      deletingSpaceId,
-      handleAskBuddy,
-      handleDeleteSpace,
-      navigation,
-      spaceProcessing,
-    ],
+    [spaceProcessing],
   );
+
+  const handleSpacePress = useCallback((space: Space) => {
+    setSelectedSpace(space);
+    requestAnimationFrame(() => {
+      spaceDetailRef.current?.present();
+    });
+  }, []);
 
   const keyExtractor = useCallback((item: Space) => item._id, []);
 
@@ -659,24 +652,30 @@ const Home = () => {
 
         <QuickActionsStrip />
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>My Spaces</Text>
-        </View>
-
         {isInitialSpacesLoading ? (
           <View style={styles.spacesLoader}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.spacesLoaderText}>Loading spaces...</Text>
           </View>
-        ) : null}
-
-        {!isInitialSpacesLoading && spaces.length === 0 ? (
+        ) : spaces.length === 0 ? (
           <SpacesEmptyState onCreatePress={openSpaceSheet} />
-        ) : null}
+        ) : (
+          <SpacesGrid
+            spaces={spaces}
+            deletingSpaceId={deletingSpaceId}
+            getSubtitle={getSpaceSubtitle}
+            onSpacePress={handleSpacePress}
+            onDeleteSpace={handleDeleteSpace}
+          />
+        )}
       </View>
     ),
     [
       activeSpace?.spacename,
+      deletingSpaceId,
+      getSpaceSubtitle,
+      handleDeleteSpace,
+      handleSpacePress,
       handleStopListening,
       isFetchingActiveSpace,
       isInitialSpacesLoading,
@@ -684,7 +683,7 @@ const Home = () => {
       isVoiceActive,
       openSpaceSheet,
       openVoiceSheet,
-      spaces.length,
+      spaces,
     ],
   );
 
@@ -729,9 +728,9 @@ const Home = () => {
     >
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <FlatList
-          data={isInitialSpacesLoading || spaces.length === 0 ? [] : spaces}
+          data={[] as Space[]}
           keyExtractor={keyExtractor}
-          renderItem={renderSpaceItem}
+          renderItem={() => null}
           ListHeaderComponent={listHeader}
           ListFooterComponent={listFooter}
           showsVerticalScrollIndicator={false}
@@ -745,6 +744,25 @@ const Home = () => {
         />
 
         <CreateSpaceBottomSheet ref={spaceSheetRef} />
+        <SpaceDetailBottomSheet
+          ref={spaceDetailRef}
+          space={selectedSpace}
+          stats={selectedSpaceStatsData?.data}
+          isStatsLoading={isFetchingSelectedSpaceStats}
+          isStatsError={isSelectedSpaceStatsError}
+          onRetryStats={refetchSelectedSpaceStats}
+          onNavigateNotes={() => {
+            if (selectedSpace) {
+              navigation.navigate('Notes', { spaceId: selectedSpace._id });
+            }
+          }}
+          onNavigateTasks={() => {
+            if (selectedSpace) {
+              navigation.navigate('Tasks', { spaceId: selectedSpace._id });
+            }
+          }}
+          onAskBuddy={handleAskBuddy}
+        />
         <VoiceAssistantSheet
           ref={bottomSheetRef}
           onStart={handleStartListening}
@@ -809,19 +827,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: mvs(16),
-  },
-
-  sectionHeader: {
-    marginTop: mvs(14),
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  sectionTitle: {
-    fontSize: fontSize.xl,
-    color: colors.text,
-    fontWeight: fontWeight.bold,
   },
 
   spacesLoader: {

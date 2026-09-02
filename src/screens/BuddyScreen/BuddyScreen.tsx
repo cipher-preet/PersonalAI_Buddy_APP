@@ -7,6 +7,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import {
   SafeAreaView,
@@ -37,12 +39,19 @@ import type {
   ChatSessionDto,
 } from '../../store/api/chat';
 import { chatListPerf, ms, spacing } from '../../theme';
+import type { MainTabParamList } from '../../navigation/types';
 
 const SUGGESTIONS = [
   'Summarize my day',
   'Plan my tasks for tomorrow',
   'Help me prepare for a meeting',
   'What should I focus on next?',
+];
+
+const SPACE_SUGGESTIONS = [
+  'Summarize the notes in this space',
+  'Which tasks are still open?',
+  'What should I focus on next here?',
 ];
 
 const formatTime = () =>
@@ -141,10 +150,14 @@ const mergeSessions = (
 
 const BuddyScreen = () => {
   const insets = useSafeAreaInsets();
+  const route = useRoute<RouteProp<MainTabParamList, 'AI'>>();
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const inputRef = useRef<TextInput>(null);
   const userId = useAppSelector(state => state.auth.userId);
   const userName = useAppSelector(state => state.auth.name);
+  const spaceId = route.params?.spaceId;
+  const spaceName = route.params?.spaceName?.trim() || null;
+  const lastOpenedSpaceIdRef = useRef<string | undefined>(undefined);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [input, setInput] = useState('');
@@ -160,6 +173,18 @@ const BuddyScreen = () => {
   const [loadingMoreSessions, setLoadingMoreSessions] = useState(false);
   const [showScrollToBottom, setShowScrollToBottom] = useState(false);
   const isNearBottomRef = useRef(true);
+
+  useEffect(() => {
+    if (!spaceId || spaceId === lastOpenedSpaceIdRef.current) {
+      return;
+    }
+
+    lastOpenedSpaceIdRef.current = spaceId;
+    setActiveSessionId(null);
+    setInput('');
+    setActiveChatLoading(false);
+    setShowScrollToBottom(false);
+  }, [spaceId]);
 
   const {
     data: sessionsResponse,
@@ -358,7 +383,10 @@ const BuddyScreen = () => {
       return activeSessionId;
     }
     try {
-      const response = await createChatSession({ userId }).unwrap();
+      const response = await createChatSession({
+        userId,
+        ...(spaceId ? { spaceId } : {}),
+      }).unwrap();
       const session = mapSessionDto(response.data);
       setSessions(prev =>
         mergeSessions(
@@ -379,7 +407,7 @@ const BuddyScreen = () => {
       }
       throw error;
     }
-  }, [activeSessionId, createChatSession, recoverLatestSession, userId]);
+  }, [activeSessionId, createChatSession, recoverLatestSession, spaceId, userId]);
 
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
@@ -422,6 +450,7 @@ const BuddyScreen = () => {
         userId: userId || '',
         chatId: sessionId,
         question: trimmed,
+        ...(spaceId ? { spaceId } : {}),
       }).unwrap();
       const assistantMessage: ChatMessage = {
         id: `${Date.now()}-assistant`,
@@ -459,6 +488,7 @@ const BuddyScreen = () => {
     sendingMessage,
     updateSessionById,
     userId,
+    spaceId,
   ]);
 
   const handleSuggestionPress = (suggestion: string) => {
@@ -606,13 +636,15 @@ const BuddyScreen = () => {
         <Header
           onHistoryPress={handleOpenHistory}
           showTitle={!showLanding}
+          contextLabel={spaceName}
         />
 
         <View style={styles.chatArea}>
           {showLanding ? (
             <BuddyLanding
               userName={userName}
-              suggestions={SUGGESTIONS}
+              spaceName={spaceName}
+              suggestions={spaceId ? SPACE_SUGGESTIONS : SUGGESTIONS}
               onSuggestionPress={handleSuggestionPress}
             />
           ) : (

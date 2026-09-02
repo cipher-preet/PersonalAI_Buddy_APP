@@ -18,8 +18,12 @@ type Props = {
   onAddPress: () => void;
 };
 
+const ACTION_SIZE = ms(68);
+const ACTION_RADIUS = ACTION_SIZE / 2;
+const ICON_SIZE = ms(26);
+
 const PlusIcon = () => (
-  <Svg width={ms(26)} height={ms(26)} viewBox="0 0 24 24" fill="none">
+  <Svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 24 24" fill="none">
     <Path
       d="M12 5v14M5 12h14"
       stroke={colors.white}
@@ -77,7 +81,7 @@ const ReminderMicButton = ({ bottomInset, onPress, onAddPress }: Props) => {
             end={{ x: 1, y: 1 }}
             style={styles.micButton}
           >
-            <MicIcon width={ms(28)} height={ms(28)} color={colors.white} />
+            <MicIcon width={ICON_SIZE} height={ICON_SIZE} color={colors.white} />
           </LinearGradient>
         </Pressable>
       </View>
@@ -111,13 +115,13 @@ const styles = StyleSheet.create({
   },
 
   addPressable: {
-    borderRadius: ms(32),
+    borderRadius: ACTION_RADIUS,
   },
 
   addButton: {
-    width: ms(64),
-    height: ms(64),
-    borderRadius: ms(32),
+    width: ACTION_SIZE,
+    height: ACTION_SIZE,
+    borderRadius: ACTION_RADIUS,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.primaryMid,
@@ -128,13 +132,13 @@ const styles = StyleSheet.create({
   },
 
   micPressable: {
-    borderRadius: ms(36),
+    borderRadius: ACTION_RADIUS,
   },
 
   micButton: {
-    width: ms(72),
-    height: ms(72),
-    borderRadius: ms(36),
+    width: ACTION_SIZE,
+    height: ACTION_SIZE,
+    borderRadius: ACTION_RADIUS,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: colors.primaryMid,

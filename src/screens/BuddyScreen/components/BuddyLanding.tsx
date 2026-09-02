@@ -20,6 +20,7 @@ import {
 
 type Props = {
   userName?: string | null;
+  spaceName?: string | null;
   suggestions: string[];
   onSuggestionPress: (suggestion: string) => void;
 };
@@ -66,11 +67,13 @@ const ArrowUpIcon = ({ color = colors.primary }: { color?: string }) => (
 
 const BuddyLanding = ({
   userName,
+  spaceName,
   suggestions,
   onSuggestionPress,
 }: Props) => {
   const firstName = userName?.trim()?.split(/\s+/)[0];
   const greetingName = firstName || 'there';
+  const scopedToSpace = Boolean(spaceName?.trim());
 
   return (
     <View style={styles.root}>
@@ -81,16 +84,33 @@ const BuddyLanding = ({
       >
         <View style={styles.hero}>
           <BuddyAvatar />
-          <Text style={styles.greeting}>
-            Hi! I'm Buddy,{'\n'}your personal assistant
-          </Text>
-          <Text style={styles.greetingSub}>
-            Ask me anything, {greetingName}.
-          </Text>
+          {scopedToSpace ? (
+            <>
+              <Text style={styles.kicker}>Asking about this space</Text>
+              <Text style={styles.greeting} numberOfLines={2}>
+                {spaceName}
+              </Text>
+              <Text style={styles.greetingSub}>
+                I can summarize notes, review open tasks, and suggest next steps.
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.greeting}>
+                How can I help,{'\n'}
+                {greetingName}?
+              </Text>
+              <Text style={styles.greetingSub}>
+                Ask about notes, tasks, reminders, or what to focus on next.
+              </Text>
+            </>
+          )}
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>Start a chat</Text>
+          <Text style={styles.sectionLabel}>
+            {scopedToSpace ? 'Try a prompt' : 'Suggested prompts'}
+          </Text>
         </View>
 
         <View style={styles.chipsWrap}>
@@ -146,9 +166,19 @@ const styles = StyleSheet.create({
     width: ms(72),
     height: ms(72),
     borderRadius: ms(36),
-    backgroundColor: '#EEF2FF',
+    backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  kicker: {
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+    color: colors.primary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
 
   greeting: {
@@ -192,7 +222,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: colors.primaryLight,
     borderRadius: radii.xl,
     paddingVertical: spacing.md,
     paddingLeft: spacing.lg,

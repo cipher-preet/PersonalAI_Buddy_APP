@@ -17,6 +17,7 @@ import {
 type Props = {
   onHistoryPress?: () => void;
   showTitle?: boolean;
+  contextLabel?: string | null;
 };
 
 const CloseIcon = ({ color = colors.text }: { color?: string }) => (
@@ -31,7 +32,11 @@ const CloseIcon = ({ color = colors.text }: { color?: string }) => (
   </Svg>
 );
 
-const Header = ({ onHistoryPress, showTitle = false }: Props) => {
+const Header = ({
+  onHistoryPress,
+  showTitle = false,
+  contextLabel,
+}: Props) => {
   const navigation = useNavigation();
 
   const handleClose = () => {
@@ -54,6 +59,11 @@ const Header = ({ onHistoryPress, showTitle = false }: Props) => {
       {showTitle ? (
         <View style={styles.center}>
           <Text style={styles.title}>Buddy</Text>
+          {contextLabel ? (
+            <Text style={styles.subtitle} numberOfLines={1}>
+              {contextLabel}
+            </Text>
+          ) : null}
         </View>
       ) : (
         <View style={styles.center} />
@@ -98,6 +108,13 @@ const styles = StyleSheet.create({
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
     color: COLORS.text,
+  },
+
+  subtitle: {
+    marginTop: spacing.xxs,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    color: colors.subText,
   },
 
   iconButton: {

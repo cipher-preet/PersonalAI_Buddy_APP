@@ -1,11 +1,12 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { MySpcaes } from '../../../../../styles/icons';
+import Svg, { Path } from 'react-native-svg';
+
+import SpaceFolderIcon from '../SpaceFolderIcon';
 import {
   colors,
   fontSize,
   fontWeight,
-  layout,
   ms,
   radii,
   spacing,
@@ -16,52 +17,74 @@ type Props = {
   description?: string;
   createdAt: string;
   isListening: boolean;
-  accentColor: string;
   onClose: () => void;
 };
+
+const CloseIcon = () => (
+  <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M18 6 6 18M6 6l12 12"
+      stroke={colors.subText}
+      strokeWidth={2.2}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
 
 const SpaceSheetHeader = ({
   title,
   description,
   createdAt,
   isListening,
-  accentColor,
   onClose,
 }: Props) => {
+  const trimmedDescription = description?.trim();
+
   return (
     <View style={styles.container}>
-      <View style={styles.left}>
-        <View style={[styles.icon, { backgroundColor: accentColor }]}>
-          <MySpcaes width={ms(16)} height={ms(16)} color={colors.black} />
+      <View style={styles.topRow}>
+        <View
+          style={[
+            styles.folderWrap,
+            isListening && styles.folderWrapListening,
+          ]}
+        >
+          <SpaceFolderIcon size={ms(34)} listening={isListening} />
         </View>
-
-        <View style={styles.textWrap}>
+        <View style={styles.copy}>
+          <Text style={styles.kicker}>Workspace</Text>
           <Text style={styles.title} numberOfLines={1}>
             {title}
           </Text>
-          <Text style={styles.meta} numberOfLines={1}>
-            {description || `Created ${createdAt}`}
+          <Text style={styles.created} numberOfLines={1}>
+            Created {createdAt}
           </Text>
         </View>
-      </View>
-
-      <View style={styles.right}>
-        <View style={[styles.statusPill, isListening && styles.statusLive]}>
-          {isListening ? <View style={styles.liveDot} /> : null}
-          <Text style={[styles.statusText, isListening && styles.statusLiveText]}>
-            {isListening ? 'Live' : 'Idle'}
-          </Text>
-        </View>
-
         <TouchableOpacity
           style={styles.closeButton}
           onPress={onClose}
           activeOpacity={0.75}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
         >
-          <Text style={styles.closeIcon}>×</Text>
+          <CloseIcon />
         </TouchableOpacity>
       </View>
+
+      <Text style={styles.description} numberOfLines={2}>
+        {trimmedDescription ||
+          'Use this workspace to capture notes, track tasks, and chat with Buddy.'}
+      </Text>
+
+      {isListening ? (
+        <View style={styles.listeningPill}>
+          <View style={styles.liveDot} />
+          <Text style={styles.listeningText}>
+            Buddy is listening in this space
+          </Text>
+        </View>
+      ) : null}
     </View>
   );
 };
@@ -70,96 +93,97 @@ export default SpaceSheetHeader;
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-    gap: spacing.md,
+    marginBottom: spacing.xs,
   },
 
-  left: {
-    flex: 1,
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
   },
 
-  icon: {
-    width: layout.iconButtonSm,
-    height: layout.iconButtonSm,
-    borderRadius: ms(14),
+  folderWrap: {
+    width: ms(52),
+    height: ms(52),
+    borderRadius: ms(16),
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  textWrap: {
+  folderWrapListening: {
+    backgroundColor: colors.successSoft,
+  },
+
+  copy: {
     flex: 1,
+    minWidth: 0,
+  },
+
+  kicker: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    color: colors.primary,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
 
   title: {
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    color: colors.black,
-    letterSpacing: -0.3,
+    marginTop: spacing.xxs,
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.extrabold,
+    color: colors.text,
+    letterSpacing: -0.4,
   },
 
-  meta: {
+  created: {
     marginTop: spacing.xxs,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.muted,
+  },
+
+  description: {
+    marginTop: spacing.lg,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
     color: colors.subText,
+    lineHeight: ms(18),
   },
 
-  right: {
+  listeningPill: {
+    marginTop: spacing.md,
+    alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-  },
-
-  statusPill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    gap: spacing.sm,
+    backgroundColor: colors.successSoft,
     borderRadius: radii.pill,
-    backgroundColor: colors.lightGray,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-
-  statusLive: {
-    backgroundColor: colors.inputBg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
   },
 
   liveDot: {
-    width: ms(5),
-    height: ms(5),
-    borderRadius: ms(3),
-    backgroundColor: colors.successBright,
+    width: ms(7),
+    height: ms(7),
+    borderRadius: ms(4),
+    backgroundColor: colors.success,
   },
 
-  statusText: {
-    fontSize: ms(10),
+  listeningText: {
+    color: colors.successText,
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
-    color: colors.subText,
-  },
-
-  statusLiveText: {
-    color: colors.success,
   },
 
   closeButton: {
-    width: ms(30),
-    height: ms(30),
-    borderRadius: ms(15),
+    width: ms(32),
+    height: ms(32),
+    borderRadius: ms(16),
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.lightGray,
-  },
-
-  closeIcon: {
-    fontSize: fontSize['2xl'],
-    lineHeight: ms(20),
-    color: colors.subText,
-    marginTop: -ms(1),
+    backgroundColor: colors.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
   },
 });

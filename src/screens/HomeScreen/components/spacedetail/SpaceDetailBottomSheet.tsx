@@ -12,11 +12,7 @@ import {
   BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
 import { Space, SpaceStats } from '../../../../store/api/home';
-import {
-  AIChatIcons,
-  NotesIcon,
-  TaskIcons,
-} from '../../../../../styles/icons';
+import { NotesIcon, TaskIcons } from '../../../../../styles/icons';
 import SpaceSheetHeader from './SpaceSheetHeader';
 import SpaceOverviewCard from './SpaceOverviewCard';
 import SpaceActionList from './SpaceActionList';
@@ -30,7 +26,6 @@ import {
 
 type Props = {
   space: Space | null;
-  accentColor?: string;
   stats?: SpaceStats;
   isStatsLoading?: boolean;
   isStatsError?: boolean;
@@ -44,7 +39,7 @@ const formatDate = (value: string) => {
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) {
-    return 'Recently';
+    return 'recently';
   }
 
   return date.toLocaleDateString('en-US', {
@@ -54,11 +49,13 @@ const formatDate = (value: string) => {
   });
 };
 
+const countLabel = (count: number, singular: string, plural: string) =>
+  `${count} ${count === 1 ? singular : plural}`;
+
 const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
   (
     {
       space,
-      accentColor = colors.primarySoft,
       stats,
       isStatsLoading = false,
       isStatsError = false,
@@ -69,7 +66,7 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
     },
     ref,
   ) => {
-    const snapPoints = useMemo(() => ['56%'], []);
+    const snapPoints = useMemo(() => ['72%'], []);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 
     const handleClose = useCallback(() => {
@@ -85,7 +82,7 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
           appearsOnIndex={0}
           disappearsOnIndex={-1}
           pressBehavior="close"
-          opacity={0.38}
+          opacity={0.4}
         />
       ),
       [],
@@ -122,27 +119,16 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
       onAskBuddy();
     };
 
-    if (!space) {
-      return (
-        <BottomSheetModal
-          ref={ref}
-          index={0}
-          snapPoints={snapPoints}
-          enablePanDownToClose
-          backdropComponent={renderBackdrop}
-          backgroundStyle={styles.sheetBackground}
-          handleIndicatorStyle={styles.indicator}
-          onChange={index => setIsSheetOpen(index >= 0)}
-        >
-          <></>
-        </BottomSheetModal>
-      );
-    }
+    const notesCount = stats?.notesCount ?? 0;
+    const tasksCount = stats?.tasksCount ?? 0;
 
     const actions = [
       {
         id: 'notes',
-        label: 'Open Notes',
+        label: 'Notes',
+        subtitle: isStatsLoading
+          ? 'Open captured notes'
+          : countLabel(notesCount, 'note saved', 'notes saved'),
         icon: (
           <NotesIcon width={ms(16)} height={ms(16)} color={colors.primary} />
         ),
@@ -150,24 +136,14 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
       },
       {
         id: 'tasks',
-        label: 'Open Tasks',
+        label: 'Tasks',
+        subtitle: isStatsLoading
+          ? 'Open follow-up tasks'
+          : countLabel(tasksCount, 'task tracked', 'tasks tracked'),
         icon: (
           <TaskIcons width={ms(16)} height={ms(16)} color={colors.primary} />
         ),
         onPress: handleTasks,
-      },
-      {
-        id: 'buddy',
-        label: 'Ask Buddy',
-        icon: (
-          <AIChatIcons
-            width={ms(17)}
-            height={ms(17)}
-            color={colors.white}
-          />
-        ),
-        onPress: handleBuddy,
-        variant: 'primary' as const,
       },
     ];
 
@@ -182,31 +158,36 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
         handleIndicatorStyle={styles.indicator}
         onChange={index => setIsSheetOpen(index >= 0)}
       >
-        <BottomSheetScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          <SpaceSheetHeader
-            title={space.spacename}
-            description={space.description}
-            createdAt={formatDate(space.createdAt)}
-            isListening={space.isListning}
-            accentColor={accentColor}
-            onClose={handleClose}
-          />
+        {space ? (
+          <BottomSheetScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            <SpaceSheetHeader
+              title={space.spacename}
+              description={space.description}
+              createdAt={formatDate(space.createdAt)}
+              isListening={space.isListning}
+              onClose={handleClose}
+            />
 
-          <SpaceOverviewCard
-            notesCount={stats?.notesCount ?? 0}
-            tasksCount={stats?.tasksCount ?? 0}
-            tasksCompleted={stats?.doneTasksCount ?? 0}
-            completionRate={stats?.completionPercentage ?? 0}
-            isLoading={isStatsLoading}
-            isError={isStatsError}
-            onRetry={onRetryStats}
-          />
+            <SpaceOverviewCard
+              notesCount={notesCount}
+              tasksCount={tasksCount}
+              tasksCompleted={stats?.doneTasksCount ?? 0}
+              completionRate={stats?.completionPercentage ?? 0}
+              isLoading={isStatsLoading}
+              isError={isStatsError}
+              onRetry={onRetryStats}
+            />
 
-          <SpaceActionList actions={actions} />
-        </BottomSheetScrollView>
+            <SpaceActionList
+              spaceName={space.spacename}
+              actions={actions}
+              onAskBuddy={handleBuddy}
+            />
+          </BottomSheetScrollView>
+        ) : null}
       </BottomSheetModal>
     );
   },
@@ -222,16 +203,16 @@ const styles = StyleSheet.create({
   },
 
   indicator: {
-    backgroundColor: colors.muted,
-    width: ms(56),
+    backgroundColor: colors.border,
+    width: ms(44),
     height: ms(5),
     borderRadius: radii.pill,
   },
 
   scrollContent: {
-    paddingHorizontal: ms(18),
-    paddingTop: spacing.xxs,
-    paddingBottom: Platform.OS === 'ios' ? vSpacing['2xl'] : vSpacing.xl,
-    gap: spacing.lg,
+    paddingHorizontal: ms(20),
+    paddingTop: spacing.xs,
+    paddingBottom: Platform.OS === 'ios' ? vSpacing['3xl'] : vSpacing['2xl'],
+    gap: spacing['2xl'],
   },
 });

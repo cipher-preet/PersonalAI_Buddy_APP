@@ -16,6 +16,7 @@ import RootNavigator from './src/navigation/RootNavigator';
 import { ToastProvider, useToast } from './src/store/context/ToastContext';
 import { store } from './src/store/store';
 import { configureGoogleSignIn } from './src/services/googleSignInService';
+import { setupReminderNotifications } from './src/services/reminderNotificationService';
 
 enableScreens(true);
 enableFreeze(true);
@@ -65,6 +66,7 @@ const AppContent = () => {
 const App = () => {
   useEffect(() => {
     configureGoogleSignIn();
+    return setupReminderNotifications();
   }, []);
 
   return (

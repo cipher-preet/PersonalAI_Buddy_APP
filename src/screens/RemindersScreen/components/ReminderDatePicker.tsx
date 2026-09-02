@@ -22,10 +22,11 @@ type Props = {
   value: Date;
   onChange: (date: Date) => void;
   onComplete?: () => void;
+  embedded?: boolean;
 };
 
-const WEEKDAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-const CELL_HEIGHT = ms(40);
+const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const CELL = ms(36);
 
 const Chevron = ({
   direction,
@@ -50,53 +51,59 @@ const sameDay = (a: Date, b: Date) =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate();
 
+const startOfDay = (date: Date) =>
+  new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+const addDays = (date: Date, days: number) => {
+  const next = startOfDay(date);
+  next.setDate(next.getDate() + days);
+  return next;
+};
+
 const startOfMonth = (date: Date) =>
   new Date(date.getFullYear(), date.getMonth(), 1);
 
 const buildWeeks = (cursor: Date) => {
-  const year = cursor.getFullYear();
-  const month = cursor.getMonth();
-  const leadingBlanks = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const first = startOfMonth(cursor);
+  const gridStart = addDays(first, -first.getDay());
+  const weeks: Date[][] = [];
+  const cursorDay = new Date(gridStart);
 
-  const cells: Array<Date | null> = [];
-
-  for (let i = 0; i < leadingBlanks; i += 1) {
-    cells.push(null);
-  }
-
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    cells.push(new Date(year, month, day));
-  }
-
-  while (cells.length % 7 !== 0) {
-    cells.push(null);
-  }
-
-  const weeks: Array<Array<Date | null>> = [];
-
-  for (let i = 0; i < cells.length; i += 7) {
-    weeks.push(cells.slice(i, i + 7));
+  for (let week = 0; week < 6; week += 1) {
+    const row: Date[] = [];
+    for (let day = 0; day < 7; day += 1) {
+      row.push(new Date(cursorDay));
+      cursorDay.setDate(cursorDay.getDate() + 1);
+    }
+    weeks.push(row);
   }
 
   return weeks;
 };
 
-const ReminderDatePicker = ({ value, onChange, onComplete }: Props) => {
+const ReminderDatePicker = ({
+  value,
+  onChange,
+  onComplete,
+  embedded = false,
+}: Props) => {
   const [cursor, setCursor] = useState(() => startOfMonth(value));
-  const appear = useRef(new Animated.Value(0)).current;
+  const appear = useRef(new Animated.Value(embedded ? 1 : 0)).current;
   const monthFade = useRef(new Animated.Value(1)).current;
+  const today = startOfDay(new Date());
 
   useEffect(() => {
+    if (embedded) {
+      return;
+    }
     Animated.timing(appear, {
       toValue: 1,
       duration: 260,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-  }, [appear]);
+  }, [appear, embedded]);
 
-  // Follow the selected date only when it lands in a different month.
   useEffect(() => {
     setCursor(prev => {
       const next = startOfMonth(value);
@@ -105,8 +112,6 @@ const ReminderDatePicker = ({ value, onChange, onComplete }: Props) => {
   }, [value]);
 
   const weeks = useMemo(() => buildWeeks(cursor), [cursor]);
-  const today = new Date();
-
   const monthLabel = cursor.toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric',
@@ -117,27 +122,35 @@ const ReminderDatePicker = ({ value, onChange, onComplete }: Props) => {
     setCursor(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
     Animated.timing(monthFade, {
       toValue: 1,
-      duration: 220,
+      duration: 180,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
   };
+
+  const selectDate = (day: Date) => {
+    const next = new Date(value);
+    next.setFullYear(day.getFullYear(), day.getMonth(), day.getDate());
+    onChange(next);
+    onComplete?.();
+  };
+
+  const shortcuts = [
+    { label: 'Today', date: today },
+    { label: 'Tomorrow', date: addDays(today, 1) },
+    { label: 'Next week', date: addDays(today, 7) },
+  ];
 
   const cardTranslate = appear.interpolate({
     inputRange: [0, 1],
     outputRange: [ms(10), 0],
   });
 
-  const gridTranslate = monthFade.interpolate({
-    inputRange: [0, 1],
-    outputRange: [ms(6), 0],
-  });
-
   return (
     <Animated.View
       style={[
-        styles.card,
-        { opacity: appear, transform: [{ translateY: cardTranslate }] },
+        !embedded && styles.card,
+        !embedded && { opacity: appear, transform: [{ translateY: cardTranslate }] },
       ]}
     >
       <View style={styles.header}>
@@ -152,9 +165,7 @@ const ReminderDatePicker = ({ value, onChange, onComplete }: Props) => {
           <Chevron direction="left" />
         </TouchableOpacity>
 
-        <Animated.Text style={[styles.monthLabel, { opacity: monthFade }]}>
-          {monthLabel}
-        </Animated.Text>
+        <Text style={styles.monthLabel}>{monthLabel}</Text>
 
         <TouchableOpacity
           activeOpacity={0.8}
@@ -168,29 +179,41 @@ const ReminderDatePicker = ({ value, onChange, onComplete }: Props) => {
         </TouchableOpacity>
       </View>
 
+      <View style={styles.shortcutRow}>
+        {shortcuts.map(item => {
+          const active = sameDay(item.date, value);
+          return (
+            <TouchableOpacity
+              key={item.label}
+              activeOpacity={0.85}
+              style={[styles.shortcut, active && styles.shortcutActive]}
+              onPress={() => selectDate(item.date)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: active }}
+            >
+              <Text
+                style={[styles.shortcutText, active && styles.shortcutTextActive]}
+              >
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
       <View style={styles.weekRow}>
-        {WEEKDAYS.map(day => (
-          <View key={day} style={styles.cell}>
+        {WEEKDAYS.map((day, index) => (
+          <View key={`${day}-${index}`} style={styles.cell}>
             <Text style={styles.weekday}>{day}</Text>
           </View>
         ))}
       </View>
 
-      <Animated.View
-        style={{ opacity: monthFade, transform: [{ translateY: gridTranslate }] }}
-      >
+      <Animated.View style={{ opacity: monthFade }}>
         {weeks.map((week, weekIndex) => (
           <View key={`week-${weekIndex}`} style={styles.weekRow}>
-            {week.map((day, dayIndex) => {
-              if (!day) {
-                return (
-                  <View
-                    key={`blank-${weekIndex}-${dayIndex}`}
-                    style={styles.cell}
-                  />
-                );
-              }
-
+            {week.map(day => {
+              const inMonth = day.getMonth() === cursor.getMonth();
               const selected = sameDay(day, value);
               const isToday = sameDay(day, today);
 
@@ -203,16 +226,14 @@ const ReminderDatePicker = ({ value, onChange, onComplete }: Props) => {
                       selected && styles.daySelected,
                       !selected && isToday && styles.dayToday,
                     ]}
-                    onPress={() => {
-                      onChange(day);
-                      onComplete?.();
-                    }}
+                    onPress={() => selectDate(day)}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
                   >
                     <Text
                       style={[
                         styles.dayText,
+                        !inMonth && styles.dayMuted,
                         selected && styles.dayTextSelected,
                         !selected && isToday && styles.dayTextToday,
                       ]}
@@ -247,7 +268,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.xs,
     marginBottom: spacing.md,
   },
 
@@ -262,9 +283,39 @@ const styles = StyleSheet.create({
 
   monthLabel: {
     color: colors.text,
-    fontSize: fontSize.base,
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
     letterSpacing: -0.2,
+  },
+
+  shortcutRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+
+  shortcut: {
+    flex: 1,
+    minHeight: ms(32),
+    borderRadius: radii.pill,
+    backgroundColor: colors.inputBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  shortcutActive: {
+    backgroundColor: colors.primaryLight,
+  },
+
+  shortcutText: {
+    color: colors.subText,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+  },
+
+  shortcutTextActive: {
+    color: colors.primary,
+    fontWeight: fontWeight.bold,
   },
 
   weekRow: {
@@ -274,7 +325,7 @@ const styles = StyleSheet.create({
 
   cell: {
     flex: 1,
-    height: CELL_HEIGHT,
+    height: CELL,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -282,13 +333,13 @@ const styles = StyleSheet.create({
   weekday: {
     color: colors.muted,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
+    fontWeight: fontWeight.bold,
   },
 
   dayButton: {
-    width: ms(34),
-    height: ms(34),
-    borderRadius: ms(17),
+    width: ms(32),
+    height: ms(32),
+    borderRadius: ms(16),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -305,6 +356,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
+  },
+
+  dayMuted: {
+    color: colors.muted,
   },
 
   dayTextSelected: {

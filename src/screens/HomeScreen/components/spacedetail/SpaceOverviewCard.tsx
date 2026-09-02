@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
+
 import {
   colors,
   fontSize,
@@ -27,19 +27,16 @@ type Props = {
   onRetry?: () => void;
 };
 
-type MetricProps = {
-  label: string;
+const Metric = ({
+  value,
+  label,
+}: {
   value: number;
-  showDivider?: boolean;
-};
-
-const Metric = ({ label, value, showDivider }: MetricProps) => (
+  label: string;
+}) => (
   <View style={styles.metric}>
-    {showDivider ? <View style={styles.divider} /> : null}
-    <View style={styles.metricInner}>
-      <Text style={styles.metricValue}>{value}</Text>
-      <Text style={styles.metricLabel}>{label}</Text>
-    </View>
+    <Text style={styles.metricValue}>{value}</Text>
+    <Text style={styles.metricLabel}>{label}</Text>
   </View>
 );
 
@@ -53,60 +50,57 @@ const SpaceOverviewCard = ({
   onRetry,
 }: Props) => {
   const safeCompletionRate = Math.min(Math.max(completionRate, 0), 100);
+  const remaining = Math.max(tasksCount - tasksCompleted, 0);
 
   return (
     <View style={styles.card}>
-      <Text style={styles.cardTitle}>Overview</Text>
+      <Text style={styles.cardTitle}>In this space</Text>
+      <Text style={styles.cardHint}>
+        A snapshot of what Buddy has saved here.
+      </Text>
 
       {isLoading ? (
         <View style={styles.stateBox}>
           <ActivityIndicator size="small" color={colors.primary} />
-          <Text style={styles.stateText}>Loading overview...</Text>
+          <Text style={styles.stateText}>Loading activity...</Text>
         </View>
       ) : isError ? (
         <View style={styles.stateBox}>
-          <Text style={styles.errorText}>Unable to load overview.</Text>
+          <Text style={styles.errorText}>Could not load space activity.</Text>
           {onRetry ? (
             <TouchableOpacity
               activeOpacity={0.75}
               style={styles.retryButton}
               onPress={onRetry}
             >
-              <Text style={styles.retryText}>Retry</Text>
+              <Text style={styles.retryText}>Try again</Text>
             </TouchableOpacity>
           ) : null}
         </View>
       ) : (
         <>
           <View style={styles.metricsRow}>
-            <Metric label="Notes" value={notesCount} />
-            <Metric label="Tasks" value={tasksCount} showDivider />
-            <Metric label="Completed" value={tasksCompleted} showDivider />
+            <Metric value={notesCount} label="Notes" />
+            <View style={styles.divider} />
+            <Metric value={tasksCount} label="Tasks" />
+            <View style={styles.divider} />
+            <Metric value={tasksCompleted} label="Done" />
           </View>
 
-          <View style={styles.separator} />
-
-          <View style={styles.progressSection}>
-            <View style={styles.progressHeader}>
-              <Text style={styles.progressTitle}>Tasks completed</Text>
-              <View style={styles.percentBadge}>
-                <Text style={styles.percentText}>{safeCompletionRate}%</Text>
-              </View>
-            </View>
-
-            <View style={styles.track}>
-              <LinearGradient
-                colors={[colors.primaryPurple, colors.primary]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[styles.fill, { width: `${safeCompletionRate}%` }]}
-              />
-            </View>
-
-            <Text style={styles.progressSubtext}>
-              {tasksCompleted} of {tasksCount} tasks finished in this space
-            </Text>
+          <View style={styles.progressHeader}>
+            <Text style={styles.progressTitle}>Task progress</Text>
+            <Text style={styles.percentText}>{safeCompletionRate}%</Text>
           </View>
+          <View style={styles.track}>
+            <View style={[styles.fill, { width: `${safeCompletionRate}%` }]} />
+          </View>
+          <Text style={styles.progressSubtext}>
+            {tasksCount === 0
+              ? 'No tasks yet. Open Tasks to add one.'
+              : remaining === 0
+                ? 'All tasks in this space are complete.'
+                : `${remaining} task${remaining === 1 ? '' : 's'} still open.`}
+          </Text>
         </>
       )}
     </View>
@@ -118,34 +112,40 @@ export default SpaceOverviewCard;
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
-    borderRadius: ms(18),
-    padding: spacing.xl,
+    borderRadius: radii.xl,
+    padding: spacing['2xl'],
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.primaryLight,
+    borderColor: colors.border,
   },
 
   cardTitle: {
-    fontSize: fontSize.base,
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
     color: colors.text,
-    marginBottom: spacing.md,
+  },
+
+  cardHint: {
+    marginTop: spacing.xs,
+    marginBottom: spacing.lg,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+    color: colors.muted,
+    lineHeight: ms(18),
   },
 
   stateBox: {
-    minHeight: mvs(120),
+    minHeight: mvs(92),
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: ms(14),
+    borderRadius: radii.md,
     backgroundColor: colors.inputBg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
   },
 
   stateText: {
     marginTop: spacing.md,
     color: colors.subText,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
+    fontWeight: fontWeight.semibold,
   },
 
   errorText: {
@@ -156,8 +156,8 @@ const styles = StyleSheet.create({
 
   retryButton: {
     marginTop: spacing.lg,
-    paddingHorizontal: ms(14),
-    paddingVertical: ms(7),
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing.sm,
     borderRadius: radii.pill,
     backgroundColor: colors.primaryLight,
   },
@@ -165,89 +165,64 @@ const styles = StyleSheet.create({
   retryText: {
     color: colors.primary,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.extrabold,
+    fontWeight: fontWeight.bold,
   },
 
   metricsRow: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    alignItems: 'center',
     backgroundColor: colors.inputBg,
-    borderRadius: ms(14),
+    borderRadius: radii.md,
     paddingVertical: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    marginBottom: spacing.lg,
   },
 
   metric: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'stretch',
-  },
-
-  metricInner: {
-    flex: 1,
     alignItems: 'center',
-    paddingHorizontal: spacing.xs,
   },
 
   divider: {
-    width: 1,
+    width: StyleSheet.hairlineWidth,
+    height: ms(28),
     backgroundColor: colors.border,
-    marginVertical: spacing.xs,
   },
 
   metricValue: {
     fontSize: fontSize['3xl'],
     fontWeight: fontWeight.extrabold,
-    color: colors.black,
-    letterSpacing: -0.5,
-    lineHeight: ms(24),
+    color: colors.text,
+    letterSpacing: -0.4,
   },
 
   metricLabel: {
-    marginTop: spacing.xs,
+    marginTop: spacing.xxs,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
     color: colors.subText,
-    textAlign: 'center',
   },
-
-  separator: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-    marginVertical: spacing.md,
-  },
-
-  progressSection: {},
 
   progressHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
 
   progressTitle: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
-    color: colors.subText,
-  },
-
-  percentBadge: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: ms(3),
-    borderRadius: radii.pill,
-    backgroundColor: colors.primarySoft,
+    color: colors.textSecondary,
   },
 
   percentText: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.extrabold,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
     color: colors.primary,
   },
 
   track: {
-    height: ms(5),
+    height: ms(6),
     borderRadius: radii.pill,
     backgroundColor: colors.primaryLight,
     overflow: 'hidden',
@@ -256,6 +231,7 @@ const styles = StyleSheet.create({
   fill: {
     height: '100%',
     borderRadius: radii.pill,
+    backgroundColor: colors.primary,
   },
 
   progressSubtext: {
@@ -263,5 +239,6 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
     color: colors.muted,
+    lineHeight: ms(16),
   },
 });

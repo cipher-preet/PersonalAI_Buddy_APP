@@ -275,7 +275,13 @@ const BriefingScreen = () => {
               <TouchableOpacity
                 activeOpacity={0.82}
                 style={styles.chatButton}
-                onPress={() => navigation.navigate('AI')}
+                onPress={() =>
+                  navigation.navigate({
+                    name: 'AI',
+                    params: {},
+                    merge: false,
+                  })
+                }
               >
                 <Text style={styles.chatButtonText}>Start chat</Text>
               </TouchableOpacity>

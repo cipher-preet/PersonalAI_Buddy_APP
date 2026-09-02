@@ -39,6 +39,20 @@ import { useToast } from '../../store/context/ToastContext';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
+const normalizeIndianMobileInput = (value: string) => {
+  let digits = value.replace(/\D/g, '');
+
+  if (digits.startsWith('0')) {
+    digits = digits.replace(/^0+/, '');
+  }
+
+  if (digits.startsWith('91') && digits.length > 10) {
+    digits = digits.slice(2);
+  }
+
+  return digits.slice(0, 10);
+};
+
 const PhoneIcon = ({ color = colors.primary }: { color?: string }) => (
   <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
     <Path
@@ -184,13 +198,14 @@ const LoginScreen = ({ navigation }: Props) => {
         <TextInput
           ref={phoneInputRef}
           value={phone}
-          onChangeText={text => setPhone(text.replace(/[^\d]/g, ''))}
+          onChangeText={text => setPhone(normalizeIndianMobileInput(text))}
           placeholder="10-digit mobile number"
           placeholderTextColor={colors.muted}
           keyboardType="phone-pad"
           textContentType="telephoneNumber"
           autoComplete="tel"
-          maxLength={10}
+          importantForAutofill="yes"
+          maxLength={16}
           returnKeyType="done"
           editable={!loading}
           style={styles.input}

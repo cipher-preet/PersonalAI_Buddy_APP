@@ -1,27 +1,39 @@
 import { PermissionsAndroid, Platform } from 'react-native';
+import {
+  getMessaging,
+  getToken,
+  isDeviceRegisteredForRemoteMessages,
+  onTokenRefresh,
+  registerDeviceForRemoteMessages,
+} from '@react-native-firebase/messaging';
 
 export const getDevicePlatform = (): 'android' | 'ios' | 'web' =>
   Platform.OS === 'ios' ? 'ios' : 'android';
 
-const requestAndroidNotificationPermission = async () => {
+export const ensureNotificationPermission = async () => {
   if (Platform.OS !== 'android' || Number(Platform.Version) < 33) {
-    return;
+    return true;
   }
 
-  await PermissionsAndroid.request(
+  const result = await PermissionsAndroid.request(
     PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
   );
+  return result === PermissionsAndroid.RESULTS.GRANTED;
 };
 
 export const getFcmToken = async (): Promise<string | null> => {
   try {
-    await requestAndroidNotificationPermission();
-    const messaging = require('@react-native-firebase/messaging').default;
-    await messaging().registerDeviceForRemoteMessages();
-    await messaging().requestPermission();
-    const token = await messaging().getToken();
+    await ensureNotificationPermission();
+    const messaging = getMessaging();
+
+    if (!isDeviceRegisteredForRemoteMessages(messaging)) {
+      await registerDeviceForRemoteMessages(messaging);
+    }
+
+    const token = await getToken(messaging);
     return typeof token === 'string' && token.length >= 8 ? token : null;
-  } catch {
+  } catch (error) {
+    console.warn('Failed to get FCM token', error);
     return null;
   }
 };
@@ -36,4 +48,19 @@ export const getAuthDevicePayload = async () => {
     fcmToken,
     platform: getDevicePlatform(),
   };
+};
+
+export const subscribeToFcmTokenRefresh = (
+  onToken: (token: string) => void,
+) => {
+  try {
+    return onTokenRefresh(getMessaging(), token => {
+      if (typeof token === 'string' && token.length >= 8) {
+        onToken(token);
+      }
+    });
+  } catch (error) {
+    console.warn('Failed to subscribe to FCM token refresh', error);
+    return () => undefined;
+  }
 };
