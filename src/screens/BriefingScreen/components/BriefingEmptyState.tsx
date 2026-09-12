@@ -32,6 +32,9 @@ type Props = {
   variant: BriefingEmptyVariant;
   onRetry?: () => void;
   onStartChat?: () => void;
+  /** TEMPORARY test hook */
+  onForceGenerate?: () => void;
+  forceGenerating?: boolean;
 };
 
 const SparkleIcon = ({
@@ -88,7 +91,13 @@ const copy: Record<
   },
 };
 
-const BriefingEmptyState = ({ variant, onRetry, onStartChat }: Props) => {
+const BriefingEmptyState = ({
+  variant,
+  onRetry,
+  onStartChat,
+  onForceGenerate,
+  forceGenerating,
+}: Props) => {
   if (variant === 'loading') {
     return (
       <View style={styles.container}>
@@ -132,6 +141,20 @@ const BriefingEmptyState = ({ variant, onRetry, onStartChat }: Props) => {
           >
             <Text style={styles.chatText}>{content.chat}</Text>
           </LinearGradient>
+        </TouchableOpacity>
+      ) : null}
+      {onForceGenerate ? (
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={[styles.forceButton, forceGenerating && styles.forceButtonDisabled]}
+          onPress={onForceGenerate}
+          disabled={forceGenerating}
+        >
+          {forceGenerating ? (
+            <ActivityIndicator color={colors.primaryDark} />
+          ) : (
+            <Text style={styles.forceText}>Generate now (test)</Text>
+          )}
         </TouchableOpacity>
       ) : null}
     </View>
@@ -214,6 +237,25 @@ const styles = StyleSheet.create({
   },
   chatText: {
     color: colors.white,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+  forceButton: {
+    marginTop: spacing.xl,
+    minHeight: ms(44),
+    paddingHorizontal: spacing['3xl'],
+    borderRadius: radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.brandBorder,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  forceButtonDisabled: {
+    opacity: 0.7,
+  },
+  forceText: {
+    color: colors.primaryDark,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
   },

@@ -222,6 +222,11 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
     const [aiCalling, setAiCalling] = useState(false);
     const [notification, setNotification] = useState(true);
     const [beeping, setBeeping] = useState(false);
+    const [remindBeforeMinutes, setRemindBeforeMinutes] = useState(5);
+    const [customBeforeText, setCustomBeforeText] = useState('15');
+    const [remindBeforeMode, setRemindBeforeMode] = useState<
+      'atStart' | '5' | '10' | 'custom'
+    >('5');
 
     const resetCreateForm = useCallback(() => {
       const baseDate = initialDate || new Date();
@@ -238,6 +243,9 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
       setAiCalling(false);
       setNotification(true);
       setBeeping(false);
+      setRemindBeforeMinutes(5);
+      setCustomBeforeText('15');
+      setRemindBeforeMode('5');
       setPickerMode('none');
     }, [initialDate]);
 
@@ -262,6 +270,18 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
       setAiCalling(event.aiCalling);
       setNotification(event.notification);
       setBeeping(event.beeping);
+      const before = Math.max(0, Number(event.remindBeforeMinutes) || 0);
+      setRemindBeforeMinutes(before);
+      if (before === 0) {
+        setRemindBeforeMode('atStart');
+      } else if (before === 5) {
+        setRemindBeforeMode('5');
+      } else if (before === 10) {
+        setRemindBeforeMode('10');
+      } else {
+        setRemindBeforeMode('custom');
+        setCustomBeforeText(String(before));
+      }
       setPickerMode('none');
     }, [event, isCreateMode]);
 
@@ -354,6 +374,44 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
       }
     };
 
+    const applyRemindBeforeMode = (mode: 'atStart' | '5' | '10' | 'custom') => {
+      setRemindBeforeMode(mode);
+      if (mode === 'atStart') {
+        setRemindBeforeMinutes(0);
+      } else if (mode === '5') {
+        setRemindBeforeMinutes(5);
+      } else if (mode === '10') {
+        setRemindBeforeMinutes(10);
+      } else {
+        const parsed = Number.parseInt(customBeforeText, 10);
+        setRemindBeforeMinutes(
+          Number.isFinite(parsed) && parsed > 0
+            ? Math.min(1440, parsed)
+            : 15,
+        );
+      }
+    };
+
+    const resolvedRemindBeforeMinutes = (() => {
+      if (!aiReminder) {
+        return 0;
+      }
+      if (remindBeforeMode === 'atStart') {
+        return 0;
+      }
+      if (remindBeforeMode === '5') {
+        return 5;
+      }
+      if (remindBeforeMode === '10') {
+        return 10;
+      }
+      const parsed = Number.parseInt(customBeforeText, 10);
+      if (!Number.isFinite(parsed) || parsed < 1) {
+        return 15;
+      }
+      return Math.min(1440, parsed);
+    })();
+
     const handleSave = async () => {
       if (isSaving) {
         return;
@@ -369,6 +427,16 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
 
       if (endTime.getTime() <= startTime.getTime()) {
         setTimeError('End time must be after the start time.');
+        hasError = true;
+      }
+
+      if (
+        aiReminder &&
+        remindBeforeMode === 'custom' &&
+        (!Number.isFinite(Number.parseInt(customBeforeText, 10)) ||
+          Number.parseInt(customBeforeText, 10) < 1)
+      ) {
+        setTimeError('Enter custom minutes between 1 and 1440.');
         hasError = true;
       }
 
@@ -389,8 +457,9 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
           endTimeLabel: formatTimeLabel(endTime),
           aiReminder,
           aiCalling: aiReminder ? aiCalling : false,
-          notification: aiReminder ? notification : true,
+          notification: aiReminder ? notification || (!aiCalling && !beeping) : true,
           beeping: aiReminder ? beeping : false,
+          remindBeforeMinutes: resolvedRemindBeforeMinutes,
         });
         if (ref && 'current' in ref) {
           ref.current?.dismiss();
@@ -603,7 +672,7 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
                 <View style={styles.featureCopy}>
                   <Text style={styles.featureTitle}>AI reminder</Text>
                   <Text style={styles.featureSubtitle}>
-                    Buddy will remind you when this meeting starts
+                    Buddy reminds you with call, notification, or beep
                   </Text>
                 </View>
               </View>
@@ -617,6 +686,62 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
 
             {aiReminder ? (
               <>
+                <View style={styles.remindBeforeCard}>
+                  <Text style={styles.remindBeforeLabel}>Remind before</Text>
+                  <View style={styles.remindBeforeRow}>
+                    {(
+                      [
+                        { id: 'atStart', label: 'At start' },
+                        { id: '5', label: '5 min' },
+                        { id: '10', label: '10 min' },
+                        { id: 'custom', label: 'Custom' },
+                      ] as const
+                    ).map(option => {
+                      const selected = remindBeforeMode === option.id;
+                      return (
+                        <TouchableOpacity
+                          key={option.id}
+                          activeOpacity={0.85}
+                          style={[
+                            styles.remindChip,
+                            selected && styles.remindChipSelected,
+                          ]}
+                          onPress={() => applyRemindBeforeMode(option.id)}
+                        >
+                          <Text
+                            style={[
+                              styles.remindChipText,
+                              selected && styles.remindChipTextSelected,
+                            ]}
+                          >
+                            {option.label}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  {remindBeforeMode === 'custom' ? (
+                    <View style={styles.customBeforeRow}>
+                      <BottomSheetTextInput
+                        value={customBeforeText}
+                        onChangeText={value => {
+                          const digits = value.replace(/[^0-9]/g, '').slice(0, 4);
+                          setCustomBeforeText(digits);
+                          const parsed = Number.parseInt(digits, 10);
+                          if (Number.isFinite(parsed) && parsed > 0) {
+                            setRemindBeforeMinutes(Math.min(1440, parsed));
+                          }
+                        }}
+                        keyboardType="number-pad"
+                        placeholder="15"
+                        placeholderTextColor={colors.muted}
+                        style={styles.customBeforeInput}
+                      />
+                      <Text style={styles.customBeforeSuffix}>minutes before</Text>
+                    </View>
+                  ) : null}
+                </View>
+
                 <View style={styles.featureCard}>
                   <View style={styles.featureLeft}>
                     <View style={[styles.featureIcon, styles.featureIconCall]}>
@@ -648,7 +773,7 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
                     <View style={styles.featureCopy}>
                       <Text style={styles.featureTitle}>Notification</Text>
                       <Text style={styles.featureSubtitle}>
-                        Push alert at the start time
+                        Push alert at the reminder time
                       </Text>
                     </View>
                   </View>
@@ -671,7 +796,7 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
                     <View style={styles.featureCopy}>
                       <Text style={styles.featureTitle}>Beeping</Text>
                       <Text style={styles.featureSubtitle}>
-                        Gentle sound cue with the alert
+                        Alarm-style sound with the alert
                       </Text>
                     </View>
                   </View>
@@ -934,6 +1059,72 @@ const styles = StyleSheet.create({
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
     lineHeight: ms(16),
+  },
+  remindBeforeCard: {
+    backgroundColor: colors.inputBg,
+    borderRadius: radii.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  remindBeforeLabel: {
+    color: colors.muted,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    letterSpacing: 0.2,
+    marginBottom: spacing.sm,
+  },
+  remindBeforeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  remindChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.lg,
+    backgroundColor: colors.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  remindChipSelected: {
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.brandBorder,
+  },
+  remindChipText: {
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+  },
+  remindChipTextSelected: {
+    color: colors.primaryDark,
+    fontWeight: fontWeight.bold,
+  },
+  customBeforeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  customBeforeInput: {
+    minWidth: ms(72),
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.lg,
+    backgroundColor: colors.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    color: colors.text,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+    textAlign: 'center',
+  },
+  customBeforeSuffix: {
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
   },
   saveButton: {
     minHeight: ms(52),

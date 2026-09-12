@@ -1,15 +1,15 @@
 export const API_URLS = {
-  // appApiBase: 'https://buddy-node-backend-scz7pyp3ha-el.a.run.app/api/v1',              // preet cloud run server
+  appApiBase: 'https://buddy-node-backend-scz7pyp3ha-el.a.run.app/api/v1',              // preet cloud run server
   // appApiBase: 'https://buddy-node-backend-710178903619.asia-south1.run.app/api/v1',  //aditya cloud running
-  appApiBase: 'https://d2c8-223-178-211-19.ngrok-free.app/api/v1',
+  // appApiBase: 'https://71ba-2401-4900-1c2b-1156-8c37-af87-982a-bbf9.ngrok-free.app/api/v1',
 
 
 
   // FastAPI AI_Orchestration server.
   // Run locally with:
   // uvicorn apps.api_gateway.main:app --host 0.0.0.0 --port 8000 --reload 
-  // buddyApiBase: 'https://buddy-ai-api-710178903619.asia-south1.run.app/api/v1',
-  buddyApiBase: 'https://0399-223-178-211-19.ngrok-free.app/api/v1',
+  buddyApiBase: 'https://buddy-ai-api-710178903619.asia-south1.run.app/api/v1',
+  // buddyApiBase: 'https://f6fd-2401-4900-1c2b-1156-8c37-af87-982a-bbf9.ngrok-free.app/api/v1',
 } as const;
 
 export const BUDDY_ENDPOINTS = {

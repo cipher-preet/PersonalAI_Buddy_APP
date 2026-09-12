@@ -16,6 +16,7 @@ export type CalendarEventCard = {
   aiCalling: boolean;
   notification: boolean;
   beeping: boolean;
+  remindBeforeMinutes: number;
   reminderId: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
@@ -33,6 +34,7 @@ export type CalendarEventWritePayload = {
   aiCalling: boolean;
   notification: boolean;
   beeping: boolean;
+  remindBeforeMinutes: number;
 };
 
 interface GetCalendarEventsArgs {

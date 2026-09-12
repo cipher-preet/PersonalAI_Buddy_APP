@@ -19,9 +19,11 @@ import type { MainTabParamList } from '../../navigation/types';
 import {
   type BriefingInsightCard,
   type BriefingListItem,
+  useForceGenerateDailyBriefingMutation,
   useGetDailyBriefingQuery,
 } from '../../store/api/home';
 import { useAppSelector } from '../../store/hooks';
+import { useToast } from '../../store/context/ToastContext';
 import {
   colors,
   fontSize,
@@ -190,11 +192,14 @@ const BriefingScreen = () => {
   const navigation =
     useNavigation<BottomTabNavigationProp<MainTabParamList>>();
   const token = useAppSelector(state => state.auth.token);
+  const { showToast } = useToast();
   const sourceSheetRef = useRef<BottomSheetModal>(null);
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
   const [selectedInsight, setSelectedInsight] =
     useState<BriefingInsightCard | null>(null);
   const [pollMs, setPollMs] = useState(0);
+  const [forceGenerate, { isLoading: isForceGenerating }] =
+    useForceGenerateDailyBriefingMutation();
 
   const { data, error, isLoading, isError, isFetching, refetch } =
     useGetDailyBriefingQuery(undefined, {
@@ -238,6 +243,28 @@ const BriefingScreen = () => {
   const openChat = useCallback(() => {
     navigation.navigate({ name: 'AI', params: {}, merge: false });
   }, [navigation]);
+
+  const handleForceGenerate = useCallback(async () => {
+    try {
+      await forceGenerate({ period: 'today' }).unwrap();
+      showToast({
+        message: 'Generating today’s briefing…',
+        description: 'This can take a minute. The screen will update automatically.',
+        type: 'info',
+      });
+      setPollMs(5000);
+      await refetch();
+    } catch (err) {
+      const message =
+        typeof err === 'object' &&
+        err != null &&
+        'data' in err &&
+        typeof (err as { data?: { message?: string } }).data?.message === 'string'
+          ? (err as { data: { message: string } }).data.message
+          : 'Could not generate briefing. Is Python API running?';
+      showToast({ message, type: 'error' });
+    }
+  }, [forceGenerate, refetch, showToast]);
 
   const toggleTask = (id: string) => {
     setCompletedTasks(current =>
@@ -322,11 +349,25 @@ const BriefingScreen = () => {
               variant={emptyVariant}
               onRetry={token ? refetch : undefined}
               onStartChat={openChat}
+              onForceGenerate={token ? handleForceGenerate : undefined}
+              forceGenerating={isForceGenerating}
             />
           ) : null}
 
           {ready && briefing ? (
             <>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.forceBanner}
+                onPress={handleForceGenerate}
+                disabled={isForceGenerating}
+              >
+                <Text style={styles.forceBannerText}>
+                  {isForceGenerating
+                    ? 'Generating test briefing…'
+                    : 'Generate now (test) — rebuilds today’s briefing'}
+                </Text>
+              </TouchableOpacity>
               {briefing.headline ? (
                 <Text style={styles.overviewText}>{briefing.headline}</Text>
               ) : null}
@@ -761,6 +802,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.md,
     paddingBottom: spacing['5xl'],
+  },
+  forceBanner: {
+    marginBottom: spacing.md,
+    minHeight: ms(40),
+    paddingHorizontal: spacing.xl,
+    borderRadius: radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.brandBorder,
+    backgroundColor: colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  forceBannerText: {
+    color: colors.primaryDark,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    textAlign: 'center',
   },
   overviewText: {
     color: colors.text,

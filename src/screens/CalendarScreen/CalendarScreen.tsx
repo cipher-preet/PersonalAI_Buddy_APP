@@ -1,7 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  FlatList,
   Modal,
   Pressable,
   ScrollView,
@@ -10,7 +9,6 @@ import {
   Text,
   TouchableOpacity,
   View,
-  type ListRenderItemInfo,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -21,6 +19,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import EventBottomSheet, {
   type EventDraft,
 } from './components/EventBottomSheet';
+import CalendarDateStrip from './components/CalendarDateStrip';
 import DeleteConfirmationModal from '../../components/DeleteConfirmationModal';
 import { useToast } from '../../store/context/ToastContext';
 import { useAppSelector } from '../../store/hooks';
@@ -34,7 +33,6 @@ import {
 import {
   DAY_NAMES,
   MONTH_NAMES,
-  addDays,
   eventToneColors,
   isSameDay,
   parseTimeToHours,
@@ -55,12 +53,6 @@ import {
 const TIME_COLUMN_WIDTH = ms(68);
 const EVENT_CARD_HEIGHT = ms(108);
 const EVENT_ROW_GAP = spacing.xl;
-const PAST_DAYS = 21;
-const FUTURE_DAYS = 60;
-const DAY_CHIP_WIDTH = ms(54);
-const DAY_CHIP_GAP = spacing.sm;
-const DAY_ITEM_WIDTH = DAY_CHIP_WIDTH + DAY_CHIP_GAP;
-const DATE_STRIP_PADDING = layout.screenPadding;
 
 const BackIcon = () => (
   <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
@@ -130,48 +122,6 @@ const TrashIcon = () => (
     />
   </Svg>
 );
-
-type StripDay = {
-  key: string;
-  date: Date;
-};
-
-type DayChipProps = {
-  item: StripDay;
-  selected: boolean;
-  isToday: boolean;
-  hasEvents: boolean;
-  onPress: (date: Date) => void;
-};
-
-const DayChip = React.memo(
-  ({ item, selected, isToday, hasEvents, onPress }: DayChipProps) => (
-    <TouchableOpacity
-      activeOpacity={0.85}
-      style={[styles.dayChip, selected && styles.dayChipSelected]}
-      onPress={() => onPress(item.date)}
-      accessibilityRole="button"
-      accessibilityLabel={`${DAY_NAMES[item.date.getDay()]} ${item.date.getDate()}`}
-      accessibilityState={{ selected }}
-    >
-      <Text style={[styles.dayName, selected && styles.dayNameSelected]}>
-        {DAY_NAMES[item.date.getDay()]}
-      </Text>
-      <Text style={[styles.dayNumber, selected && styles.dayNumberSelected]}>
-        {item.date.getDate()}
-      </Text>
-      {hasEvents ? (
-        <View style={[styles.eventDot, selected && styles.eventDotSelected]} />
-      ) : isToday && !selected ? (
-        <View style={styles.todayDot} />
-      ) : (
-        <View style={styles.dotSpacer} />
-      )}
-    </TouchableOpacity>
-  ),
-);
-
-DayChip.displayName = 'DayChip';
 
 type MeetingCardProps = {
   event: CalendarEventCard;
@@ -279,12 +229,9 @@ const CalendarScreen = () => {
   const { showToast } = useToast();
   const insets = useSafeAreaInsets();
   const eventSheetRef = useRef<BottomSheetModal>(null);
-  const dateListRef = useRef<FlatList<StripDay>>(null);
-  const hasScrolledToInitialDate = useRef(false);
   const userId = useAppSelector(state => state.auth.userId) ?? '';
-  const today = useMemo(() => startOfDay(new Date()), []);
-  const todayKey = useMemo(() => toDateKey(today), [today]);
-  const [selectedDate, setSelectedDate] = useState(today);
+  const [today, setToday] = useState(() => startOfDay(new Date()));
+  const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
   const [sheetMode, setSheetMode] = useState<'create' | 'edit'>('create');
   const [selectedEvent, setSelectedEvent] = useState<CalendarEventCard | null>(
     null,
@@ -292,51 +239,25 @@ const CalendarScreen = () => {
   const [eventPendingDelete, setEventPendingDelete] =
     useState<CalendarEventCard | null>(null);
 
-  const stripDays = useMemo<StripDay[]>(
-    () =>
-      Array.from({ length: PAST_DAYS + FUTURE_DAYS + 1 }, (_, index) => {
-        const date = addDays(today, index - PAST_DAYS);
-        return { key: toDateKey(date), date };
-      }),
-    [today],
-  );
-
-  const range = useMemo(
-    () => ({
-      from: stripDays[0]?.key ?? toDateKey(today),
-      to: stripDays[stripDays.length - 1]?.key ?? toDateKey(today),
-    }),
-    [stripDays, today],
-  );
-
-  const selectedKey = toDateKey(selectedDate);
-  const selectedIndex = useMemo(() => {
-    const index = stripDays.findIndex(item => item.key === selectedKey);
-    return index >= 0 ? index : PAST_DAYS;
-  }, [selectedKey, stripDays]);
-
-  const scrollToDateIndex = useCallback((index: number, animated: boolean) => {
-    if (index < 0) {
-      return;
-    }
-
-    requestAnimationFrame(() => {
-      dateListRef.current?.scrollToIndex({
-        index,
-        animated,
-        viewPosition: 0.45,
-      });
-    });
+  useEffect(() => {
+    const refreshToday = () => {
+      const nextToday = startOfDay(new Date());
+      setToday(prev => (isSameDay(prev, nextToday) ? prev : nextToday));
+    };
+    refreshToday();
+    const timer = setInterval(refreshToday, 60_000);
+    return () => clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    if (!hasScrolledToInitialDate.current) {
-      hasScrolledToInitialDate.current = true;
-      return;
-    }
+  const range = useMemo(() => {
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth();
+    const from = toDateKey(new Date(year, month, 1));
+    const to = toDateKey(new Date(year, month + 1, 0));
+    return { from, to };
+  }, [selectedDate]);
 
-    scrollToDateIndex(selectedIndex, true);
-  }, [scrollToDateIndex, selectedIndex]);
+  const selectedKey = toDateKey(selectedDate);
 
   const handleSelectDate = useCallback((date: Date) => {
     setSelectedDate(startOfDay(date));
@@ -445,37 +366,6 @@ const CalendarScreen = () => {
     }
   };
 
-  const renderDay = useCallback(
-    ({ item }: ListRenderItemInfo<StripDay>) => (
-      <DayChip
-        item={item}
-        selected={item.key === selectedKey}
-        isToday={item.key === todayKey}
-        hasEvents={daysWithEvents.has(item.key)}
-        onPress={handleSelectDate}
-      />
-    ),
-    [daysWithEvents, handleSelectDate, selectedKey, todayKey],
-  );
-
-  const getDayLayout = useCallback(
-    (_: ArrayLike<StripDay> | null | undefined, index: number) => ({
-      length: DAY_ITEM_WIDTH,
-      offset: DATE_STRIP_PADDING + DAY_ITEM_WIDTH * index,
-      index,
-    }),
-    [],
-  );
-
-  const handleDateScrollFailed = useCallback(
-    (info: { index: number }) => {
-      setTimeout(() => {
-        scrollToDateIndex(info.index, false);
-      }, 80);
-    },
-    [scrollToDateIndex],
-  );
-
   return (
     <View style={styles.screen}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
@@ -493,7 +383,7 @@ const CalendarScreen = () => {
           <View style={styles.headerCopy}>
             <Text style={styles.headerTitle}>Calendar</Text>
             <Text style={styles.headerSubtitle}>
-              {MONTH_NAMES[selectedDate.getMonth()]} {selectedDate.getFullYear()}
+              Plan meetings and AI reminders
             </Text>
           </View>
           <Pressable
@@ -516,24 +406,11 @@ const CalendarScreen = () => {
           </Pressable>
         </View>
 
-        <View style={styles.dateStrip}>
-          <FlatList
-            ref={dateListRef}
-            data={stripDays}
-            keyExtractor={item => item.key}
-            renderItem={renderDay}
-            extraData={`${selectedKey}-${daysWithEvents.size}`}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.dateStripContent}
-            getItemLayout={getDayLayout}
-            initialScrollIndex={PAST_DAYS}
-            onScrollToIndexFailed={handleDateScrollFailed}
-            initialNumToRender={14}
-            windowSize={5}
-            maxToRenderPerBatch={12}
-          />
-        </View>
+        <CalendarDateStrip
+          selectedDate={selectedDate}
+          markedDateKeys={daysWithEvents}
+          onSelectDate={handleSelectDate}
+        />
 
         <View style={styles.agendaHeader}>
           <View style={styles.agendaCopy}>
@@ -732,71 +609,6 @@ const styles = StyleSheet.create({
     borderRadius: ms(21),
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  dateStrip: {
-    backgroundColor: colors.white,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  dateStripContent: {
-    paddingHorizontal: DATE_STRIP_PADDING,
-    paddingVertical: spacing.xl,
-  },
-  dayChip: {
-    width: DAY_CHIP_WIDTH,
-    height: ms(78),
-    marginRight: DAY_CHIP_GAP,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.xl,
-    backgroundColor: colors.lightGray,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderLight,
-  },
-  dayChipSelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  dayNumber: {
-    marginTop: spacing.xs,
-    color: colors.text,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-  },
-  dayNumberSelected: {
-    color: colors.white,
-  },
-  dayName: {
-    color: colors.subText,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    letterSpacing: 0.3,
-    textTransform: 'uppercase',
-  },
-  dayNameSelected: {
-    color: colors.white,
-  },
-  eventDot: {
-    marginTop: spacing.sm,
-    width: ms(6),
-    height: ms(6),
-    borderRadius: ms(3),
-    backgroundColor: colors.primaryPurple,
-  },
-  eventDotSelected: {
-    backgroundColor: colors.white,
-  },
-  todayDot: {
-    marginTop: spacing.sm,
-    width: ms(6),
-    height: ms(6),
-    borderRadius: ms(3),
-    backgroundColor: colors.primary,
-  },
-  dotSpacer: {
-    marginTop: spacing.sm,
-    height: ms(6),
   },
   agendaHeader: {
     flexDirection: 'row',

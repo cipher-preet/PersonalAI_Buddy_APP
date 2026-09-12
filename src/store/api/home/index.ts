@@ -527,6 +527,32 @@ export const homeApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Briefing'],
     }),
+    /** TEMPORARY test hook — remove before production release. */
+    forceGenerateDailyBriefing: builder.mutation<
+      {
+        success: boolean;
+        data?: {
+          userId: string;
+          dateKey: string;
+          timezone: string;
+          status: string;
+          skipReason?: string | null;
+          forced?: boolean;
+        };
+        message?: string;
+      },
+      { period?: 'today' | 'yesterday'; date?: string } | void
+    >({
+      query: args => ({
+        url: 'home/forceGenerateDailyBriefing',
+        method: 'POST',
+        body: {
+          period: args?.period ?? 'today',
+          ...(args?.date ? { date: args.date } : {}),
+        },
+      }),
+      invalidatesTags: ['Briefing'],
+    }),
   }),
 });
 
@@ -548,4 +574,5 @@ export const {
   useGetStagedTasksBySpaceQuery,
   useRegisterDeviceTokenMutation,
   useGetDailyBriefingQuery,
+  useForceGenerateDailyBriefingMutation,
 } = homeApi;
