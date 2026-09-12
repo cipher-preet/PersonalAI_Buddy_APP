@@ -13,6 +13,7 @@ import {
 type Props = {
   title: string;
   subtitle: string;
+  meta?: string;
 
   icon: React.ReactNode;
   rightIcon?: React.ReactNode;
@@ -26,6 +27,7 @@ type Props = {
 const TopCard = ({
   title,
   subtitle,
+  meta,
   icon,
   rightIcon,
   color,
@@ -85,6 +87,14 @@ const TopCard = ({
         >
           {subtitle}
         </Text>
+        {meta ? (
+          <Text
+            numberOfLines={1}
+            style={[styles.meta, active && styles.metaActive]}
+          >
+            {meta}
+          </Text>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
@@ -176,5 +186,16 @@ const styles = StyleSheet.create({
 
   subtitleActive: {
     color: colors.info,
+  },
+
+  meta: {
+    marginTop: spacing.xs,
+    fontSize: fontSize.xs,
+    color: colors.muted,
+    fontWeight: fontWeight.semibold,
+  },
+
+  metaActive: {
+    color: colors.textSecondary,
   },
 });

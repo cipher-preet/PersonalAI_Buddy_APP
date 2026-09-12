@@ -30,6 +30,7 @@ import { useAppSelector } from '../../store/hooks';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { MainTabParamList } from '../../navigation/types';
 import CreateSpaceBottomSheet from './components/addspcesheet/CreateSpaceBottomSheet';
+import UpgradePlanPromptModal from '../../components/UpgradePlanPromptModal';
 import {
   Space,
   useStartListningMutation,
@@ -38,6 +39,7 @@ import {
   useGetUserSpacesQuery,
   useGetSpaceStatsQuery,
 } from '../../store/api/home';
+import { useGetPlanStatusQuery } from '../../store/api/payments';
 import {
   endListeningSession,
   requestVoiceListeningPermissions,
@@ -65,6 +67,19 @@ import {
   spacing,
   vSpacing,
 } from '../../theme';
+import {
+  getPlanLimitPrompt,
+  getPlanLimitResource,
+  isPlanLimitError,
+  type PlanLimitResource,
+} from '../../utils/planLimitError';
+import {
+  UNLIMITED_LIMIT,
+  formatClock,
+  formatHoursShort,
+  getRecordingRemainingMs,
+  hasReachedCountLimit,
+} from '../../utils/planUsage';
 
 const SPACE_PAGE_LIMIT = 10;
 
@@ -142,6 +157,13 @@ const Home = () => {
 
   const [isListening, setIsListening] = useState(false);
   const [isUploadingVoice, setIsUploadingVoice] = useState(false);
+  const [nowTs, setNowTs] = useState(Date.now());
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [upgradeResource, setUpgradeResource] =
+    useState<PlanLimitResource>('spaces');
+  const listeningStartedAtRef = useRef<number | null>(null);
+  const stopListeningRef = useRef<() => Promise<void>>(async () => undefined);
+  const exhaustedPromptedRef = useRef(false);
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [spaceProcessing, setSpaceProcessing] = useState<
     Record<string, SpaceProcessingState>
@@ -182,6 +204,10 @@ const Home = () => {
   } = useGetSpaceStatsQuery(
     { userId, spaceId: selectedSpace?._id ?? '' },
     { skip: !userId || !selectedSpace?._id },
+  );
+  const { data: planStatus } = useGetPlanStatusQuery(
+    { userId },
+    { skip: !userId },
   );
 
   useEffect(() => {
@@ -348,6 +374,8 @@ const Home = () => {
         spaceId: voiceSpace._id,
         mode,
       };
+      listeningStartedAtRef.current = Date.now();
+      setNowTs(Date.now());
 
       await requestVoiceListeningPermissions();
 
@@ -410,6 +438,11 @@ const Home = () => {
       } catch (statusError) {
         console.log('Unable to reset listening status:', statusError);
       }
+      if (isPlanLimitError(error)) {
+        setUpgradeResource(getPlanLimitResource(error) || 'recordingHours');
+        setShowUpgradePrompt(true);
+        return;
+      }
       showToast({
         message: 'Unable to start microphone recording.',
         type: 'error',
@@ -425,14 +458,75 @@ const Home = () => {
 
   const isUserListening = activeSpace?.isListning === true;
   const isVoiceActive = isListening || isUserListening;
+  const elapsedMs = listeningStartedAtRef.current
+    ? Math.max(0, nowTs - listeningStartedAtRef.current)
+    : 0;
+  const remainingMs = getRecordingRemainingMs(
+    planStatus,
+    isVoiceActive ? elapsedMs : 0,
+  );
+  const upgradePrompt = getPlanLimitPrompt(upgradeResource);
+
+  useEffect(() => {
+    if (!isVoiceActive) {
+      listeningStartedAtRef.current = null;
+      exhaustedPromptedRef.current = false;
+      return;
+    }
+
+    if (listeningStartedAtRef.current) {
+      return;
+    }
+
+    const startedAt = activeSpace?.listeningStartedAt
+      ? new Date(activeSpace.listeningStartedAt).getTime()
+      : Date.now();
+    listeningStartedAtRef.current = Number.isNaN(startedAt)
+      ? Date.now()
+      : startedAt;
+  }, [activeSpace?.listeningStartedAt, isVoiceActive]);
+
+  useEffect(() => {
+    if (!isVoiceActive) {
+      return;
+    }
+
+    const timer = setInterval(() => {
+      setNowTs(Date.now());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isVoiceActive]);
+
+  useEffect(() => {
+    if (
+      !isVoiceActive ||
+      remainingMs === UNLIMITED_LIMIT ||
+      remainingMs > 0 ||
+      exhaustedPromptedRef.current
+    ) {
+      return;
+    }
+
+    exhaustedPromptedRef.current = true;
+    setUpgradeResource('recordingHours');
+    setShowUpgradePrompt(true);
+    stopListeningRef.current();
+  }, [isVoiceActive, remainingMs]);
 
   /**
    * OPEN BOTTOM SHEET
    */
 
   const openVoiceSheet = useCallback(() => {
+    if (remainingMs !== UNLIMITED_LIMIT && remainingMs <= 0) {
+      setUpgradeResource('recordingHours');
+      setShowUpgradePrompt(true);
+      return;
+    }
+
     bottomSheetRef.current?.present();
-  }, []);
+  }, [remainingMs]);
 
   const handleStopListening = async () => {
     const recordingContext = recordingContextRef.current;
@@ -510,9 +604,22 @@ const Home = () => {
     }
   };
 
+  stopListeningRef.current = handleStopListening;
+
   const openSpaceSheet = useCallback(() => {
+    if (
+      hasReachedCountLimit(
+        planStatus?.usage?.spaces,
+        planStatus?.plan?.limits?.spaces,
+      )
+    ) {
+      setUpgradeResource('spaces');
+      setShowUpgradePrompt(true);
+      return;
+    }
+
     spaceSheetRef.current?.present();
-  }, []);
+  }, [planStatus?.plan?.limits?.spaces, planStatus?.usage?.spaces]);
 
   const handleDeleteSpace = useCallback(
     async (space: Space) => {
@@ -561,40 +668,15 @@ const Home = () => {
     [activeSpace?._id, deleteSpace, deletingSpaceId, isDeletingSpace, showToast],
   );
 
-  const handleAskBuddy = useCallback(() => {
-    if (selectedSpace) {
-      navigation.navigate('AI', {
-        spaceId: selectedSpace._id,
-        spaceName: selectedSpace.spacename,
-      });
-      return;
-    }
-
-    navigation.navigate({
-      name: 'AI',
-      params: {},
-      merge: false,
-    });
-  }, [navigation, selectedSpace]);
-
   const getSpaceSubtitle = useCallback(
     (space: Space) => {
       if (space.isListning) {
         return 'Listening';
       }
 
-      const processingLabel = getStatusLabel(
+      return getStatusLabel(
         getPrimaryProcessingStatus(spaceProcessing[space._id]),
       );
-      if (processingLabel) {
-        return processingLabel;
-      }
-
-      if (typeof space.tasksCount === 'number') {
-        return `${space.tasksCount} task${space.tasksCount === 1 ? '' : 's'}`;
-      }
-
-      return 'Workspace';
     },
     [spaceProcessing],
   );
@@ -628,11 +710,26 @@ const Home = () => {
             subtitle={
               isUploadingVoice
                 ? 'Uploading voice message...'
-                : isFetchingActiveSpace
+                : isFetchingActiveSpace && !isVoiceActive
                   ? 'Checking active space...'
                   : isVoiceActive
-                    ? `In: ${activeSpace?.spacename || 'Space'}`
-                    : 'Buddy is Ready to Listen.'
+                    ? formatClock(elapsedMs)
+                    : remainingMs === UNLIMITED_LIMIT
+                      ? 'Unlimited recording time'
+                      : remainingMs <= 0
+                        ? 'Upgrade to keep listening'
+                        : `${formatHoursShort(remainingMs)} remaining`
+            }
+            meta={
+              isVoiceActive
+                ? `${activeSpace?.spacename || 'Space'} · ${
+                    remainingMs === UNLIMITED_LIMIT
+                      ? 'Unlimited'
+                      : remainingMs <= 0
+                        ? 'Time up'
+                        : `${formatHoursShort(remainingMs)} left`
+                  }`
+                : undefined
             }
             color={colors.accentCyan}
             active={isVoiceActive}
@@ -673,6 +770,7 @@ const Home = () => {
     [
       activeSpace?.spacename,
       deletingSpaceId,
+      elapsedMs,
       getSpaceSubtitle,
       handleDeleteSpace,
       handleSpacePress,
@@ -683,6 +781,7 @@ const Home = () => {
       isVoiceActive,
       openSpaceSheet,
       openVoiceSheet,
+      remainingMs,
       spaces,
     ],
   );
@@ -761,11 +860,20 @@ const Home = () => {
               navigation.navigate('Tasks', { spaceId: selectedSpace._id });
             }
           }}
-          onAskBuddy={handleAskBuddy}
         />
         <VoiceAssistantSheet
           ref={bottomSheetRef}
           onStart={handleStartListening}
+        />
+        <UpgradePlanPromptModal
+          visible={showUpgradePrompt}
+          title={upgradePrompt.title}
+          message={upgradePrompt.message}
+          onClose={() => setShowUpgradePrompt(false)}
+          onUpgrade={() => {
+            setShowUpgradePrompt(false);
+            navigation.navigate('Plans');
+          }}
         />
       </SafeAreaView>
     </LinearGradient>

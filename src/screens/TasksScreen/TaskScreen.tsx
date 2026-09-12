@@ -45,8 +45,15 @@ import {
   useGetStagedTasksBySpaceQuery,
   useGetUserSpacesQuery,
 } from '../../store/api/home';
+import { useGetPlanStatusQuery } from '../../store/api/payments';
 import UpgradePlanPromptModal from '../../components/UpgradePlanPromptModal';
-import { isPlanLimitError } from '../../utils/planLimitError';
+import {
+  getPlanLimitPrompt,
+  getPlanLimitResource,
+  isPlanLimitError,
+  type PlanLimitResource,
+} from '../../utils/planLimitError';
+import { hasReachedCountLimit } from '../../utils/planUsage';
 import {
   colors,
   fontSize,
@@ -137,6 +144,8 @@ const TaskScreen = () => {
   const [taskFilter, setTaskFilter] = useState<TaskFilter>('newest');
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [upgradeResource, setUpgradeResource] =
+    useState<PlanLimitResource>('tasks');
   const userId = useAppSelector(state => state.auth.userId) ?? '';
   const dispatch = useAppDispatch();
   const { showToast } = useToast();
@@ -150,6 +159,10 @@ const TaskScreen = () => {
     isError: isSpacesError,
     refetch: refetchSpaces,
   } = useGetUserSpacesQuery({ userId, limit: 50 }, { skip: !userId });
+  const { data: planStatus } = useGetPlanStatusQuery(
+    { userId },
+    { skip: !userId },
+  );
 
   const spaces = useMemo(
     () => spacesData?.data?.data?.spaces ?? [],
@@ -345,10 +358,21 @@ const TaskScreen = () => {
       return;
     }
 
+    if (
+      hasReachedCountLimit(
+        planStatus?.usage?.tasks,
+        planStatus?.plan?.limits?.tasks,
+      )
+    ) {
+      setUpgradeResource('tasks');
+      setShowUpgradePrompt(true);
+      return;
+    }
+
     requestAnimationFrame(() => {
       addTaskSheetRef.current?.present();
     });
-  }, [selectedSpaceId, showToast]);
+  }, [planStatus?.plan?.limits?.tasks, planStatus?.usage?.tasks, selectedSpaceId, showToast]);
 
   const getApiErrorMessage = (error: any, fallback: string) =>
     error?.data?.message || error?.message || fallback;
@@ -406,6 +430,7 @@ const TaskScreen = () => {
         });
       } catch (error: any) {
         if (isPlanLimitError(error)) {
+          setUpgradeResource(getPlanLimitResource(error) || 'tasks');
           setShowUpgradePrompt(true);
           throw error;
         }
@@ -742,6 +767,8 @@ const TaskScreen = () => {
 
       <UpgradePlanPromptModal
         visible={showUpgradePrompt}
+        title={getPlanLimitPrompt(upgradeResource).title}
+        message={getPlanLimitPrompt(upgradeResource).message}
         onClose={() => setShowUpgradePrompt(false)}
         onUpgrade={() => {
           setShowUpgradePrompt(false);

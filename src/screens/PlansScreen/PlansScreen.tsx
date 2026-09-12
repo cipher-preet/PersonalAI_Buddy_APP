@@ -4,8 +4,8 @@ import {
   BackHandler,
   LayoutAnimation,
   Platform,
-  Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -35,28 +35,27 @@ import {
 import { useToast } from '../../store/context/ToastContext';
 import { useAppSelector } from '../../store/hooks';
 import {
-  PlanCode,
   useActivateFreePlanMutation,
   useCreatePaymentOrderMutation,
   useGetPlanStatusQuery,
   useGetPlansQuery,
   useVerifyPaymentMutation,
 } from '../../store/api/payments';
-
-type UiPlanId = 'free' | 'pro' | 'pro_plus';
-type BillingCycle = 'monthly' | 'quarterly' | 'annually';
-
-type UiPlan = {
-  id: UiPlanId;
-  backendCode: PlanCode | null;
-  name: string;
-  tagline: string;
-  prices: Record<BillingCycle, string>;
-  accent: string;
-  accentSoft: string;
-  features: string[];
-  comingSoon?: boolean;
-};
+import BillingToggle from './components/BillingToggle';
+import CompareTable from './components/CompareTable';
+import CurrentPlanBanner from './components/CurrentPlanBanner';
+import FaqList from './components/FaqList';
+import PlanCard from './components/PlanCard';
+import {
+  BillingCycle,
+  CYCLE_CADENCE,
+  UiPlan,
+  UiPlanId,
+  buildCompareRows,
+  buildPlanFaqs,
+  getQuarterlyHint,
+  mapApiPlansToUi,
+} from './planCatalog';
 
 if (
   Platform.OS === 'android' &&
@@ -64,88 +63,6 @@ if (
 ) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
-
-const BILLING_OPTIONS: { id: BillingCycle; label: string }[] = [
-  { id: 'monthly', label: 'Monthly' },
-  { id: 'quarterly', label: 'Quarterly' },
-  { id: 'annually', label: 'Annually' },
-];
-
-const CYCLE_CADENCE: Record<BillingCycle, string> = {
-  monthly: 'month',
-  quarterly: 'quarter',
-  annually: 'year',
-};
-
-const CYCLE_HINT: Record<BillingCycle, string | null> = {
-  monthly: null,
-  quarterly: 'Save 11% vs monthly',
-  annually: 'Best value · Save 16%',
-};
-
-const UI_PLANS: UiPlan[] = [
-  {
-    id: 'free',
-    backendCode: 'free',
-    name: 'Starter',
-    tagline: 'Best for getting started',
-    prices: {
-      monthly: 'Free',
-      quarterly: 'Free',
-      annually: 'Free',
-    },
-    accent: '#F59E0B',
-    accentSoft: '#FEF3C7',
-    features: [
-      '5 memory spaces',
-      '100 captured notes',
-      'Basic task extraction',
-      'Daily voice capture',
-      'Standard AI summaries',
-    ],
-  },
-  {
-    id: 'pro',
-    backendCode: 'pro',
-    name: 'Buddy Pro',
-    tagline: 'Best for daily capture',
-    prices: {
-      monthly: '₹299',
-      quarterly: '₹799',
-      annually: '₹2,999',
-    },
-    accent: colors.accentIndigo,
-    accentSoft: colors.primaryLight,
-    features: [
-      'Everything in Starter',
-      'Unlimited memory spaces',
-      'Advanced notes and task extraction',
-      'Priority voice processing',
-      'Smarter reminders and follow-ups',
-    ],
-  },
-  {
-    id: 'pro_plus',
-    backendCode: null,
-    name: 'Buddy Pro Plus',
-    tagline: 'Best for power users',
-    prices: {
-      monthly: '₹499',
-      quarterly: '₹1,299',
-      annually: '₹4,999',
-    },
-    accent: colors.primaryPurple,
-    accentSoft: colors.primarySoft,
-    comingSoon: true,
-    features: [
-      'Everything in Buddy Pro',
-      'Team-ready shared spaces',
-      'Longer voice sessions',
-      'Custom briefing styles',
-      'Priority support',
-    ],
-  },
-];
 
 const BackIcon = () => (
   <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
@@ -159,23 +76,17 @@ const BackIcon = () => (
   </Svg>
 );
 
-const CloseIcon = () => (
-  <Svg width={ms(16)} height={ms(16)} viewBox="0 0 24 24" fill="none">
+const SparkleIcon = ({
+  color = colors.white,
+  size = 16,
+}: {
+  color?: string;
+  size?: number;
+}) => (
+  <Svg width={ms(size)} height={ms(size)} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M7 7l10 10M17 7 7 17"
-      stroke={colors.text}
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const SparkIcon = () => (
-  <Svg width={ms(22)} height={ms(22)} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M12 2.5 13.6 8.4 19.5 10 13.6 11.6 12 17.5 10.4 11.6 4.5 10 10.4 8.4 12 2.5Z"
-      fill={colors.primary}
+      d="M12 3.8c.7 4.1 2.4 5.8 6.5 6.5-4.1.7-5.8 2.4-6.5 6.5-.7-4.1-2.4-5.8-6.5-6.5C9.6 9.6 11.3 7.9 12 3.8Z"
+      fill={color}
     />
   </Svg>
 );
@@ -192,19 +103,29 @@ const CheckIcon = ({ color = colors.primary }: { color?: string }) => (
   </Svg>
 );
 
+const ShieldIcon = () => (
+  <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 3.5 19.5 6.5v5.4c0 4.5-3.1 7.8-7.5 9.1-4.4-1.3-7.5-4.6-7.5-9.1V6.5L12 3.5Z"
+      stroke={colors.success}
+      strokeWidth={1.7}
+      strokeLinejoin="round"
+    />
+    <Path
+      d="m9 12 2 2 4-4"
+      stroke={colors.success}
+      strokeWidth={1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 const animateCards = () => {
   LayoutAnimation.configureNext({
     duration: 220,
     update: {
       type: LayoutAnimation.Types.easeInEaseOut,
-    },
-    create: {
-      type: LayoutAnimation.Types.easeInEaseOut,
-      property: LayoutAnimation.Properties.opacity,
-    },
-    delete: {
-      type: LayoutAnimation.Types.easeInEaseOut,
-      property: LayoutAnimation.Properties.opacity,
     },
   });
 };
@@ -236,34 +157,20 @@ const PlansScreen = () => {
   const [verifyPayment, { isLoading: isVerifyingPayment }] =
     useVerifyPaymentMutation();
 
-  const plans = useMemo<UiPlan[]>(() => {
-    return UI_PLANS.map(plan => {
-      const backend = plansData?.plans?.find(
-        item => item.code === plan.backendCode,
-      );
-
-      if (!backend || plan.comingSoon) {
-        return plan;
-      }
-
-      const monthly =
-        backend.amount === 0 ? 'Free' : `₹${Math.round(backend.amount / 100)}`;
-
-      return {
-        ...plan,
-        prices: {
-          ...plan.prices,
-          monthly,
-        },
-      };
-    });
-  }, [plansData]);
+  const plans = useMemo(
+    () => mapApiPlansToUi(plansData?.plans),
+    [plansData],
+  );
+  const compareRows = useMemo(() => buildCompareRows(plans), [plans]);
+  const faqs = useMemo(() => buildPlanFaqs(plans), [plans]);
 
   const selectedPlan =
     plans.find(plan => plan.id === selectedPlanId) ?? plans[1] ?? plans[0];
   const currentPlanCode = planStatus?.plan?.code;
+  const currentPlanName = planStatus?.plan?.name;
   const isLoadingInitialPlan =
-    !currentPlanCode && (isFetchingPlans || isFetchingPlanStatus);
+    (isFetchingPlans && plans.length === 0) ||
+    (!currentPlanCode && isFetchingPlanStatus);
   const isBusy = isActivatingFree || isCreatingOrder || isVerifyingPayment;
 
   useEffect(() => {
@@ -271,7 +178,11 @@ const PlansScreen = () => {
       return;
     }
 
-    if (currentPlanCode === 'free' || currentPlanCode === 'pro') {
+    if (
+      currentPlanCode === 'free' ||
+      currentPlanCode === 'pro' ||
+      currentPlanCode === 'business'
+    ) {
       setSelectedPlanId(currentPlanCode);
     }
     hasSyncedCurrentPlan.current = true;
@@ -314,27 +225,14 @@ const PlansScreen = () => {
     setSelectedPlanId(planId);
   }, []);
 
+  const handleBillingChange = useCallback((cycle: BillingCycle) => {
+    setBillingCycle(cycle);
+  }, []);
+
   const startCheckout = useCallback(
     async (plan: UiPlan) => {
       if (!userId) {
         showToast({ message: 'Please login again to continue.', type: 'error' });
-        return;
-      }
-
-      if (plan.comingSoon || !plan.backendCode) {
-        showToast({
-          message: 'Buddy Pro Plus is coming soon.',
-          type: 'info',
-        });
-        return;
-      }
-
-      if (billingCycle !== 'monthly') {
-        showToast({
-          message:
-            'Quarterly and annual billing will be available soon. You can subscribe monthly for now.',
-          type: 'info',
-        });
         return;
       }
 
@@ -347,16 +245,18 @@ const PlansScreen = () => {
         if (plan.backendCode === 'free') {
           const response = await activateFreePlan({ userId }).unwrap();
           showToast({
-            message: response.message || 'Starter plan activated.',
+            message: response.message || 'Free plan activated.',
             type: 'success',
           });
           refetchPlanStatus();
+          subscribeSheetRef.current?.dismiss();
           return;
         }
 
         const order = await createPaymentOrder({
           userId,
           planCode: plan.backendCode,
+          interval: billingCycle,
         }).unwrap();
 
         if (!order.requiresPayment) {
@@ -409,7 +309,8 @@ const PlansScreen = () => {
         }).unwrap();
 
         showToast({
-          message: verification.message || 'Payment verified. Pro is active.',
+          message:
+            verification.message || `${plan.name} is now active.`,
           type: 'success',
         });
         refetchPlanStatus();
@@ -440,13 +341,13 @@ const PlansScreen = () => {
 
   const handleSelectThisPlan = useCallback(
     (plan: UiPlan) => {
+      setSelectedPlanId(plan.id);
+
       if (plan.id === 'free') {
         startCheckout(plan);
         return;
       }
 
-      setSelectedPlanId(plan.id);
-      setBillingCycle('monthly');
       requestAnimationFrame(() => {
         subscribeSheetRef.current?.present();
       });
@@ -454,63 +355,64 @@ const PlansScreen = () => {
     [startCheckout],
   );
 
-  const displayPrice = selectedPlan.prices[billingCycle];
+  const displayPrice = selectedPlan?.prices[billingCycle] ?? '';
   const displayCadence = CYCLE_CADENCE[billingCycle];
+  const quarterlyHint = selectedPlan ? getQuarterlyHint(selectedPlan) : null;
   const subscribeLabel = isBusy
     ? 'Please wait...'
-    : selectedPlan.comingSoon
-      ? 'Notify me when it launches'
-      : billingCycle !== 'monthly'
-        ? 'Coming soon'
-        : `Subscribe to ${selectedPlan.name}`;
+    : `Subscribe to ${selectedPlan?.name ?? 'plan'}`;
 
   return (
     <View style={styles.container}>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <LinearGradient
         colors={[colors.gradientStart, colors.gradientMid, colors.white]}
-        locations={[0, 0.38, 1]}
+        locations={[0, 0.32, 1]}
         style={StyleSheet.absoluteFill}
       />
 
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <View style={styles.headerBar}>
-          <TouchableOpacity
-            activeOpacity={0.78}
-            style={styles.headerButton}
-            onPress={() => navigation.goBack()}
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-          >
-            <BackIcon />
-          </TouchableOpacity>
-          <TouchableOpacity
-            activeOpacity={0.78}
-            style={styles.headerButton}
-            onPress={() => navigation.goBack()}
-            accessibilityRole="button"
-            accessibilityLabel="Close"
-          >
-            <CloseIcon />
-          </TouchableOpacity>
+          <View style={styles.headerSide}>
+            <TouchableOpacity
+              activeOpacity={0.78}
+              style={styles.headerButton}
+              onPress={() => navigation.goBack()}
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+            >
+              <BackIcon />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.headerCopy}>
+            <Text style={styles.headerTitle}>Upgrade</Text>
+            <Text style={styles.headerSubtitle}>Choose a membership</Text>
+          </View>
+          <View style={styles.headerSide}>
+            {currentPlanName ? (
+              <View style={styles.headerPlanChip}>
+                <Text style={styles.headerPlanText} numberOfLines={1}>
+                  {currentPlanName}
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.headerButtonSpacer} />
+            )}
+          </View>
         </View>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[
+            styles.content,
+            { paddingBottom: spacing['6xl'] + insets.bottom },
+          ]}
         >
-          <View style={styles.hero}>
-            <View style={styles.haloOuter}>
-              <LinearGradient
-                colors={[colors.primarySoft, colors.white]}
-                style={styles.haloInner}
-              >
-                <SparkIcon />
-              </LinearGradient>
-            </View>
-            <Text style={styles.heroTitle}>Choose your Buddy plan</Text>
-            <Text style={styles.heroSubtitle}>
-              Capture more, remember more. Switch anytime.
-            </Text>
+          {planStatus ? <CurrentPlanBanner planStatus={planStatus} /> : null}
+
+          <View style={styles.billingBlock}>
+            <Text style={styles.billingLabel}>Billing cycle</Text>
+            <BillingToggle value={billingCycle} onChange={handleBillingChange} />
           </View>
 
           {isLoadingInitialPlan ? (
@@ -523,108 +425,38 @@ const PlansScreen = () => {
             </View>
           ) : (
             <View style={styles.planStack}>
-              {plans.map(plan => {
-                const selected = plan.id === selectedPlanId;
-                const isCurrent =
-                  plan.backendCode != null &&
-                  currentPlanCode === plan.backendCode;
-                const priceText =
-                  plan.id === 'free'
-                    ? 'Free'
-                    : `${plan.prices.monthly}/month`;
-
-                return (
-                  <Pressable
-                    key={plan.id}
-                    onPress={() => handleSelectCard(plan.id)}
-                    style={[
-                      styles.planCard,
-                      selected && styles.planCardSelected,
-                      selected && { borderColor: plan.accent },
-                    ]}
-                  >
-                    <View
-                      style={[styles.accentBar, { backgroundColor: plan.accent }]}
-                    />
-
-                    <View style={styles.planCardBody}>
-                      <View style={styles.planCardTop}>
-                        <View style={styles.planCopy}>
-                          <Text style={styles.planName}>{plan.name}</Text>
-                          <Text style={styles.planTagline}>{plan.tagline}</Text>
-                        </View>
-
-                        {isCurrent ? (
-                          <View
-                            style={[
-                              styles.currentBadge,
-                              { backgroundColor: plan.accentSoft },
-                            ]}
-                          >
-                            <CheckIcon color={plan.accent} />
-                            <Text
-                              style={[
-                                styles.currentBadgeText,
-                                { color: plan.accent },
-                              ]}
-                            >
-                              Current
-                            </Text>
-                          </View>
-                        ) : (
-                          <Text style={styles.planPrice}>{priceText}</Text>
-                        )}
-                      </View>
-
-                      {selected ? (
-                        <View style={styles.expandedBlock}>
-                          <View style={styles.featureList}>
-                            {plan.features.map(feature => (
-                              <View key={feature} style={styles.featureRow}>
-                                <View
-                                  style={[
-                                    styles.featureCheck,
-                                    { backgroundColor: plan.accentSoft },
-                                  ]}
-                                >
-                                  <CheckIcon color={plan.accent} />
-                                </View>
-                                <Text style={styles.featureText}>{feature}</Text>
-                              </View>
-                            ))}
-                          </View>
-
-                          <TouchableOpacity
-                            activeOpacity={0.88}
-                            disabled={isBusy || isCurrent}
-                            style={[
-                              styles.selectButton,
-                              { backgroundColor: plan.accent },
-                              (isBusy || isCurrent) &&
-                                styles.selectButtonDisabled,
-                            ]}
-                            onPress={() => handleSelectThisPlan(plan)}
-                          >
-                            {isBusy && selected && plan.id === 'free' ? (
-                              <ActivityIndicator color={colors.white} />
-                            ) : (
-                              <Text style={styles.selectButtonText}>
-                                {isCurrent
-                                  ? 'Current plan'
-                                  : plan.comingSoon
-                                    ? 'Join waitlist'
-                                    : `Select ${plan.name}`}
-                              </Text>
-                            )}
-                          </TouchableOpacity>
-                        </View>
-                      ) : null}
-                    </View>
-                  </Pressable>
-                );
-              })}
+              {plans.map(plan => (
+                <PlanCard
+                  key={plan.id}
+                  plan={plan}
+                  billingCycle={billingCycle}
+                  selected={plan.id === selectedPlanId}
+                  isCurrent={currentPlanCode === plan.backendCode}
+                  isBusy={isBusy && selectedPlanId === plan.id}
+                  onPress={() => handleSelectCard(plan.id)}
+                  onCta={() => handleSelectThisPlan(plan)}
+                />
+              ))}
             </View>
           )}
+
+          {plans.length > 0 ? (
+            <>
+              <CompareTable
+                plans={plans}
+                rows={compareRows}
+                selectedPlanId={selectedPlanId}
+              />
+              <FaqList items={faqs} />
+            </>
+          ) : null}
+
+          <View style={styles.legalRow}>
+            <ShieldIcon />
+            <Text style={styles.legalText}>
+              Payments are secured by Razorpay. Change or cancel anytime.
+            </Text>
+          </View>
         </ScrollView>
       </SafeAreaView>
 
@@ -637,92 +469,75 @@ const PlansScreen = () => {
         handleIndicatorStyle={styles.sheetIndicator}
         onChange={index => setIsSheetOpen(index >= 0)}
       >
+        {selectedPlan ? (
         <BottomSheetScrollView
           contentContainerStyle={[
             styles.sheetContent,
             { paddingBottom: spacing['2xl'] + insets.bottom },
           ]}
         >
-          <Text style={styles.sheetTitle}>{selectedPlan.name}</Text>
-          <Text style={styles.sheetPrice}>
-            {displayPrice}
-            {selectedPlan.id !== 'free' ? (
-              <Text style={styles.sheetCadence}>/{displayCadence}</Text>
+          <View style={styles.sheetHero}>
+            <View style={styles.sheetEyebrowRow}>
+              <SparkleIcon color={colors.primary} size={14} />
+              <Text style={styles.sheetEyebrow}>Confirm subscription</Text>
+            </View>
+            <Text style={styles.sheetTitle}>{selectedPlan.name}</Text>
+            <View style={styles.sheetPriceRow}>
+              <Text style={styles.sheetPrice}>{displayPrice}</Text>
+              {selectedPlan.id !== 'free' ? (
+                <Text style={styles.sheetCadence}>/{displayCadence}</Text>
+              ) : null}
+            </View>
+            {billingCycle === 'quarterly' && quarterlyHint ? (
+              <View style={styles.sheetHintChip}>
+                <Text style={styles.sheetHint}>{quarterlyHint}</Text>
+              </View>
             ) : null}
-          </Text>
-          {CYCLE_HINT[billingCycle] ? (
-            <Text style={styles.sheetHint}>{CYCLE_HINT[billingCycle]}</Text>
-          ) : null}
-
-          <View style={styles.billingToggle}>
-            {BILLING_OPTIONS.map(option => {
-              const active = billingCycle === option.id;
-
-              return (
-                <TouchableOpacity
-                  key={option.id}
-                  activeOpacity={0.85}
-                  style={[
-                    styles.billingChip,
-                    active && styles.billingChipActive,
-                    active && shadows.soft,
-                  ]}
-                  onPress={() => setBillingCycle(option.id)}
-                >
-                  <Text
-                    style={[
-                      styles.billingChipText,
-                      active && styles.billingChipTextActive,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
           </View>
 
+          <BillingToggle value={billingCycle} onChange={handleBillingChange} />
+
           <View style={styles.featuresBox}>
-            <View style={styles.featuresBoxHeader}>
-              <Text style={styles.featuresBoxLabel}>Features</Text>
-            </View>
-            <View style={styles.featuresBoxBody}>
-              {selectedPlan.features.map(feature => (
-                <View key={feature} style={styles.featureRow}>
-                  <View
-                    style={[
-                      styles.featureCheck,
-                      { backgroundColor: selectedPlan.accentSoft },
-                    ]}
-                  >
-                    <CheckIcon color={selectedPlan.accent} />
-                  </View>
-                  <Text style={styles.featureText}>{feature}</Text>
+            {selectedPlan.features.map(feature => (
+              <View key={feature.id} style={styles.sheetFeatureRow}>
+                <View style={styles.sheetCheck}>
+                  <CheckIcon />
                 </View>
-              ))}
-            </View>
+                <Text style={styles.sheetFeatureText}>{feature.label}</Text>
+              </View>
+            ))}
           </View>
 
           <TouchableOpacity
             activeOpacity={0.88}
             disabled={isBusy}
-            style={[
-              styles.subscribeButton,
-              { backgroundColor: selectedPlan.accent },
-              isBusy && styles.selectButtonDisabled,
-            ]}
             onPress={() => startCheckout(selectedPlan)}
           >
-            {isBusy ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <Text style={styles.selectButtonText}>{subscribeLabel}</Text>
-            )}
+            <LinearGradient
+              colors={[
+                colors.upgradeGradientStart,
+                colors.upgradeGradientMid,
+                colors.upgradeGradientEnd,
+              ]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.subscribeButton, isBusy && styles.subscribeDisabled]}
+            >
+              {isBusy ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={styles.subscribeButtonText}>{subscribeLabel}</Text>
+              )}
+            </LinearGradient>
           </TouchableOpacity>
-          <Text style={styles.legalText}>
-            By subscribing, you agree to our Terms of Service and Privacy Policy.
-          </Text>
+          <View style={styles.legalRow}>
+            <ShieldIcon />
+            <Text style={styles.legalText}>
+              By subscribing, you agree to our Terms of Service and Privacy Policy.
+            </Text>
+          </View>
         </BottomSheetScrollView>
+        ) : null}
       </BottomSheetModal>
     </View>
   );
@@ -741,12 +556,18 @@ const styles = StyleSheet.create({
   },
 
   headerBar: {
+    minHeight: ms(56),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing['2xl'],
+    paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
+  },
+
+  headerSide: {
+    width: ms(84),
+    alignItems: 'flex-start',
   },
 
   headerButton: {
@@ -760,50 +581,63 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
 
-  content: {
-    paddingHorizontal: spacing['2xl'],
-    paddingTop: spacing.sm,
-    paddingBottom: spacing['6xl'],
-    flexGrow: 1,
-  },
-
-  hero: {
+  headerCopy: {
+    flex: 1,
     alignItems: 'center',
-    marginBottom: spacing['2xl'],
+    paddingHorizontal: spacing.sm,
   },
 
-  haloOuter: {
-    width: ms(72),
-    height: ms(72),
-    borderRadius: ms(36),
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primarySoft,
-    marginBottom: spacing.lg,
+  headerButtonSpacer: {
+    width: layout.headerButton,
+    height: layout.headerButton,
   },
 
-  haloInner: {
-    width: ms(54),
-    height: ms(54),
-    borderRadius: ms(27),
-    alignItems: 'center',
-    justifyContent: 'center',
+  headerPlanChip: {
+    alignSelf: 'flex-end',
+    maxWidth: ms(84),
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primaryLight,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.brandBorder,
   },
 
-  heroTitle: {
+  headerPlanText: {
+    color: colors.primaryDark,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+  },
+
+  headerTitle: {
     color: colors.text,
-    fontSize: ms(26),
-    fontWeight: fontWeight.extrabold,
-    letterSpacing: -0.6,
-    textAlign: 'center',
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    letterSpacing: -0.3,
   },
 
-  heroSubtitle: {
-    marginTop: spacing.sm,
+  headerSubtitle: {
+    marginTop: spacing.xxs,
     color: colors.subText,
-    fontSize: fontSize.sm,
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
-    textAlign: 'center',
+  },
+
+  content: {
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: spacing.md,
+    flexGrow: 1,
+    gap: spacing['2xl'],
+  },
+
+  billingBlock: {
+    gap: spacing.md,
+  },
+
+  billingLabel: {
+    color: colors.text,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
   },
 
   loaderCard: {
@@ -815,6 +649,7 @@ const styles = StyleSheet.create({
     padding: spacing['2xl'],
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
+    ...shadows.card,
   },
 
   loaderTitle: {
@@ -833,126 +668,23 @@ const styles = StyleSheet.create({
   },
 
   planStack: {
+    gap: spacing.xl,
+  },
+
+  legalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.sm,
-  },
-
-  planCard: {
-    flexDirection: 'row',
-    overflow: 'hidden',
-    borderRadius: radii.xl,
-    backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-
-  planCardSelected: {
-    borderWidth: 1.5,
-  },
-
-  accentBar: {
-    width: ms(5),
-  },
-
-  planCardBody: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-  },
-
-  planCardTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-
-  planCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  planName: {
-    color: colors.text,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.extrabold,
-    letterSpacing: -0.2,
-  },
-
-  planTagline: {
-    marginTop: spacing.xxs,
-    color: colors.subText,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-  },
-
-  planPrice: {
-    color: colors.text,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
-    marginTop: spacing.xxs,
-  },
-
-  currentBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-    borderRadius: radii.pill,
   },
 
-  currentBadgeText: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-  },
-
-  expandedBlock: {
-    marginTop: spacing.lg,
-  },
-
-  featureList: {
-    gap: spacing.md,
-    marginBottom: spacing.lg,
-  },
-
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-  },
-
-  featureCheck: {
-    width: ms(22),
-    height: ms(22),
-    borderRadius: ms(11),
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: ms(1),
-  },
-
-  featureText: {
+  legalText: {
     flex: 1,
-    color: colors.text,
-    fontSize: fontSize.sm,
+    color: colors.muted,
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
-    lineHeight: ms(20),
-  },
-
-  selectButton: {
-    minHeight: ms(48),
-    borderRadius: radii.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  selectButtonDisabled: {
-    opacity: 0.55,
-  },
-
-  selectButtonText: {
-    color: colors.white,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
+    lineHeight: ms(16),
   },
 
   sheetBackground: {
@@ -971,108 +703,117 @@ const styles = StyleSheet.create({
   sheetContent: {
     paddingHorizontal: spacing['2xl'],
     paddingTop: spacing.sm,
+    gap: spacing.lg,
+  },
+
+  sheetHero: {
+    backgroundColor: colors.primarySoft,
+    borderRadius: radii.xl,
+    padding: spacing['2xl'],
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.brandBorder,
+  },
+
+  sheetEyebrowRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+
+  sheetEyebrow: {
+    color: colors.primary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 1.2,
   },
 
   sheetTitle: {
     color: colors.text,
-    fontSize: ms(22),
+    fontSize: ms(26),
     fontWeight: fontWeight.extrabold,
-    letterSpacing: -0.4,
+    letterSpacing: -0.5,
+    marginTop: spacing.sm,
+  },
+
+  sheetPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
   },
 
   sheetPrice: {
-    marginTop: spacing.xs,
     color: colors.text,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
+    fontSize: fontSize['4xl'],
+    fontWeight: fontWeight.extrabold,
+  },
+
+  sheetHintChip: {
+    alignSelf: 'flex-start',
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.pill,
+    backgroundColor: colors.successSoft,
   },
 
   sheetHint: {
-    marginTop: spacing.xs,
-    color: colors.success,
+    color: colors.successText,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
   },
 
   sheetCadence: {
+    marginBottom: spacing.xs,
     color: colors.subText,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
-  },
-
-  billingToggle: {
-    flexDirection: 'row',
-    backgroundColor: colors.lightGray,
-    borderRadius: radii.pill,
-    padding: spacing.xs,
-    marginTop: spacing.xl,
-    marginBottom: spacing.xl,
-  },
-
-  billingChip: {
-    flex: 1,
-    minHeight: ms(38),
-    borderRadius: radii.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  billingChipActive: {
-    backgroundColor: colors.white,
-  },
-
-  billingChipText: {
-    color: colors.subText,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-  },
-
-  billingChipTextActive: {
-    color: colors.text,
-    fontWeight: fontWeight.bold,
   },
 
   featuresBox: {
     borderRadius: radii.xl,
-    backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    overflow: 'hidden',
-    marginBottom: spacing.xl,
-  },
-
-  featuresBoxHeader: {
     backgroundColor: colors.inputBg,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-
-  featuresBoxLabel: {
-    color: colors.subText,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
-  },
-
-  featuresBoxBody: {
     padding: spacing.lg,
     gap: spacing.md,
   },
 
-  subscribeButton: {
-    minHeight: ms(52),
-    borderRadius: radii.lg,
+  sheetFeatureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+
+  sheetCheck: {
+    width: ms(22),
+    height: ms(22),
+    borderRadius: ms(11),
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  legalText: {
-    marginTop: spacing.md,
-    color: colors.muted,
-    fontSize: fontSize.xs,
+  sheetFeatureText: {
+    flex: 1,
+    color: colors.text,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
-    textAlign: 'center',
-    lineHeight: ms(16),
+  },
+
+  subscribeButton: {
+    minHeight: layout.buttonHeight,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.primary,
+  },
+
+  subscribeDisabled: {
+    opacity: 0.55,
+  },
+
+  subscribeButtonText: {
+    color: colors.white,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
   },
 });

@@ -11,6 +11,8 @@ import {
 import Svg, { Path } from 'react-native-svg';
 
 import SpaceFolderIcon from './SpaceFolderIcon';
+import { useGetSpaceStatsQuery } from '../../../store/api/home';
+import { useAppSelector } from '../../../store/hooks';
 import {
   colors,
   fontSize,
@@ -21,13 +23,19 @@ import {
 } from '../../../theme';
 
 type Props = {
+  spaceId: string;
   title: string;
-  subtitle: string;
+  statusLabel?: string;
+  notesCount?: number;
+  tasksCount?: number;
   isListening?: boolean;
   isDeleting?: boolean;
   onPress: () => void;
   onDelete?: () => void;
 };
+
+const countLabel = (count: number, singular: string, plural: string) =>
+  `${count} ${count === 1 ? singular : plural}`;
 
 const TrashIcon = () => (
   <Svg width={ms(15)} height={ms(15)} viewBox="0 0 24 24" fill="none">
@@ -42,14 +50,29 @@ const TrashIcon = () => (
 );
 
 const SpaceFolderTile = ({
+  spaceId,
   title,
-  subtitle,
+  statusLabel,
+  notesCount: initialNotesCount,
+  tasksCount: initialTasksCount,
   isListening = false,
   isDeleting = false,
   onPress,
   onDelete,
 }: Props) => {
   const [menuVisible, setMenuVisible] = useState(false);
+  const userId = useAppSelector(state => state.auth.userId) ?? '';
+  const hasListCounts =
+    typeof initialNotesCount === 'number' &&
+    typeof initialTasksCount === 'number';
+
+  const { data: statsData } = useGetSpaceStatsQuery(
+    { userId, spaceId },
+    { skip: !userId || !spaceId || hasListCounts },
+  );
+
+  const notesCount = statsData?.data?.notesCount ?? initialNotesCount ?? 0;
+  const tasksCount = statsData?.data?.tasksCount ?? initialTasksCount ?? 0;
 
   return (
     <>
@@ -77,8 +100,16 @@ const SpaceFolderTile = ({
         <Text style={styles.title} numberOfLines={2}>
           {title}
         </Text>
-        <Text style={styles.subtitle} numberOfLines={1}>
-          {subtitle}
+        {statusLabel ? (
+          <Text style={styles.status} numberOfLines={1}>
+            {statusLabel}
+          </Text>
+        ) : null}
+        <Text style={styles.meta} numberOfLines={1}>
+          {countLabel(notesCount, 'note', 'notes')}
+        </Text>
+        <Text style={styles.meta} numberOfLines={1}>
+          {countLabel(tasksCount, 'task', 'tasks')}
         </Text>
       </TouchableOpacity>
 
@@ -142,7 +173,15 @@ const styles = StyleSheet.create({
     lineHeight: ms(16),
   },
 
-  subtitle: {
+  status: {
+    marginTop: spacing.xxs,
+    color: colors.primary,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+    textAlign: 'center',
+  },
+
+  meta: {
     marginTop: spacing.xxs,
     color: colors.muted,
     fontSize: fontSize.xs,

@@ -49,9 +49,11 @@ export interface Space {
   _id: string;
   spacename: string;
   description: string;
+  notesCount?: number;
   tasksCount?: number;
   userId: string;
   isListning: boolean;
+  listeningStartedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   __v: number;
@@ -75,6 +77,89 @@ interface GetUserSpacesResponse {
 interface GetUserActiveSpacesResponse {
   success: boolean;
   data: any;
+}
+
+export type BriefingTaskCard = {
+  id: string;
+  title: string;
+  meta: string;
+};
+
+export type BriefingMeetingCard = {
+  id: string;
+  time: string;
+  title: string;
+  meta: string;
+};
+
+export type BriefingInsightCard = {
+  id: string;
+  source: string;
+  sourceType: string;
+  title: string;
+  body: string;
+  excerpt: string;
+  whyItMatters: string;
+  capturedAt: string;
+  space: string;
+  tags: string[];
+};
+
+export type BriefingListItem = {
+  id: string;
+  title: string;
+  detail: string;
+};
+
+export type BriefingSourceStats = {
+  transcriptCount: number;
+  taskCount: number;
+  noteCount: number;
+  eventCount: number;
+  reminderCount: number;
+  pendingTranscriptCount: number;
+};
+
+export type BriefingStatus =
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'READY'
+  | 'FAILED'
+  | 'SKIPPED'
+  | string;
+
+export type DailyBriefingPayload = {
+  userId: string;
+  dateKey: string;
+  timezone: string;
+  status: BriefingStatus;
+  skipReason?: string | null;
+  headline: string;
+  overview: string;
+  highlights: BriefingListItem[];
+  importantMoments: BriefingListItem[];
+  completed: BriefingListItem[];
+  pendingTasks: BriefingListItem[];
+  decisions: BriefingListItem[];
+  followUps: BriefingListItem[];
+  tomorrowFocus: BriefingListItem[];
+  insights: BriefingInsightCard[];
+  people: string[];
+  topics: string[];
+  tasks: BriefingTaskCard[];
+  meetings: BriefingMeetingCard[];
+  sourceStats: BriefingSourceStats;
+  pipelineVersion?: string;
+  generatedAt?: string | null;
+  updatedAt?: string | null;
+  periodStartUtc?: string | null;
+  periodEndUtc?: string | null;
+};
+
+interface GetDailyBriefingResponse {
+  success: boolean;
+  message?: string;
+  data: DailyBriefingPayload;
 }
 
 export interface SpaceStats {
@@ -237,7 +322,7 @@ export const homeApi = baseApi.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Spaces'],
+      invalidatesTags: ['Spaces', 'Plans'],
     }),
 
     deleteSpace: builder.mutation<DeleteSpaceResponse, { spaceId: string }>({
@@ -246,7 +331,7 @@ export const homeApi = baseApi.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Spaces'],
+      invalidatesTags: ['Spaces', 'Plans'],
     }),
 
     startListning: builder.mutation<
@@ -258,7 +343,7 @@ export const homeApi = baseApi.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Spaces'],
+      invalidatesTags: ['Spaces', 'Plans'],
     }),
 
     getUserSpaces: builder.query<GetUserSpacesResponse, GetUserSpacesArgs>({
@@ -368,7 +453,7 @@ export const homeApi = baseApi.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Spaces'],
+      invalidatesTags: ['Spaces', 'Plans'],
     }),
 
     getStagedTasksBySpace: builder.query<
@@ -397,7 +482,7 @@ export const homeApi = baseApi.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Spaces'],
+      invalidatesTags: ['Spaces', 'Plans'],
     }),
 
     createStagedNote: builder.mutation<
@@ -434,6 +519,14 @@ export const homeApi = baseApi.injectEndpoints({
         body: data,
       }),
     }),
+    getDailyBriefing: builder.query<GetDailyBriefingResponse, { date?: string } | void>({
+      query: args => ({
+        url: 'home/getDailyBriefing',
+        method: 'GET',
+        params: args?.date ? { date: args.date } : undefined,
+      }),
+      providesTags: ['Briefing'],
+    }),
   }),
 });
 
@@ -454,4 +547,5 @@ export const {
   useLazyGetStagedNoteByIdQuery,
   useGetStagedTasksBySpaceQuery,
   useRegisterDeviceTokenMutation,
+  useGetDailyBriefingQuery,
 } = homeApi;

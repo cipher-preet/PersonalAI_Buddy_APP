@@ -35,8 +35,11 @@ const SpacesGrid = ({
         {spaces.map(space => (
           <View key={space._id} style={styles.cell}>
             <SpaceFolderTile
+              spaceId={space._id}
               title={space.spacename}
-              subtitle={getSubtitle(space)}
+              statusLabel={getSubtitle(space)}
+              notesCount={space.notesCount}
+              tasksCount={space.tasksCount}
               isListening={space.isListning}
               isDeleting={deletingSpaceId === space._id}
               onPress={() => onSpacePress(space)}

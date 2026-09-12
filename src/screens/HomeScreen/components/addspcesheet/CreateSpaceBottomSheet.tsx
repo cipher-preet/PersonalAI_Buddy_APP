@@ -26,7 +26,12 @@ import { useToast } from '../../../../store/context/ToastContext';
 import { useAppSelector } from '../../../../store/hooks';
 import { useCreateSpaceMutation } from '../../../../store/api/home';
 import UpgradePlanPromptModal from '../../../../components/UpgradePlanPromptModal';
-import { isPlanLimitError } from '../../../../utils/planLimitError';
+import {
+  getPlanLimitPrompt,
+  getPlanLimitResource,
+  isPlanLimitError,
+  type PlanLimitResource,
+} from '../../../../utils/planLimitError';
 import {
   colors,
   fontSize,
@@ -55,6 +60,8 @@ const CreateSpaceBottomSheet = forwardRef((_props: any, ref: any) => {
   const [spaceNameError, setSpaceNameError] = useState('');
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [upgradeResource, setUpgradeResource] =
+    useState<PlanLimitResource>('spaces');
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [createSpace, { isLoading }] = useCreateSpaceMutation();
 
@@ -164,6 +171,7 @@ const CreateSpaceBottomSheet = forwardRef((_props: any, ref: any) => {
       }
     } catch (error: any) {
       if (isPlanLimitError(error)) {
+        setUpgradeResource(getPlanLimitResource(error) || 'spaces');
         showPlanLimitPrompt();
         return;
       }
@@ -267,6 +275,8 @@ const CreateSpaceBottomSheet = forwardRef((_props: any, ref: any) => {
 
       <UpgradePlanPromptModal
         visible={showUpgradePrompt}
+        title={getPlanLimitPrompt(upgradeResource).title}
+        message={getPlanLimitPrompt(upgradeResource).message}
         onClose={() => setShowUpgradePrompt(false)}
         onUpgrade={() => {
           setShowUpgradePrompt(false);

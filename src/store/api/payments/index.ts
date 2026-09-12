@@ -19,12 +19,15 @@ const unwrapApiData = <T>(response: unknown): T => {
   return response as T;
 };
 
-export type PlanCode = 'free' | 'pro';
+export type PlanCode = 'free' | 'pro' | 'business';
+export type PlanInterval = 'forever' | 'monthly' | 'quarterly';
 
 export type PlanLimits = {
   spaces: number;
   notes: number;
   tasks: number;
+  recordingHours?: number;
+  recordingMs?: number;
 };
 
 export type Plan = {
@@ -33,9 +36,11 @@ export type Plan = {
   name: string;
   description: string;
   amount: number;
+  quarterlyAmount?: number;
   currency: string;
-  interval: 'forever' | 'monthly';
+  interval: PlanInterval;
   limits: PlanLimits;
+  languages?: string[];
   features: string[];
   isActive: boolean;
 };
@@ -108,7 +113,7 @@ export const paymentsApi = baseApi.injectEndpoints({
 
     createPaymentOrder: builder.mutation<
       PaymentOrder,
-      { userId: string; planCode: PlanCode }
+      { userId: string; planCode: PlanCode; interval?: 'monthly' | 'quarterly' }
     >({
       query: body => ({
         url: 'payments/order',

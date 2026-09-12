@@ -1,5 +1,6 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  RefreshControl,
   ScrollView,
   StatusBar,
   StyleSheet,
@@ -16,6 +17,12 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import type { MainTabParamList } from '../../navigation/types';
 import {
+  type BriefingInsightCard,
+  type BriefingListItem,
+  useGetDailyBriefingQuery,
+} from '../../store/api/home';
+import { useAppSelector } from '../../store/hooks';
+import {
   colors,
   fontSize,
   fontWeight,
@@ -25,60 +32,23 @@ import {
   shadows,
   spacing,
 } from '../../theme';
+import {
+  capturedCount,
+  deriveProgress,
+  formatDateKey,
+  formatDateKeyParts,
+  formatGeneratedAt,
+  isBriefingReady,
+  isPreparingStatus,
+  listOrEmpty,
+  sectionItems,
+  sourceSummary,
+  tasksFromBriefing,
+} from './briefingUtils';
+import BriefingEmptyState, {
+  type BriefingEmptyVariant,
+} from './components/BriefingEmptyState';
 import BriefingSourceBottomSheet from './components/BriefingSourceBottomSheet';
-import { insights, type InsightItem } from './components/mockBriefing';
-
-type TaskItem = {
-  id: string;
-  title: string;
-  meta: string;
-};
-
-type MeetingItem = {
-  id: string;
-  time: string;
-  title: string;
-  meta: string;
-};
-
-const tasks: TaskItem[] = [
-  {
-    id: 'proposal',
-    title: 'Finish product proposal',
-    meta: 'Due today · Product Launch',
-  },
-  {
-    id: 'research',
-    title: 'Review research notes',
-    meta: 'Due 2:00 PM · Personal',
-  },
-  {
-    id: 'invoice',
-    title: 'Send August invoice',
-    meta: 'Due 5:00 PM · Finance',
-  },
-];
-
-const meetings: MeetingItem[] = [
-  {
-    id: 'sync',
-    time: '10:30 AM',
-    title: 'Product sync',
-    meta: '30 min · Google Meet',
-  },
-  {
-    id: 'review',
-    time: '3:00 PM',
-    title: 'Client review',
-    meta: '45 min · Zoom',
-  },
-  {
-    id: 'critique',
-    time: '5:30 PM',
-    title: 'Design critique',
-    meta: '40 min · Office',
-  },
-];
 
 const BackIcon = () => (
   <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
@@ -170,24 +140,104 @@ const ChevronIcon = () => (
   </Svg>
 );
 
+const isNotFoundError = (error: unknown) =>
+  typeof error === 'object' &&
+  error != null &&
+  'status' in error &&
+  (error as { status?: number }).status === 404;
+
+const ItemSection = ({
+  title,
+  subtitle,
+  items,
+}: {
+  title: string;
+  subtitle: string;
+  items: BriefingListItem[];
+}) => {
+  if (!items.length) {
+    return null;
+  }
+  return (
+    <>
+      <View style={styles.sectionHeading}>
+        <View>
+          <Text style={styles.sectionTitle}>{title}</Text>
+          <Text style={styles.sectionSubtitle}>{subtitle}</Text>
+        </View>
+      </View>
+      <View style={styles.listCard}>
+        {items.map((item, index) => (
+          <View key={item.id || `${title}-${index}`}>
+            <View style={styles.listRow}>
+              <View style={styles.listBullet} />
+              <View style={styles.taskCopy}>
+                <Text style={styles.taskTitle}>{item.title}</Text>
+                {item.detail ? (
+                  <Text style={styles.taskMeta}>{item.detail}</Text>
+                ) : null}
+              </View>
+            </View>
+            {index < items.length - 1 ? <View style={styles.divider} /> : null}
+          </View>
+        ))}
+      </View>
+    </>
+  );
+};
+
 const BriefingScreen = () => {
   const navigation =
     useNavigation<BottomTabNavigationProp<MainTabParamList>>();
+  const token = useAppSelector(state => state.auth.token);
   const sourceSheetRef = useRef<BottomSheetModal>(null);
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
-  const [selectedInsight, setSelectedInsight] = useState<InsightItem | null>(
-    null,
-  );
+  const [selectedInsight, setSelectedInsight] =
+    useState<BriefingInsightCard | null>(null);
+  const [pollMs, setPollMs] = useState(0);
 
-  const now = useMemo(() => new Date(), []);
-  const month = now.toLocaleDateString('en-US', { month: 'short' });
-  const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
-  const fullDate = now.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
-  const progress = completedTasks.length / tasks.length;
+  const { data, error, isLoading, isError, isFetching, refetch } =
+    useGetDailyBriefingQuery(undefined, {
+      skip: !token,
+      pollingInterval: pollMs,
+      refetchOnFocus: true,
+    });
+
+  const briefing = data?.success ? data.data : undefined;
+  const ready = isBriefingReady(briefing);
+
+  useEffect(() => {
+    const next = isPreparingStatus(briefing?.status) ? 12000 : 0;
+    setPollMs(current => (current === next ? current : next));
+  }, [briefing?.status]);
+
+  const tasks = useMemo(
+    () => (briefing ? tasksFromBriefing(briefing) : []),
+    [briefing],
+  );
+  const meetings = listOrEmpty(briefing?.meetings);
+  const insights = listOrEmpty(briefing?.insights);
+  const highlights = sectionItems(briefing?.highlights);
+  const importantMoments = sectionItems(briefing?.importantMoments);
+  const completedItems = sectionItems(briefing?.completed);
+  const followUps = sectionItems(briefing?.followUps);
+  const tomorrowFocus = sectionItems(briefing?.tomorrowFocus);
+  const decisions = sectionItems(briefing?.decisions);
+  const people = listOrEmpty(briefing?.people);
+  const topics = listOrEmpty(briefing?.topics);
+  const progress = briefing ? deriveProgress(briefing) : { done: 0, total: 0, percent: 0 };
+  const localProgress = tasks.length
+    ? completedTasks.length / tasks.length
+    : progress.percent / 100;
+  const dateParts = formatDateKeyParts(briefing?.dateKey);
+  const generatedLabel = formatGeneratedAt(briefing?.generatedAt);
+  const snapshotCount = capturedCount(briefing?.sourceStats);
+  const snapshotLabel = sourceSummary(briefing?.sourceStats);
+  const ringOffset = 2 * Math.PI * 27 * (1 - Math.min(Math.max(localProgress, 0), 1));
+
+  const openChat = useCallback(() => {
+    navigation.navigate({ name: 'AI', params: {}, merge: false });
+  }, [navigation]);
 
   const toggleTask = (id: string) => {
     setCompletedTasks(current =>
@@ -197,10 +247,38 @@ const BriefingScreen = () => {
     );
   };
 
-  const openInsightSource = (insight: InsightItem) => {
+  const openInsightSource = (insight: BriefingInsightCard) => {
     setSelectedInsight(insight);
     requestAnimationFrame(() => sourceSheetRef.current?.present());
   };
+
+  const emptyVariant: BriefingEmptyVariant | null = (() => {
+    if (!token) {
+      return 'signedOut';
+    }
+    if (isLoading && !briefing) {
+      return 'loading';
+    }
+    if (isError && isNotFoundError(error)) {
+      return 'missing';
+    }
+    if (isError) {
+      return 'error';
+    }
+    if (!briefing) {
+      return 'missing';
+    }
+    if (isPreparingStatus(briefing.status)) {
+      return 'preparing';
+    }
+    if (briefing.status === 'SKIPPED') {
+      return 'skipped';
+    }
+    if (briefing.status === 'FAILED') {
+      return 'failed';
+    }
+    return null;
+  })();
 
   return (
     <View style={styles.screen}>
@@ -216,7 +294,9 @@ const BriefingScreen = () => {
           </TouchableOpacity>
           <View style={styles.headerCopy}>
             <Text style={styles.headerTitle}>Daily Briefing</Text>
-            <Text style={styles.headerDate}>{fullDate}</Text>
+            <Text style={styles.headerDate}>
+              {formatDateKey(briefing?.dateKey)}
+            </Text>
           </View>
           <View style={styles.buddyBadge}>
             <SparkleIcon size={17} />
@@ -226,254 +306,392 @@ const BriefingScreen = () => {
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
+          refreshControl={
+            token ? (
+              <RefreshControl
+                refreshing={isFetching && !isLoading}
+                onRefresh={refetch}
+                tintColor={colors.primary}
+                colors={[colors.primary]}
+              />
+            ) : undefined
+          }
         >
-          <LinearGradient
-            colors={[colors.primaryDark, colors.primary, colors.primaryMid]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.dayCard}
-          >
-            <View style={styles.dateColumn}>
-              <View style={styles.buddyPlanRow}>
-                <SparkleIcon color={colors.white} size={14} />
-                <Text style={styles.buddyPlanText}>TODAY</Text>
-              </View>
-              <Text style={styles.bigDate}>
-                {month} {now.getDate()}
-              </Text>
-              <Text style={styles.dayName}>{dayName}</Text>
-            </View>
-            <View style={styles.dayMeetings}>
-              {meetings.slice(0, 2).map((meeting, index) => (
-                <View key={meeting.id} style={styles.dayMeeting}>
-                  <View
-                    style={[
-                      styles.meetingAccent,
-                      index === 1 && styles.meetingAccentSecondary,
-                    ]}
-                  />
-                  <View style={styles.dayMeetingCopy}>
-                    <Text numberOfLines={1} style={styles.dayMeetingTitle}>
-                      {meeting.title}
-                    </Text>
-                    <Text style={styles.dayMeetingTime}>
-                      {meeting.time} · {meeting.meta.split(' · ')[0]}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </LinearGradient>
+          {emptyVariant ? (
+            <BriefingEmptyState
+              variant={emptyVariant}
+              onRetry={token ? refetch : undefined}
+              onStartChat={openChat}
+            />
+          ) : null}
 
-          <View style={styles.quickGrid}>
-            <View style={[styles.quickCard, styles.chatCard]}>
-              <View style={styles.chatIconWrap}>
-                <ChatIcon />
-              </View>
-              <Text style={styles.quickTitle}>Let’s plan your day</Text>
-              <Text style={styles.quickBody}>Buddy is ready when you are.</Text>
-              <TouchableOpacity
-                activeOpacity={0.82}
-                style={styles.chatButton}
-                onPress={() =>
-                  navigation.navigate({
-                    name: 'AI',
-                    params: {},
-                    merge: false,
-                  })
-                }
+          {ready && briefing ? (
+            <>
+              {briefing.headline ? (
+                <Text style={styles.overviewText}>{briefing.headline}</Text>
+              ) : null}
+              {briefing.overview ? (
+                <Text style={styles.overviewBody}>{briefing.overview}</Text>
+              ) : null}
+
+              <LinearGradient
+                colors={[colors.primaryDark, colors.primary, colors.primaryMid]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.dayCard}
               >
-                <Text style={styles.chatButtonText}>Start chat</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={[styles.quickCard, styles.focusCard]}>
-              <Text style={styles.focusValue}>4h 30m</Text>
-              <Text style={styles.focusLabel}>Focus time available</Text>
-              <View style={styles.focusRingWrap}>
-                <Svg width={ms(72)} height={ms(72)} viewBox="0 0 72 72">
-                  <Circle
-                    cx={36}
-                    cy={36}
-                    r={27}
-                    fill="none"
-                    stroke={colors.white}
-                    strokeWidth={6}
-                    opacity={0.72}
-                  />
-                  <Circle
-                    cx={36}
-                    cy={36}
-                    r={27}
-                    fill="none"
-                    stroke={colors.info}
-                    strokeWidth={6}
-                    strokeLinecap="round"
-                    strokeDasharray={`${2 * Math.PI * 27}`}
-                    strokeDashoffset={`${2 * Math.PI * 27 * 0.28}`}
-                    rotation={-90}
-                    origin="36, 36"
-                  />
-                </Svg>
-                <View style={styles.focusRingCenter}>
-                  <Text style={styles.focusRingText}>72%</Text>
+                <View style={styles.dateColumn}>
+                  <View style={styles.buddyPlanRow}>
+                    <SparkleIcon color={colors.white} size={14} />
+                    <Text style={styles.buddyPlanText}>YESTERDAY</Text>
+                  </View>
+                  <Text style={styles.bigDate}>
+                    {dateParts.month} {dateParts.day}
+                  </Text>
+                  <Text style={styles.dayName}>{dateParts.dayName}</Text>
                 </View>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.sectionHeading}>
-            <View>
-              <Text style={styles.sectionTitle}>Today’s priorities</Text>
-              <Text style={styles.sectionSubtitle}>
-                {completedTasks.length} of {tasks.length} completed
-              </Text>
-            </View>
-            <TouchableOpacity
-              activeOpacity={0.72}
-              style={styles.viewAllButton}
-              onPress={() => navigation.navigate('Tasks')}
-            >
-              <Text style={styles.viewAllText}>View all</Text>
-              <ChevronIcon />
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.priorityCard}>
-            {tasks.map((task, index) => {
-              const completed = completedTasks.includes(task.id);
-              return (
-                <React.Fragment key={task.id}>
-                  <TouchableOpacity
-                    activeOpacity={0.76}
-                    style={styles.taskRow}
-                    onPress={() => toggleTask(task.id)}
-                  >
-                    <View
-                      style={[
-                        styles.checkbox,
-                        completed && styles.checkboxCompleted,
-                      ]}
-                    >
-                      {completed ? <CheckIcon /> : null}
+                <View style={styles.dayMeetings}>
+                  {(meetings.length ? meetings : highlights)
+                    .slice(0, 2)
+                    .map((item, index) => (
+                      <View key={item.id || `peek-${index}`} style={styles.dayMeeting}>
+                        <View
+                          style={[
+                            styles.meetingAccent,
+                            index === 1 && styles.meetingAccentSecondary,
+                          ]}
+                        />
+                        <View style={styles.dayMeetingCopy}>
+                          <Text numberOfLines={1} style={styles.dayMeetingTitle}>
+                            {item.title}
+                          </Text>
+                          <Text numberOfLines={1} style={styles.dayMeetingTime}>
+                            {'time' in item
+                              ? `${item.time}${item.meta ? ` · ${item.meta.split(' · ')[0]}` : ''}`
+                              : item.detail || 'Highlight'}
+                          </Text>
+                        </View>
+                      </View>
+                    ))}
+                  {!meetings.length && !highlights.length ? (
+                    <View style={styles.dayMeeting}>
+                      <View style={styles.meetingAccent} />
+                      <View style={styles.dayMeetingCopy}>
+                        <Text style={styles.dayMeetingTitle}>No meetings</Text>
+                        <Text style={styles.dayMeetingTime}>
+                          {snapshotLabel}
+                        </Text>
+                      </View>
                     </View>
-                    <View style={styles.taskCopy}>
-                      <Text
-                        style={[
-                          styles.taskTitle,
-                          completed && styles.taskTitleCompleted,
-                        ]}
-                      >
-                        {task.title}
-                      </Text>
-                      <Text style={styles.taskMeta}>{task.meta}</Text>
-                    </View>
-                  </TouchableOpacity>
-                  {index < tasks.length - 1 ? <View style={styles.divider} /> : null}
-                </React.Fragment>
-              );
-            })}
-            <View style={styles.progressRow}>
-              <View style={styles.progressTrack}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    { width: `${Math.max(progress * 100, 4)}%` },
-                  ]}
-                />
-              </View>
-              <Text style={styles.progressText}>
-                {Math.round(progress * 100)}%
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.sectionHeading}>
-            <View>
-              <Text style={styles.sectionTitle}>Upcoming meetings</Text>
-              <Text style={styles.sectionSubtitle}>Your next 8 hours</Text>
-            </View>
-            <View style={styles.sectionIcon}>
-              <CalendarIcon />
-            </View>
-          </View>
-
-          <View style={styles.meetingsCard}>
-            {meetings.map((meeting, index) => (
-              <View key={meeting.id} style={styles.meetingRow}>
-                <View style={styles.meetingTimeColumn}>
-                  <Text style={styles.meetingTime}>{meeting.time}</Text>
-                </View>
-                <View style={styles.timelineColumn}>
-                  <View
-                    style={[
-                      styles.timelineDot,
-                      index === 1 && styles.timelineDotSecondary,
-                      index === 2 && styles.timelineDotTertiary,
-                    ]}
-                  />
-                  {index < meetings.length - 1 ? (
-                    <View style={styles.timelineLine} />
                   ) : null}
                 </View>
-                <View style={styles.meetingCopy}>
-                  <Text style={styles.meetingTitle}>{meeting.title}</Text>
-                  <Text style={styles.meetingMeta}>{meeting.meta}</Text>
+              </LinearGradient>
+
+              <View style={styles.quickGrid}>
+                <View style={[styles.quickCard, styles.chatCard]}>
+                  <View style={styles.chatIconWrap}>
+                    <ChatIcon />
+                  </View>
+                  <Text style={styles.quickTitle}>Let’s plan your day</Text>
+                  <Text style={styles.quickBody}>
+                    Buddy is ready when you are.
+                  </Text>
+                  <TouchableOpacity
+                    activeOpacity={0.82}
+                    style={styles.chatButton}
+                    onPress={openChat}
+                  >
+                    <Text style={styles.chatButtonText}>Start chat</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={[styles.quickCard, styles.focusCard]}>
+                  <Text style={styles.focusValue}>
+                    {progress.total ? `${progress.percent}%` : snapshotCount}
+                  </Text>
+                  <Text style={styles.focusLabel}>
+                    {progress.total
+                      ? `${progress.done} of ${progress.total} wrapped up`
+                      : 'Items Buddy captured'}
+                  </Text>
+                  <View style={styles.focusRingWrap}>
+                    <Svg width={ms(72)} height={ms(72)} viewBox="0 0 72 72">
+                      <Circle
+                        cx={36}
+                        cy={36}
+                        r={27}
+                        fill="none"
+                        stroke={colors.white}
+                        strokeWidth={6}
+                        opacity={0.72}
+                      />
+                      <Circle
+                        cx={36}
+                        cy={36}
+                        r={27}
+                        fill="none"
+                        stroke={colors.info}
+                        strokeWidth={6}
+                        strokeLinecap="round"
+                        strokeDasharray={`${2 * Math.PI * 27}`}
+                        strokeDashoffset={`${ringOffset}`}
+                        rotation={-90}
+                        origin="36, 36"
+                      />
+                    </Svg>
+                    <View style={styles.focusRingCenter}>
+                      <Text style={styles.focusRingText}>
+                        {progress.total ? `${progress.percent}%` : snapshotCount}
+                      </Text>
+                    </View>
+                  </View>
                 </View>
               </View>
-            ))}
-          </View>
 
-          <View style={styles.sectionHeading}>
-            <View>
-              <Text style={styles.sectionTitle}>Captured by Buddy</Text>
-              <Text style={styles.sectionSubtitle}>Context worth remembering</Text>
-            </View>
-            <View style={styles.sectionIcon}>
-              <SparkleIcon size={17} />
-            </View>
-          </View>
+              <ItemSection
+                title="Highlights"
+                subtitle="What mattered most"
+                items={highlights}
+              />
+              <ItemSection
+                title="Important moments"
+                subtitle="Worth remembering"
+                items={importantMoments}
+              />
+              <ItemSection
+                title="Completed yesterday"
+                subtitle="Already wrapped up"
+                items={completedItems}
+              />
 
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.insightsScroll}
-            contentContainerStyle={styles.insightsContent}
-          >
-            {insights.map(insight => (
-              <TouchableOpacity
-                key={insight.id}
-                activeOpacity={0.8}
-                style={styles.insightCard}
-                onPress={() => openInsightSource(insight)}
-              >
-                <View style={styles.insightTop}>
-                  <View style={styles.insightBadge}>
-                    <SparkleIcon size={13} />
-                    <Text style={styles.insightBadgeText}>KEY INSIGHT</Text>
+              {tasks.length ? (
+                <>
+                  <View style={styles.sectionHeading}>
+                    <View>
+                      <Text style={styles.sectionTitle}>Today’s priorities</Text>
+                      <Text style={styles.sectionSubtitle}>
+                        {completedTasks.length} of {tasks.length} completed
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      activeOpacity={0.72}
+                      style={styles.viewAllButton}
+                      onPress={() => navigation.navigate('Tasks')}
+                    >
+                      <Text style={styles.viewAllText}>View all</Text>
+                      <ChevronIcon />
+                    </TouchableOpacity>
                   </View>
-                  <Text style={styles.insightSource}>{insight.source}</Text>
-                </View>
-                <Text numberOfLines={2} style={styles.insightTitle}>
-                  {insight.title}
-                </Text>
-                <Text numberOfLines={3} style={styles.insightBody}>
-                  {insight.body}
-                </Text>
-                <View style={styles.insightAction}>
-                  <Text style={styles.insightActionText}>View source</Text>
-                  <ChevronIcon />
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
 
-          <View style={styles.endNote}>
-            <SparkleIcon color={colors.muted} size={14} />
-            <Text style={styles.endNoteText}>
-              Buddy keeps your briefing updated throughout the day.
-            </Text>
-          </View>
+                  <View style={styles.priorityCard}>
+                    {tasks.map((task, index) => {
+                      const completed = completedTasks.includes(task.id);
+                      return (
+                        <React.Fragment key={task.id || `task-${index}`}>
+                          <TouchableOpacity
+                            activeOpacity={0.76}
+                            style={styles.taskRow}
+                            onPress={() => toggleTask(task.id)}
+                          >
+                            <View
+                              style={[
+                                styles.checkbox,
+                                completed && styles.checkboxCompleted,
+                              ]}
+                            >
+                              {completed ? <CheckIcon /> : null}
+                            </View>
+                            <View style={styles.taskCopy}>
+                              <Text
+                                style={[
+                                  styles.taskTitle,
+                                  completed && styles.taskTitleCompleted,
+                                ]}
+                              >
+                                {task.title}
+                              </Text>
+                              {task.meta ? (
+                                <Text style={styles.taskMeta}>{task.meta}</Text>
+                              ) : null}
+                            </View>
+                          </TouchableOpacity>
+                          {index < tasks.length - 1 ? (
+                            <View style={styles.divider} />
+                          ) : null}
+                        </React.Fragment>
+                      );
+                    })}
+                    <View style={styles.progressRow}>
+                      <View style={styles.progressTrack}>
+                        <View
+                          style={[
+                            styles.progressFill,
+                            {
+                              width: `${Math.max(localProgress * 100, 4)}%`,
+                            },
+                          ]}
+                        />
+                      </View>
+                      <Text style={styles.progressText}>
+                        {Math.round(localProgress * 100)}%
+                      </Text>
+                    </View>
+                  </View>
+                </>
+              ) : null}
+
+              {meetings.length ? (
+                <>
+                  <View style={styles.sectionHeading}>
+                    <View>
+                      <Text style={styles.sectionTitle}>Upcoming meetings</Text>
+                      <Text style={styles.sectionSubtitle}>
+                        From yesterday’s calendar
+                      </Text>
+                    </View>
+                    <View style={styles.sectionIcon}>
+                      <CalendarIcon />
+                    </View>
+                  </View>
+
+                  <View style={styles.meetingsCard}>
+                    {meetings.map((meeting, index) => (
+                      <View
+                        key={meeting.id || `meeting-${index}`}
+                        style={styles.meetingRow}
+                      >
+                        <View style={styles.meetingTimeColumn}>
+                          <Text style={styles.meetingTime}>{meeting.time}</Text>
+                        </View>
+                        <View style={styles.timelineColumn}>
+                          <View
+                            style={[
+                              styles.timelineDot,
+                              index === 1 && styles.timelineDotSecondary,
+                              index === 2 && styles.timelineDotTertiary,
+                            ]}
+                          />
+                          {index < meetings.length - 1 ? (
+                            <View style={styles.timelineLine} />
+                          ) : null}
+                        </View>
+                        <View style={styles.meetingCopy}>
+                          <Text style={styles.meetingTitle}>{meeting.title}</Text>
+                          {meeting.meta ? (
+                            <Text style={styles.meetingMeta}>{meeting.meta}</Text>
+                          ) : null}
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              ) : null}
+
+              <ItemSection
+                title="Follow-ups"
+                subtitle="Don’t let these slip"
+                items={followUps}
+              />
+              <ItemSection
+                title="Tomorrow’s focus"
+                subtitle="Start here next"
+                items={tomorrowFocus}
+              />
+              <ItemSection
+                title="Decisions"
+                subtitle="Locked in yesterday"
+                items={decisions}
+              />
+
+              {insights.length ? (
+                <>
+                  <View style={styles.sectionHeading}>
+                    <View>
+                      <Text style={styles.sectionTitle}>Captured by Buddy</Text>
+                      <Text style={styles.sectionSubtitle}>
+                        Context worth remembering
+                      </Text>
+                    </View>
+                    <View style={styles.sectionIcon}>
+                      <SparkleIcon size={17} />
+                    </View>
+                  </View>
+
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={styles.insightsScroll}
+                    contentContainerStyle={styles.insightsContent}
+                  >
+                    {insights.map(insight => (
+                      <TouchableOpacity
+                        key={insight.id}
+                        activeOpacity={0.8}
+                        style={styles.insightCard}
+                        onPress={() => openInsightSource(insight)}
+                      >
+                        <View style={styles.insightTop}>
+                          <View style={styles.insightBadge}>
+                            <SparkleIcon size={13} />
+                            <Text style={styles.insightBadgeText}>KEY INSIGHT</Text>
+                          </View>
+                          <Text style={styles.insightSource}>{insight.source}</Text>
+                        </View>
+                        <Text numberOfLines={2} style={styles.insightTitle}>
+                          {insight.title}
+                        </Text>
+                        <Text numberOfLines={3} style={styles.insightBody}>
+                          {insight.body}
+                        </Text>
+                        <View style={styles.insightAction}>
+                          <Text style={styles.insightActionText}>View source</Text>
+                          <ChevronIcon />
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </>
+              ) : null}
+
+              {people.length || topics.length ? (
+                <View style={styles.chipsCard}>
+                  {people.length ? (
+                    <View style={styles.chipBlock}>
+                      <Text style={styles.chipLabel}>People</Text>
+                      <View style={styles.chipsRow}>
+                        {people.map(person => (
+                          <View key={person} style={styles.chip}>
+                            <Text style={styles.chipText}>{person}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  ) : null}
+                  {topics.length ? (
+                    <View style={styles.chipBlock}>
+                      <Text style={styles.chipLabel}>Topics</Text>
+                      <View style={styles.chipsRow}>
+                        {topics.map(topic => (
+                          <View key={topic} style={styles.chip}>
+                            <Text style={styles.chipText}>{topic}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+
+              <View style={styles.endNote}>
+                <SparkleIcon color={colors.muted} size={14} />
+                <Text style={styles.endNoteText}>
+                  {generatedLabel
+                    ? `Prepared ${generatedLabel}. Buddy updates this after each day ends.`
+                    : 'Buddy prepares your briefing after each local day ends.'}
+                </Text>
+              </View>
+            </>
+          ) : null}
         </ScrollView>
       </SafeAreaView>
 
@@ -543,6 +761,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.md,
     paddingBottom: spacing['5xl'],
+  },
+  overviewText: {
+    color: colors.text,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    marginBottom: spacing.xs,
+  },
+  overviewBody: {
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    marginBottom: spacing.md,
   },
   dayCard: {
     minHeight: ms(142),
@@ -756,6 +985,27 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
   },
+  listCard: {
+    paddingHorizontal: spacing.xl,
+    borderRadius: radii.xl,
+    backgroundColor: colors.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+  },
+  listRow: {
+    minHeight: ms(58),
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: spacing.md,
+  },
+  listBullet: {
+    width: ms(8),
+    height: ms(8),
+    borderRadius: ms(4),
+    marginTop: spacing.sm,
+    marginRight: spacing.md,
+    backgroundColor: colors.primary,
+  },
   taskRow: {
     minHeight: ms(64),
     flexDirection: 'row',
@@ -955,6 +1205,43 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
+  },
+  chipsCard: {
+    marginTop: spacing['2xl'],
+    padding: spacing.xl,
+    borderRadius: radii.xl,
+    backgroundColor: colors.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    gap: spacing.xl,
+  },
+  chipBlock: {
+    gap: spacing.sm,
+  },
+  chipLabel: {
+    color: colors.subText,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  chipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  chip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primarySoft,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.brandBorder,
+  },
+  chipText: {
+    color: colors.primaryDark,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
   },
   endNote: {
     flexDirection: 'row',

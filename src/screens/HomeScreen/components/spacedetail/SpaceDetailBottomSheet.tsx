@@ -32,7 +32,6 @@ type Props = {
   onRetryStats?: () => void;
   onNavigateNotes: () => void;
   onNavigateTasks: () => void;
-  onAskBuddy: () => void;
 };
 
 const formatDate = (value: string) => {
@@ -62,7 +61,6 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
       onRetryStats,
       onNavigateNotes,
       onNavigateTasks,
-      onAskBuddy,
     },
     ref,
   ) => {
@@ -112,11 +110,6 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
     const handleTasks = () => {
       handleClose();
       onNavigateTasks();
-    };
-
-    const handleBuddy = () => {
-      handleClose();
-      onAskBuddy();
     };
 
     const notesCount = stats?.notesCount ?? 0;
@@ -181,11 +174,7 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
               onRetry={onRetryStats}
             />
 
-            <SpaceActionList
-              spaceName={space.spacename}
-              actions={actions}
-              onAskBuddy={handleBuddy}
-            />
+            <SpaceActionList actions={actions} />
           </BottomSheetScrollView>
         ) : null}
       </BottomSheetModal>

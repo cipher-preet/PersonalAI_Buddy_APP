@@ -32,7 +32,12 @@ import {
 } from '../../../../store/api/home';
 import { requestVoiceListeningPermissions } from '../../../../services/voiceRecorderService';
 import UpgradePlanPromptModal from '../../../../components/UpgradePlanPromptModal';
-import { isPlanLimitError } from '../../../../utils/planLimitError';
+import {
+  getPlanLimitPrompt,
+  getPlanLimitResource,
+  isPlanLimitError,
+  type PlanLimitResource,
+} from '../../../../utils/planLimitError';
 import SpaceCard from './SpaceCard';
 import {
   colors,
@@ -58,6 +63,8 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [upgradeResource, setUpgradeResource] =
+    useState<PlanLimitResource>('spaces');
   const userId = useAppSelector(state => state.auth.userId) ?? '';
   const { showToast } = useToast();
   const [createSpace, { isLoading: isCreating }] = useCreateSpaceMutation();
@@ -162,6 +169,7 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
       }
     } catch (error: any) {
       if (isPlanLimitError(error)) {
+        setUpgradeResource(getPlanLimitResource(error) || 'spaces');
         showPlanLimitPrompt();
         return;
       }
@@ -200,6 +208,12 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
             });
           }
         } catch (err: any) {
+          if (isPlanLimitError(err)) {
+            setUpgradeResource(getPlanLimitResource(err) || 'recordingHours');
+            showPlanLimitPrompt();
+            return;
+          }
+
           showToast({
             message:
               err?.message === 'Microphone permission denied.' ||
@@ -229,7 +243,7 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
         </BottomSheetFooter>
       );
     },
-    [selectedSpace, onStart, isStarting, startListning, showToast, ref],
+    [selectedSpace, onStart, isStarting, startListning, showToast, ref, showPlanLimitPrompt],
   );
 
   return (
@@ -344,6 +358,8 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
 
       <UpgradePlanPromptModal
         visible={showUpgradePrompt}
+        title={getPlanLimitPrompt(upgradeResource).title}
+        message={getPlanLimitPrompt(upgradeResource).message}
         onClose={() => setShowUpgradePrompt(false)}
         onUpgrade={() => {
           setShowUpgradePrompt(false);

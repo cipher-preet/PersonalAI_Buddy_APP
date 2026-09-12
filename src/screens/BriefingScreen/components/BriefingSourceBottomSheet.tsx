@@ -29,10 +29,10 @@ import {
   radii,
   spacing,
 } from '../../../theme';
-import type { InsightItem } from './mockBriefing';
+import type { BriefingInsightCard } from '../../../store/api/home';
 
 type Props = {
-  insight: InsightItem | null;
+  insight: BriefingInsightCard | null;
 };
 
 const SparkleIcon = ({
@@ -133,30 +133,32 @@ const BriefingSourceBottomSheet = forwardRef<BottomSheetModal, Props>(
               <Text style={styles.summary}>{insight.body}</Text>
 
               <View style={styles.metaRow}>
-                <View style={styles.metaChip}>
-                  <Text style={styles.metaChipText}>{insight.sourceType}</Text>
-                </View>
-                <View style={styles.metaChip}>
-                  <Text style={styles.metaChipText}>{insight.capturedAt}</Text>
-                </View>
-                <View style={styles.metaChip}>
-                  <Text style={styles.metaChipText}>{insight.space}</Text>
-                </View>
+                {[insight.sourceType, insight.capturedAt, insight.space]
+                  .filter(Boolean)
+                  .map(label => (
+                    <View key={label} style={styles.metaChip}>
+                      <Text style={styles.metaChipText}>{label}</Text>
+                    </View>
+                  ))}
               </View>
 
-              <View style={styles.section}>
-                <Text style={styles.sectionLabel}>Original capture</Text>
-                <View style={styles.quoteCard}>
-                  <Text style={styles.quoteText}>{insight.excerpt}</Text>
+              {insight.excerpt ? (
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>Original capture</Text>
+                  <View style={styles.quoteCard}>
+                    <Text style={styles.quoteText}>{insight.excerpt}</Text>
+                  </View>
                 </View>
-              </View>
+              ) : null}
 
-              <View style={styles.section}>
-                <Text style={styles.sectionLabel}>Why it matters</Text>
-                <Text style={styles.sectionBody}>{insight.whyItMatters}</Text>
-              </View>
+              {insight.whyItMatters ? (
+                <View style={styles.section}>
+                  <Text style={styles.sectionLabel}>Why it matters</Text>
+                  <Text style={styles.sectionBody}>{insight.whyItMatters}</Text>
+                </View>
+              ) : null}
 
-              {insight.tags.length > 0 ? (
+              {insight.tags?.length ? (
                 <View style={styles.section}>
                   <Text style={styles.sectionLabel}>Tags</Text>
                   <View style={styles.tagsRow}>

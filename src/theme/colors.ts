@@ -35,6 +35,25 @@ export const colors = {
   upgradeGradientMid: '#6366F1',
   upgradeGradientEnd: '#22D3EE',
 
+  // Plans
+  planProStart: '#1E1B4B',
+  planProMid: '#312E81',
+  planProEnd: '#4338CA',
+  planBusinessStart: '#0B1220',
+  planBusinessMid: '#111827',
+  planBusinessEnd: '#1E293B',
+  planGold: '#E8C36A',
+  planGoldSoft: 'rgba(232, 195, 106, 0.16)',
+  planGoldBorder: 'rgba(232, 195, 106, 0.28)',
+  planGoldBorderStrong: 'rgba(232, 195, 106, 0.35)',
+  planInk: '#0B1220',
+  planMutedOnDark: 'rgba(226, 232, 240, 0.72)',
+  planChipOnDark: 'rgba(255, 255, 255, 0.08)',
+  planSaveOnDark: '#86EFAC',
+  planSaveOnDarkSoft: '#BBF7D0',
+  planSavePillActive: 'rgba(134, 239, 172, 0.18)',
+  planChipOnLight: 'rgba(255, 255, 255, 0.16)',
+
   // Text
   text: '#0F172A',
   textSecondary: '#334155',

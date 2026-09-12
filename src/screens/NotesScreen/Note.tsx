@@ -44,8 +44,15 @@ import {
   useGetStagedNotesBySpaceQuery,
   useLazyGetStagedNoteByIdQuery,
 } from '../../store/api/home';
+import { useGetPlanStatusQuery } from '../../store/api/payments';
 import UpgradePlanPromptModal from '../../components/UpgradePlanPromptModal';
-import { isPlanLimitError } from '../../utils/planLimitError';
+import {
+  getPlanLimitPrompt,
+  getPlanLimitResource,
+  isPlanLimitError,
+  type PlanLimitResource,
+} from '../../utils/planLimitError';
+import { hasReachedCountLimit } from '../../utils/planUsage';
 import {
   colors,
   fontSize,
@@ -146,6 +153,8 @@ const Notes = () => {
   const [sortOrder, setSortOrder] = useState<NoteSortOrder>('newest');
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+  const [upgradeResource, setUpgradeResource] =
+    useState<PlanLimitResource>('notes');
   const userId = useAppSelector(state => state.auth.userId) ?? '';
   const dispatch = useAppDispatch();
   const { showToast } = useToast();
@@ -166,6 +175,10 @@ const Notes = () => {
     isError,
     refetch,
   } = useGetNoteWorkspacesQuery({ userId }, { skip: !userId });
+  const { data: planStatus } = useGetPlanStatusQuery(
+    { userId },
+    { skip: !userId },
+  );
 
   const spaces = useMemo(
     () => noteWorkspacesData?.data?.spaces ?? [],
@@ -330,10 +343,21 @@ const Notes = () => {
       return;
     }
 
+    if (
+      hasReachedCountLimit(
+        planStatus?.usage?.notes,
+        planStatus?.plan?.limits?.notes,
+      )
+    ) {
+      setUpgradeResource('notes');
+      setShowUpgradePrompt(true);
+      return;
+    }
+
     requestAnimationFrame(() => {
       addNoteSheetRef.current?.present();
     });
-  }, [selectedSpaceId, showToast]);
+  }, [planStatus?.plan?.limits?.notes, planStatus?.usage?.notes, selectedSpaceId, showToast]);
 
   const getApiErrorMessage = (error: any, fallback: string) =>
     error?.data?.message || error?.message || fallback;
@@ -388,6 +412,7 @@ const Notes = () => {
         });
       } catch (error: any) {
         if (isPlanLimitError(error)) {
+          setUpgradeResource(getPlanLimitResource(error) || 'notes');
           setShowUpgradePrompt(true);
           throw error;
         }
@@ -753,6 +778,8 @@ const Notes = () => {
 
       <UpgradePlanPromptModal
         visible={showUpgradePrompt}
+        title={getPlanLimitPrompt(upgradeResource).title}
+        message={getPlanLimitPrompt(upgradeResource).message}
         onClose={() => setShowUpgradePrompt(false)}
         onUpgrade={() => {
           setShowUpgradePrompt(false);
