@@ -43,11 +43,11 @@ const PLAN_PRESENTATION: Record<PlanCode, PlanPresentation> = {
   },
   pro: {
     variant: 'featured',
-    badge: 'Most popular',
+    badge: 'Popular',
   },
   business: {
     variant: 'premium',
-    badge: 'Full language pack',
+    badge: 'Best value',
   },
 };
 
@@ -125,7 +125,23 @@ export const mapApiPlansToUi = (plans?: Plan[]) =>
     })
     .map(mapApiPlanToUi);
 
-export const buildCompareRows = (plans: UiPlan[]) => {
+export type CompareIcon =
+  | 'spaces'
+  | 'recording'
+  | 'languages'
+  | 'briefing'
+  | 'goals'
+  | 'team';
+
+export type CompareRow = {
+  id: string;
+  label: string;
+  description: string;
+  icon: CompareIcon;
+  values: Partial<Record<PlanCode, string>>;
+};
+
+export const buildCompareRows = (plans: UiPlan[]): CompareRow[] => {
   const byCode = Object.fromEntries(plans.map(plan => [plan.id, plan])) as Partial<
     Record<PlanCode, UiPlan>
   >;
@@ -138,7 +154,9 @@ export const buildCompareRows = (plans: UiPlan[]) => {
   return [
     {
       id: 'spaces',
-      label: 'Spaces',
+      label: 'More spaces',
+      description: 'Organize work across dedicated spaces',
+      icon: 'spaces',
       values: {
         free: valueFor('free', plan => formatLimit(plan.limits.spaces)),
         pro: valueFor('pro', plan => formatLimit(plan.limits.spaces)),
@@ -147,7 +165,9 @@ export const buildCompareRows = (plans: UiPlan[]) => {
     },
     {
       id: 'recording',
-      label: 'Recording',
+      label: 'Meeting recording',
+      description: 'Capture conversations with included hours',
+      icon: 'recording',
       values: {
         free: valueFor('free', plan => formatLimit(plan.limits.recordingHours, ' hrs')),
         pro: valueFor('pro', plan => formatLimit(plan.limits.recordingHours, ' hrs')),
@@ -158,7 +178,9 @@ export const buildCompareRows = (plans: UiPlan[]) => {
     },
     {
       id: 'languages',
-      label: 'Languages',
+      label: 'Language pack',
+      description: 'Speak and listen in more Indian languages',
+      icon: 'languages',
       values: {
         free: valueFor('free', plan => String(plan.languages.length || '—')),
         pro: valueFor('pro', plan => String(plan.languages.length || '—')),
@@ -168,6 +190,8 @@ export const buildCompareRows = (plans: UiPlan[]) => {
     {
       id: 'briefing',
       label: 'Daily briefing',
+      description: 'Personalized summary from your day',
+      icon: 'briefing',
       values: {
         free: valueFor('free', plan =>
           hasFeature(plan.features.map(item => item.label), 'briefing') ? 'Yes' : '—',
@@ -183,6 +207,8 @@ export const buildCompareRows = (plans: UiPlan[]) => {
     {
       id: 'goals',
       label: 'Goal monitor',
+      description: 'Track outcomes across every space',
+      icon: 'goals',
       values: {
         free: valueFor('free', plan =>
           hasFeature(plan.features.map(item => item.label), 'goal') ? 'Yes' : '—',
@@ -197,7 +223,9 @@ export const buildCompareRows = (plans: UiPlan[]) => {
     },
     {
       id: 'team',
-      label: 'Team',
+      label: 'Team access',
+      description: 'Collaborate with shared workspaces',
+      icon: 'team',
       values: {
         free: valueFor('free', plan =>
           hasFeature(plan.features.map(item => item.label), 'team') ? 'Yes' : '—',

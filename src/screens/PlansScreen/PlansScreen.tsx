@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Defs, LinearGradient as SvgGradient, Path, Stop } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import {
   BottomSheetBackdrop,
@@ -45,6 +45,7 @@ import BillingToggle from './components/BillingToggle';
 import CompareTable from './components/CompareTable';
 import CurrentPlanBanner from './components/CurrentPlanBanner';
 import FaqList from './components/FaqList';
+import LanguagePackCard from './components/LanguagePackCard';
 import PlanCard from './components/PlanCard';
 import {
   BillingCycle,
@@ -71,6 +72,28 @@ const BackIcon = () => (
       stroke={colors.text}
       strokeWidth={2}
       strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const DiamondIcon = () => (
+  <Svg width={ms(44)} height={ms(44)} viewBox="0 0 48 48" fill="none">
+    <Defs>
+      <SvgGradient id="diamondGrad" x1="8" y1="6" x2="40" y2="42">
+        <Stop offset="0%" stopColor={colors.upgradeGradientStart} />
+        <Stop offset="55%" stopColor={colors.upgradeGradientMid} />
+        <Stop offset="100%" stopColor={colors.upgradeGradientEnd} />
+      </SvgGradient>
+    </Defs>
+    <Path
+      d="M24 6.5 39.5 18.2 24 41.5 8.5 18.2 24 6.5Z"
+      fill="url(#diamondGrad)"
+    />
+    <Path
+      d="M8.5 18.2h31M16.2 18.2 24 41.5M31.8 18.2 24 41.5M16.2 18.2 24 6.5M31.8 18.2 24 6.5"
+      stroke="rgba(255,255,255,0.55)"
+      strokeWidth={1.4}
       strokeLinejoin="round"
     />
   </Svg>
@@ -167,11 +190,12 @@ const PlansScreen = () => {
   const selectedPlan =
     plans.find(plan => plan.id === selectedPlanId) ?? plans[1] ?? plans[0];
   const currentPlanCode = planStatus?.plan?.code;
-  const currentPlanName = planStatus?.plan?.name;
   const isLoadingInitialPlan =
     (isFetchingPlans && plans.length === 0) ||
     (!currentPlanCode && isFetchingPlanStatus);
   const isBusy = isActivatingFree || isCreatingOrder || isVerifyingPayment;
+  const isCurrentSelected =
+    !!selectedPlan && currentPlanCode === selectedPlan.backendCode;
 
   useEffect(() => {
     if (!currentPlanCode || hasSyncedCurrentPlan.current) {
@@ -358,6 +382,15 @@ const PlansScreen = () => {
   const displayPrice = selectedPlan?.prices[billingCycle] ?? '';
   const displayCadence = CYCLE_CADENCE[billingCycle];
   const quarterlyHint = selectedPlan ? getQuarterlyHint(selectedPlan) : null;
+  const primaryCtaLabel = isBusy
+    ? 'Please wait...'
+    : isCurrentSelected
+      ? 'Current plan'
+      : selectedPlan?.id === 'free'
+        ? 'Continue with Free'
+        : selectedPlan?.id === 'pro'
+          ? 'Upgrade to Pro'
+          : `Get ${selectedPlan?.name ?? 'Business'}`;
   const subscribeLabel = isBusy
     ? 'Please wait...'
     : `Subscribe to ${selectedPlan?.name ?? 'plan'}`;
@@ -367,51 +400,48 @@ const PlansScreen = () => {
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} />
       <LinearGradient
         colors={[colors.gradientStart, colors.gradientMid, colors.white]}
-        locations={[0, 0.32, 1]}
+        locations={[0, 0.28, 1]}
         style={StyleSheet.absoluteFill}
       />
 
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <View style={styles.headerBar}>
-          <View style={styles.headerSide}>
-            <TouchableOpacity
-              activeOpacity={0.78}
-              style={styles.headerButton}
-              onPress={() => navigation.goBack()}
-              accessibilityRole="button"
-              accessibilityLabel="Go back"
-            >
-              <BackIcon />
-            </TouchableOpacity>
-          </View>
-          <View style={styles.headerCopy}>
-            <Text style={styles.headerTitle}>Upgrade</Text>
-            <Text style={styles.headerSubtitle}>Choose a membership</Text>
-          </View>
-          <View style={styles.headerSide}>
-            {currentPlanName ? (
-              <View style={styles.headerPlanChip}>
-                <Text style={styles.headerPlanText} numberOfLines={1}>
-                  {currentPlanName}
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.headerButtonSpacer} />
-            )}
-          </View>
+          <TouchableOpacity
+            activeOpacity={0.78}
+            style={styles.headerButton}
+            onPress={() => navigation.goBack()}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <BackIcon />
+          </TouchableOpacity>
+          <View style={styles.headerSpacer} />
         </View>
 
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={[
             styles.content,
-            { paddingBottom: spacing['6xl'] + insets.bottom },
+            {
+              paddingBottom:
+                spacing['7xl'] + layout.buttonHeight + insets.bottom,
+            },
           ]}
         >
+          <View style={styles.hero}>
+            <View style={styles.heroIconWrap}>
+              <DiamondIcon />
+            </View>
+            <Text style={styles.heroTitle}>Get Premium!</Text>
+            <Text style={styles.heroSubtitle}>
+              Supercharge your productivity with Buddy.
+            </Text>
+          </View>
+
           {planStatus ? <CurrentPlanBanner planStatus={planStatus} /> : null}
 
           <View style={styles.billingBlock}>
-            <Text style={styles.billingLabel}>Billing cycle</Text>
+            <Text style={styles.sectionLabel}>Billing cycle</Text>
             <BillingToggle value={billingCycle} onChange={handleBillingChange} />
           </View>
 
@@ -424,7 +454,7 @@ const PlansScreen = () => {
               </Text>
             </View>
           ) : (
-            <View style={styles.planStack}>
+            <View style={styles.planRow}>
               {plans.map(plan => (
                 <PlanCard
                   key={plan.id}
@@ -432,13 +462,22 @@ const PlansScreen = () => {
                   billingCycle={billingCycle}
                   selected={plan.id === selectedPlanId}
                   isCurrent={currentPlanCode === plan.backendCode}
-                  isBusy={isBusy && selectedPlanId === plan.id}
                   onPress={() => handleSelectCard(plan.id)}
-                  onCta={() => handleSelectThisPlan(plan)}
                 />
               ))}
             </View>
           )}
+
+          {selectedPlan && !isLoadingInitialPlan ? (
+            <LanguagePackCard
+              plan={selectedPlan}
+              priceLabel={
+                selectedPlan.id === 'free'
+                  ? selectedPlan.prices[billingCycle]
+                  : `${selectedPlan.prices[billingCycle]} / ${selectedPlan.cadenceLabel[billingCycle]}`
+              }
+            />
+          ) : null}
 
           {plans.length > 0 ? (
             <>
@@ -458,6 +497,41 @@ const PlansScreen = () => {
             </Text>
           </View>
         </ScrollView>
+
+        {selectedPlan && !isLoadingInitialPlan ? (
+          <View
+            style={[
+              styles.stickyCta,
+              { paddingBottom: Math.max(insets.bottom, spacing.lg) },
+            ]}
+          >
+            <TouchableOpacity
+              activeOpacity={0.88}
+              disabled={isBusy || isCurrentSelected}
+              onPress={() => handleSelectThisPlan(selectedPlan)}
+            >
+              <LinearGradient
+                colors={[
+                  colors.upgradeGradientStart,
+                  colors.upgradeGradientMid,
+                  colors.upgradeGradientEnd,
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[
+                  styles.primaryButton,
+                  (isBusy || isCurrentSelected) && styles.primaryButtonDisabled,
+                ]}
+              >
+                {isBusy ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <Text style={styles.primaryButtonText}>{primaryCtaLabel}</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+        ) : null}
       </SafeAreaView>
 
       <BottomSheetModal
@@ -470,73 +544,89 @@ const PlansScreen = () => {
         onChange={index => setIsSheetOpen(index >= 0)}
       >
         {selectedPlan ? (
-        <BottomSheetScrollView
-          contentContainerStyle={[
-            styles.sheetContent,
-            { paddingBottom: spacing['2xl'] + insets.bottom },
-          ]}
-        >
-          <View style={styles.sheetHero}>
-            <View style={styles.sheetEyebrowRow}>
-              <SparkleIcon color={colors.primary} size={14} />
-              <Text style={styles.sheetEyebrow}>Confirm subscription</Text>
-            </View>
-            <Text style={styles.sheetTitle}>{selectedPlan.name}</Text>
-            <View style={styles.sheetPriceRow}>
-              <Text style={styles.sheetPrice}>{displayPrice}</Text>
-              {selectedPlan.id !== 'free' ? (
-                <Text style={styles.sheetCadence}>/{displayCadence}</Text>
+          <BottomSheetScrollView
+            contentContainerStyle={[
+              styles.sheetContent,
+              { paddingBottom: spacing['2xl'] + insets.bottom },
+            ]}
+          >
+            <View style={styles.sheetHero}>
+              <View style={styles.sheetEyebrowRow}>
+                <SparkleIcon color={colors.primary} size={14} />
+                <Text style={styles.sheetEyebrow}>Confirm subscription</Text>
+              </View>
+              <Text style={styles.sheetTitle}>{selectedPlan.name}</Text>
+              <View style={styles.sheetPriceRow}>
+                <Text style={styles.sheetPrice}>{displayPrice}</Text>
+                {selectedPlan.id !== 'free' ? (
+                  <Text style={styles.sheetCadence}>/{displayCadence}</Text>
+                ) : null}
+              </View>
+              {billingCycle === 'quarterly' && quarterlyHint ? (
+                <View style={styles.sheetHintChip}>
+                  <Text style={styles.sheetHint}>{quarterlyHint}</Text>
+                </View>
               ) : null}
             </View>
-            {billingCycle === 'quarterly' && quarterlyHint ? (
-              <View style={styles.sheetHintChip}>
-                <Text style={styles.sheetHint}>{quarterlyHint}</Text>
+
+            <BillingToggle value={billingCycle} onChange={handleBillingChange} />
+
+            <View style={styles.featuresBox}>
+              {selectedPlan.features.map(feature => (
+                <View key={feature.id} style={styles.sheetFeatureRow}>
+                  <View style={styles.sheetCheck}>
+                    <CheckIcon />
+                  </View>
+                  <Text style={styles.sheetFeatureText}>{feature.label}</Text>
+                </View>
+              ))}
+            </View>
+
+            {selectedPlan.languages.length > 0 ? (
+              <View style={styles.sheetLanguages}>
+                <Text style={styles.sheetLanguagesTitle}>
+                  Languages included ({selectedPlan.languages.length})
+                </Text>
+                <View style={styles.sheetChipWrap}>
+                  {selectedPlan.languages.map(language => (
+                    <View key={language.name} style={styles.sheetChip}>
+                      <Text style={styles.sheetChipText}>{language.name}</Text>
+                    </View>
+                  ))}
+                </View>
               </View>
             ) : null}
-          </View>
 
-          <BillingToggle value={billingCycle} onChange={handleBillingChange} />
-
-          <View style={styles.featuresBox}>
-            {selectedPlan.features.map(feature => (
-              <View key={feature.id} style={styles.sheetFeatureRow}>
-                <View style={styles.sheetCheck}>
-                  <CheckIcon />
-                </View>
-                <Text style={styles.sheetFeatureText}>{feature.label}</Text>
-              </View>
-            ))}
-          </View>
-
-          <TouchableOpacity
-            activeOpacity={0.88}
-            disabled={isBusy}
-            onPress={() => startCheckout(selectedPlan)}
-          >
-            <LinearGradient
-              colors={[
-                colors.upgradeGradientStart,
-                colors.upgradeGradientMid,
-                colors.upgradeGradientEnd,
-              ]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[styles.subscribeButton, isBusy && styles.subscribeDisabled]}
+            <TouchableOpacity
+              activeOpacity={0.88}
+              disabled={isBusy}
+              onPress={() => startCheckout(selectedPlan)}
             >
-              {isBusy ? (
-                <ActivityIndicator color={colors.white} />
-              ) : (
-                <Text style={styles.subscribeButtonText}>{subscribeLabel}</Text>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
-          <View style={styles.legalRow}>
-            <ShieldIcon />
-            <Text style={styles.legalText}>
-              By subscribing, you agree to our Terms of Service and Privacy Policy.
-            </Text>
-          </View>
-        </BottomSheetScrollView>
+              <LinearGradient
+                colors={[
+                  colors.upgradeGradientStart,
+                  colors.upgradeGradientMid,
+                  colors.upgradeGradientEnd,
+                ]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.subscribeButton, isBusy && styles.subscribeDisabled]}
+              >
+                {isBusy ? (
+                  <ActivityIndicator color={colors.white} />
+                ) : (
+                  <Text style={styles.subscribeButtonText}>{subscribeLabel}</Text>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+            <View style={styles.legalRow}>
+              <ShieldIcon />
+              <Text style={styles.legalText}>
+                By subscribing, you agree to our Terms of Service and Privacy
+                Policy.
+              </Text>
+            </View>
+          </BottomSheetScrollView>
         ) : null}
       </BottomSheetModal>
     </View>
@@ -556,18 +646,13 @@ const styles = StyleSheet.create({
   },
 
   headerBar: {
-    minHeight: ms(56),
+    minHeight: ms(48),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.sm,
-  },
-
-  headerSide: {
-    width: ms(84),
-    alignItems: 'flex-start',
+    paddingTop: spacing.xs,
+    paddingBottom: spacing.xs,
   },
 
   headerButton: {
@@ -581,60 +666,59 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
 
-  headerCopy: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: spacing.sm,
-  },
-
-  headerButtonSpacer: {
+  headerSpacer: {
     width: layout.headerButton,
     height: layout.headerButton,
   },
 
-  headerPlanChip: {
-    alignSelf: 'flex-end',
-    maxWidth: ms(84),
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.pill,
-    backgroundColor: colors.primaryLight,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.brandBorder,
-  },
-
-  headerPlanText: {
-    color: colors.primaryDark,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-  },
-
-  headerTitle: {
-    color: colors.text,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
-    letterSpacing: -0.3,
-  },
-
-  headerSubtitle: {
-    marginTop: spacing.xxs,
-    color: colors.subText,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
-  },
-
   content: {
     paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
     flexGrow: 1,
     gap: spacing['2xl'],
+  },
+
+  hero: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+
+  heroIconWrap: {
+    width: ms(72),
+    height: ms(72),
+    borderRadius: ms(24),
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.brandBorder,
+    ...shadows.card,
+  },
+
+  heroTitle: {
+    marginTop: spacing.xl,
+    color: colors.text,
+    fontSize: ms(28),
+    fontWeight: fontWeight.extrabold,
+    letterSpacing: -0.6,
+    textAlign: 'center',
+  },
+
+  heroSubtitle: {
+    marginTop: spacing.sm,
+    color: colors.subText,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.medium,
+    textAlign: 'center',
+    lineHeight: ms(22),
   },
 
   billingBlock: {
     gap: spacing.md,
   },
 
-  billingLabel: {
+  sectionLabel: {
     color: colors.text,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
@@ -667,8 +751,41 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  planStack: {
-    gap: spacing.xl,
+  planRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: spacing.md,
+    paddingTop: spacing.md,
+  },
+
+  stickyCta: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: layout.screenPadding,
+    paddingTop: spacing.md,
+    backgroundColor: 'rgba(247,247,251,0.96)',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+
+  primaryButton: {
+    minHeight: layout.buttonHeight,
+    borderRadius: radii.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.primary,
+  },
+
+  primaryButtonDisabled: {
+    opacity: 0.55,
+  },
+
+  primaryButtonText: {
+    color: colors.white,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
   },
 
   legalRow: {
@@ -797,6 +914,42 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+  },
+
+  sheetLanguages: {
+    borderRadius: radii.xl,
+    backgroundColor: colors.primarySoft,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.brandBorder,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+
+  sheetLanguagesTitle: {
+    color: colors.primaryDark,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+
+  sheetChipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+
+  sheetChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.pill,
+    backgroundColor: colors.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.brandBorder,
+  },
+
+  sheetChipText: {
+    color: colors.primaryDark,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
   },
 
   subscribeButton: {

@@ -97,7 +97,7 @@ const CurrentPlanBanner = ({ planStatus }: Props) => {
     <View style={styles.card}>
       <View style={styles.topRow}>
         <View style={styles.copy}>
-          <Text style={styles.eyebrow}>YOUR PLAN</Text>
+          <Text style={styles.eyebrow}>CURRENT PLAN</Text>
           <Text style={styles.title}>{planName}</Text>
           <Text style={styles.subtitle}>
             {renewal
@@ -119,7 +119,9 @@ const CurrentPlanBanner = ({ planStatus }: Props) => {
       <View style={styles.statRow}>
         {stats.map(stat => (
           <View key={stat.label} style={styles.statChip}>
-            <Text style={styles.statValue}>{stat.value}</Text>
+            <Text style={styles.statValue} numberOfLines={1}>
+              {stat.value}
+            </Text>
             <Text style={styles.statLabel}>{stat.label}</Text>
           </View>
         ))}

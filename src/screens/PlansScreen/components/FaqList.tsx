@@ -47,7 +47,7 @@ const FaqList = ({ items }: Props) => {
   return (
     <View style={styles.card}>
       <View style={styles.heading}>
-        <Text style={styles.title}>Questions</Text>
+        <Text style={styles.title}>Frequently asked</Text>
         <Text style={styles.subtitle}>
           Billing, languages, and switching plans — covered.
         </Text>
