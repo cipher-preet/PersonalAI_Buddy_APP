@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
-import { REMINDER_TONES, ReminderItem } from './mockReminders';
+import { EXPIRED_REMINDER_TONE, REMINDER_TONES, ReminderItem } from './mockReminders';
 import {
   colors,
   fontSize,
@@ -47,17 +47,28 @@ const TrashIcon = () => (
 );
 
 const ReminderCard = ({ item, width, onPress, onDelete }: Props) => {
-  const tone = REMINDER_TONES[item.tone] ?? REMINDER_TONES.lavender;
+  const expired = Boolean(item.expired);
+  const tone = expired
+    ? EXPIRED_REMINDER_TONE
+    : REMINDER_TONES[item.tone] ?? REMINDER_TONES.lavender;
   const [menuVisible, setMenuVisible] = useState(false);
 
   return (
-    <View style={[styles.shadowWrap, { width }]}>
+    <View
+      style={[
+        styles.shadowWrap,
+        { width },
+        expired && styles.shadowWrapExpired,
+      ]}
+    >
       <TouchableOpacity
         activeOpacity={0.9}
         style={[styles.card, { backgroundColor: tone.bg }]}
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel={item.title}
+        accessibilityLabel={
+          expired ? `${item.title}, expired reminder` : item.title
+        }
       >
         <View style={styles.body}>
           <View style={styles.headerRow}>
@@ -95,6 +106,11 @@ const ReminderCard = ({ item, width, onPress, onDelete }: Props) => {
           <Text style={[styles.timeLabel, { color: tone.muted }]}>
             {item.timeLabel}
           </Text>
+          {expired ? (
+            <Text style={[styles.expiredBadge, { color: tone.muted }]}>
+              Expired
+            </Text>
+          ) : null}
         </View>
       </TouchableOpacity>
 
@@ -135,6 +151,11 @@ const styles = StyleSheet.create({
     borderRadius: radii['2xl'],
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
+  },
+
+  shadowWrapExpired: {
+    borderColor: '#D0D0D6',
+    opacity: 0.92,
   },
 
   card: {
@@ -184,11 +205,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: spacing.xl,
+    gap: spacing.sm,
   },
 
   timeLabel: {
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
+  },
+
+  expiredBadge: {
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
 
   menuBackdrop: {

@@ -553,6 +553,46 @@ export const homeApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Briefing'],
     }),
+    submitFeedback: builder.mutation<
+      {
+        success: boolean;
+        data?: {
+          message?: string;
+          feedbackId?: string;
+        };
+        message?: string;
+      },
+      { topicId: string; topicLabel: string; message: string }
+    >({
+      query: body => ({
+        url: 'home/submit-feedback',
+        method: 'POST',
+        body,
+      }),
+    }),
+    raiseSupportTicket: builder.mutation<
+      {
+        success: boolean;
+        data?: {
+          message?: string;
+          ticketId?: string;
+          status?: string;
+        };
+        message?: string;
+      },
+      {
+        categoryId: string;
+        categoryLabel: string;
+        subject: string;
+        message: string;
+      }
+    >({
+      query: body => ({
+        url: 'home/raise-support-ticket',
+        method: 'POST',
+        body,
+      }),
+    }),
   }),
 });
 
@@ -575,4 +615,6 @@ export const {
   useRegisterDeviceTokenMutation,
   useGetDailyBriefingQuery,
   useForceGenerateDailyBriefingMutation,
+  useSubmitFeedbackMutation,
+  useRaiseSupportTicketMutation,
 } = homeApi;

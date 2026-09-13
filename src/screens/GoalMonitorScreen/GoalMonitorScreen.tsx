@@ -9,12 +9,16 @@ import {
   View,
 } from 'react-native';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
-import { useNavigation } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
+import UpgradePlanPromptModal from '../../components/UpgradePlanPromptModal';
+import type { MainTabParamList } from '../../navigation/types';
 import { useGetUserSpacesQuery, type Space } from '../../store/api/home';
+import { useGetPlanStatusQuery } from '../../store/api/payments';
 import { useToast } from '../../store/context/ToastContext';
 import { useAppSelector } from '../../store/hooks';
 import {
@@ -124,17 +128,36 @@ const formatSpaceDate = (value?: string) => {
 };
 
 const GoalMonitorScreen = () => {
-  const navigation = useNavigation();
+  const navigation =
+    useNavigation<BottomTabNavigationProp<MainTabParamList>>();
   const sheetRef = useRef<BottomSheetModal>(null);
   const { showToast } = useToast();
   const userId = useAppSelector(state => state.auth.userId) ?? '';
   const [activeSpaceId, setActiveSpaceId] = useState('');
   const [goalsBySpace, setGoalsBySpace] = useState<Record<string, string>>({});
   const [sheetMode, setSheetMode] = useState<GoalSheetMode>('create');
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
+
+  const { data: planStatus, isSuccess: isPlanLoaded } = useGetPlanStatusQuery(
+    { userId },
+    { skip: !userId },
+  );
+  const isFreePlan = isPlanLoaded && planStatus?.plan?.code === 'free';
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isFreePlan) {
+        setShowUpgradePrompt(true);
+        sheetRef.current?.dismiss();
+      } else {
+        setShowUpgradePrompt(false);
+      }
+    }, [isFreePlan]),
+  );
 
   const { data: spacesData, isFetching } = useGetUserSpacesQuery(
     { userId, limit: 50 },
-    { skip: !userId },
+    { skip: !userId || isFreePlan },
   );
   const spaces = useMemo(
     () => spacesData?.data?.data?.spaces ?? [],
@@ -145,6 +168,11 @@ const GoalMonitorScreen = () => {
 
   const openSheet = useCallback(
     (space: Space, mode: GoalSheetMode) => {
+      if (isFreePlan) {
+        setShowUpgradePrompt(true);
+        return;
+      }
+
       const goal = goalsBySpace[space._id] ?? '';
       setActiveSpaceId(space._id);
 
@@ -161,7 +189,7 @@ const GoalMonitorScreen = () => {
 
       requestAnimationFrame(() => sheetRef.current?.present());
     },
-    [goalsBySpace, showToast],
+    [goalsBySpace, isFreePlan, showToast],
   );
 
   const saveGoal = (goal: string) => {
@@ -327,6 +355,20 @@ const GoalMonitorScreen = () => {
         spaceName={activeSpace?.spacename ?? ''}
         goal={activeGoal}
         onSave={saveGoal}
+      />
+
+      <UpgradePlanPromptModal
+        visible={showUpgradePrompt}
+        title="Goal Monitor is a Pro feature"
+        message="Upgrade to Pro to set outcomes for each space and let Buddy track progress with you."
+        onClose={() => {
+          setShowUpgradePrompt(false);
+          navigation.goBack();
+        }}
+        onUpgrade={() => {
+          setShowUpgradePrompt(false);
+          navigation.navigate('Plans');
+        }}
       />
     </View>
   );

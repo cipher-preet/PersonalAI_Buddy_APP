@@ -1,4 +1,11 @@
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   FlatList,
   Modal,
@@ -8,6 +15,8 @@ import {
   TouchableOpacity,
   View,
   type ListRenderItemInfo,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -111,6 +120,11 @@ const CalendarDateStrip = ({
   onSelectDate,
 }: Props) => {
   const listRef = useRef<FlatList<StripDay>>(null);
+  const listWidthRef = useRef(0);
+  const scrollXRef = useRef(0);
+  const monthKeyRef = useRef('');
+  const didInitialScrollRef = useRef(false);
+
   const today = useMemo(() => startOfDay(new Date()), []);
   const todayKey = useMemo(() => toDateKey(today), [today]);
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -119,6 +133,8 @@ const CalendarDateStrip = ({
   const selectedYear = selectedDate.getFullYear();
   const selectedMonth = selectedDate.getMonth();
   const monthKey = `${selectedYear}-${selectedMonth}`;
+  const selectedKey = toDateKey(selectedDate);
+  const selectedIndex = Math.max(0, selectedDate.getDate() - 1);
 
   const days = useMemo<StripDay[]>(() => {
     const totalDays = new Date(selectedYear, selectedMonth + 1, 0).getDate();
@@ -128,21 +144,69 @@ const CalendarDateStrip = ({
     });
   }, [selectedMonth, selectedYear]);
 
-  const selectedIndex = Math.max(0, selectedDate.getDate() - 1);
+  const scrollToIndex = useCallback(
+    (index: number, animated: boolean) => {
+      if (!days.length || listWidthRef.current <= 0) {
+        return;
+      }
+      const safeIndex = Math.min(Math.max(index, 0), days.length - 1);
+      listRef.current?.scrollToIndex({
+        index: safeIndex,
+        animated,
+        viewPosition: 0.45,
+      });
+    },
+    [days.length],
+  );
 
+  // Position strip when month changes (or on first layout). Avoid re-scrolling
+  // on every day tap — that was the main jerk.
   useEffect(() => {
     if (!days.length) {
       return;
     }
-    const index = Math.min(selectedDate.getDate() - 1, days.length - 1);
-    requestAnimationFrame(() => {
-      listRef.current?.scrollToIndex({
-        index,
-        animated: false,
-        viewPosition: 0.4,
-      });
+
+    const monthChanged = monthKeyRef.current !== monthKey;
+    const isFirst = monthKeyRef.current === '';
+    monthKeyRef.current = monthKey;
+
+    if (!monthChanged && !isFirst) {
+      return;
+    }
+
+    const frame = requestAnimationFrame(() => {
+      scrollToIndex(selectedIndex, !isFirst);
     });
-  }, [days.length, monthKey, selectedDate]);
+    return () => cancelAnimationFrame(frame);
+  }, [days.length, monthKey, scrollToIndex, selectedIndex]);
+
+  const ensureSelectedVisible = useCallback(
+    (index: number) => {
+      const width = listWidthRef.current;
+      if (width <= 0) {
+        return;
+      }
+      const itemStart = DATE_STRIP_PADDING + DAY_ITEM_WIDTH * index;
+      const itemEnd = itemStart + DAY_CHIP_WIDTH;
+      const viewStart = scrollXRef.current;
+      const viewEnd = viewStart + width;
+      const edgePad = DAY_ITEM_WIDTH;
+
+      if (itemStart < viewStart + edgePad || itemEnd > viewEnd - edgePad) {
+        scrollToIndex(index, true);
+      }
+    },
+    [scrollToIndex],
+  );
+
+  const handleSelectDay = useCallback(
+    (date: Date) => {
+      const next = startOfDay(date);
+      onSelectDate(next);
+      ensureSelectedVisible(Math.max(0, next.getDate() - 1));
+    },
+    [ensureSelectedVisible, onSelectDate],
+  );
 
   const shiftMonth = useCallback(
     (delta: number) => {
@@ -197,21 +261,29 @@ const CalendarDateStrip = ({
     ({ item }: ListRenderItemInfo<StripDay>) => (
       <DayChip
         item={item}
-        selected={item.key === toDateKey(selectedDate)}
+        selected={item.key === selectedKey}
         isToday={item.key === todayKey}
         hasEvents={Boolean(markedDateKeys?.has(item.key))}
-        onPress={date => onSelectDate(startOfDay(date))}
+        onPress={handleSelectDay}
       />
     ),
-    [markedDateKeys, onSelectDate, selectedDate, todayKey],
+    [handleSelectDay, markedDateKeys, selectedKey, todayKey],
   );
 
+  // Offset is item-only; content padding is applied by contentContainerStyle.
   const getItemLayout = useCallback(
     (_: ArrayLike<StripDay> | null | undefined, index: number) => ({
       length: DAY_ITEM_WIDTH,
-      offset: DATE_STRIP_PADDING + DAY_ITEM_WIDTH * index,
+      offset: DAY_ITEM_WIDTH * index,
       index,
     }),
+    [],
+  );
+
+  const handleScroll = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      scrollXRef.current = event.nativeEvent.contentOffset.x;
+    },
     [],
   );
 
@@ -255,30 +327,42 @@ const CalendarDateStrip = ({
       </View>
 
       <FlatList
-        key={monthKey}
         ref={listRef}
         data={days}
         keyExtractor={item => item.key}
         renderItem={renderDay}
-        extraData={`${toDateKey(selectedDate)}-${markedDateKeys?.size ?? 0}`}
+        extraData={`${selectedKey}-${markedDateKeys?.size ?? 0}`}
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         getItemLayout={getItemLayout}
-        initialScrollIndex={Math.min(selectedIndex, Math.max(days.length - 1, 0))}
-        onScrollToIndexFailed={info => {
-          setTimeout(() => {
-            listRef.current?.scrollToIndex({
-              index: info.index,
-              animated: false,
-              viewPosition: 0.4,
+        onLayout={event => {
+          listWidthRef.current = event.nativeEvent.layout.width;
+          if (!didInitialScrollRef.current && days.length) {
+            didInitialScrollRef.current = true;
+            requestAnimationFrame(() => {
+              scrollToIndex(selectedIndex, false);
             });
-          }, 60);
+          }
         }}
-        initialNumToRender={14}
-        maxToRenderPerBatch={12}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        onScrollToIndexFailed={info => {
+          // Rare with full month rendered; soft retry once layout catches up.
+          setTimeout(() => {
+            listRef.current?.scrollToOffset({
+              offset: Math.max(0, DAY_ITEM_WIDTH * info.index),
+              animated: true,
+            });
+          }, 40);
+        }}
+        // Month strip is tiny (≤31); render everything to avoid virtualization hitches.
+        initialNumToRender={31}
+        maxToRenderPerBatch={31}
         windowSize={5}
-        decelerationRate="fast"
+        removeClippedSubviews={false}
+        decelerationRate="normal"
+        bounces
       />
 
       <Modal

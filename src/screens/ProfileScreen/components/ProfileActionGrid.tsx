@@ -67,6 +67,45 @@ const PlanIcon = ({ color = colors.primary }: IconProps) => (
   </Svg>
 );
 
+const FeedbackIcon = ({ color = colors.primary }: IconProps) => (
+  <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M5 5.5h14a2.5 2.5 0 0 1 2.5 2.5v6.5A2.5 2.5 0 0 1 19 17H10l-5.5 3v-3.6A2.5 2.5 0 0 1 2.5 14V8A2.5 2.5 0 0 1 5 5.5Z"
+      stroke={color}
+      strokeWidth={1.5}
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M7.5 11h.1m4.4 0h.1m4.4 0h.1"
+      stroke={color}
+      strokeWidth={2.2}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
+const HelpSupportIcon = ({ color = colors.primary }: IconProps) => (
+  <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 21a9 9 0 1 0-9-9 9 9 0 0 0 9 9Z"
+      stroke={color}
+      strokeWidth={1.5}
+    />
+    <Path
+      d="M9.8 9.6a2.2 2.2 0 0 1 4.3.7c0 1.5-2.15 2-2.15 3.3"
+      stroke={color}
+      strokeWidth={1.5}
+      strokeLinecap="round"
+    />
+    <Path
+      d="M12 16.8h.01"
+      stroke={color}
+      strokeWidth={2.2}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
 const LogoutIcon = ({ color = colors.error }: IconProps) => (
   <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
     <Path
@@ -424,25 +463,50 @@ const ProfileActionGrid = ({
         <TouchableOpacity
           activeOpacity={0.82}
           style={styles.listRow}
-          onPress={openDeleteSheet}
+          onPress={() => navigation.navigate('Feedback')}
           accessibilityRole="button"
-          accessibilityLabel="Delete account"
+          accessibilityLabel="Send feedback"
         >
-          <View style={[styles.listIcon, { backgroundColor: colors.errorSoft }]}>
-            <DeleteAccountIcon color={colors.error} />
+          <View
+            style={[styles.listIcon, { backgroundColor: colors.primarySoft }]}
+          >
+            <FeedbackIcon color={colors.primaryPurpleDark} />
           </View>
           <View style={styles.listContent}>
-            <Text style={[styles.listTitle, styles.deleteTitle]}>
-              Delete Account
-            </Text>
+            <Text style={styles.listTitle}>Feedback</Text>
             <Text style={styles.listSubtitle}>
-              Permanently erase your account and data
+              Tell us how we can improve Buddy
             </Text>
           </View>
-          <ChevronIcon color={colors.error} />
+          <ChevronIcon />
         </TouchableOpacity>
 
         <View style={styles.listDivider} />
+
+        <TouchableOpacity
+          activeOpacity={0.82}
+          style={styles.listRow}
+          onPress={() => navigation.navigate('HelpSupport')}
+          accessibilityRole="button"
+          accessibilityLabel="Help and support"
+        >
+          <View
+            style={[styles.listIcon, { backgroundColor: colors.primaryLight }]}
+          >
+            <HelpSupportIcon color={colors.primary} />
+          </View>
+          <View style={styles.listContent}>
+            <Text style={styles.listTitle}>Help & Support</Text>
+            <Text style={styles.listSubtitle}>
+              Email us or raise a support ticket
+            </Text>
+          </View>
+          <ChevronIcon />
+        </TouchableOpacity>
+      </View>
+
+      <View style={[styles.sectionCard, styles.sectionCardSpacer]}>
+        <Text style={styles.sectionLabel}>Session</Text>
 
         <TouchableOpacity
           activeOpacity={0.82}
@@ -457,6 +521,29 @@ const ProfileActionGrid = ({
           <View style={styles.listContent}>
             <Text style={[styles.listTitle, styles.logoutTitle]}>Logout</Text>
             <Text style={styles.listSubtitle}>Sign out of your account</Text>
+          </View>
+          <ChevronIcon color={colors.error} />
+        </TouchableOpacity>
+
+        <View style={styles.listDivider} />
+
+        <TouchableOpacity
+          activeOpacity={0.82}
+          style={styles.listRow}
+          onPress={openDeleteSheet}
+          accessibilityRole="button"
+          accessibilityLabel="Delete account"
+        >
+          <View style={[styles.listIcon, { backgroundColor: colors.errorSoft }]}>
+            <DeleteAccountIcon color={colors.error} />
+          </View>
+          <View style={styles.listContent}>
+            <Text style={[styles.listTitle, styles.deleteTitle]}>
+              Delete Account
+            </Text>
+            <Text style={styles.listSubtitle}>
+              Permanently erase your account and data
+            </Text>
           </View>
           <ChevronIcon color={colors.error} />
         </TouchableOpacity>

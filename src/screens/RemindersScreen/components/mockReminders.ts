@@ -23,7 +23,17 @@ export type ReminderItem = {
   aiCalling: boolean;
   notification: boolean;
   beeping: boolean;
+  /** One-time reminder whose fire time has passed. Repeating reminders stay active. */
+  expired?: boolean;
 };
+
+/** Grayscale palette for expired / unused one-time reminders. */
+export const EXPIRED_REMINDER_TONE = {
+  bg: '#E8E8EC',
+  text: '#5C5F66',
+  muted: '#8A8E96',
+  arrow: '#7A7E86',
+} as const;
 
 export const REMINDER_TONES: Record<
   ReminderTone,
@@ -89,8 +99,8 @@ export const MOCK_REMINDERS: ReminderItem[] = [
     tone: 'rose',
     repeat: 'once',
     aiCalling: false,
-    notification: true,
-    beeping: false,
+    notification: false,
+    beeping: true,
   },
   {
     id: '2',
@@ -104,7 +114,7 @@ export const MOCK_REMINDERS: ReminderItem[] = [
     tone: 'lavender',
     repeat: 'once',
     aiCalling: true,
-    notification: true,
+    notification: false,
     beeping: false,
   },
   {
@@ -119,7 +129,7 @@ export const MOCK_REMINDERS: ReminderItem[] = [
     tone: 'ochre',
     repeat: 'weekly',
     aiCalling: true,
-    notification: true,
+    notification: false,
     beeping: true,
   },
   {
@@ -134,7 +144,7 @@ export const MOCK_REMINDERS: ReminderItem[] = [
     tone: 'teal',
     repeat: 'daily',
     aiCalling: false,
-    notification: true,
+    notification: false,
     beeping: true,
   },
   {
@@ -149,8 +159,8 @@ export const MOCK_REMINDERS: ReminderItem[] = [
     tone: 'lavender',
     repeat: 'weekdays',
     aiCalling: false,
-    notification: true,
-    beeping: false,
+    notification: false,
+    beeping: true,
   },
   {
     id: '6',
@@ -164,8 +174,8 @@ export const MOCK_REMINDERS: ReminderItem[] = [
     tone: 'rose',
     repeat: 'weekly',
     aiCalling: false,
-    notification: true,
-    beeping: false,
+    notification: false,
+    beeping: true,
   },
   {
     id: '7',
@@ -179,7 +189,7 @@ export const MOCK_REMINDERS: ReminderItem[] = [
     tone: 'ochre',
     repeat: 'weekly',
     aiCalling: true,
-    notification: true,
+    notification: false,
     beeping: false,
   },
   {
@@ -194,7 +204,7 @@ export const MOCK_REMINDERS: ReminderItem[] = [
     tone: 'teal',
     repeat: 'daily',
     aiCalling: false,
-    notification: true,
+    notification: false,
     beeping: true,
   },
 ];

@@ -10,6 +10,8 @@ export type MainTabParamList = {
   AI: { spaceId?: string; spaceName?: string } | undefined;
   Profile: undefined;
   Plans: undefined;
+  Feedback: undefined;
+  HelpSupport: undefined;
 };
 
 export type ReminderCallParams = {

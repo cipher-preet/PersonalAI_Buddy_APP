@@ -129,23 +129,6 @@ const PhoneIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
   </Svg>
 );
 
-const BellIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M12 4a5.5 5.5 0 0 1 5.5 5.5v3l1.2 2.2a.9.9 0 0 1-.8 1.3H6.1a.9.9 0 0 1-.8-1.3l1.2-2.2v-3A5.5 5.5 0 0 1 12 4Z"
-      stroke={color}
-      strokeWidth={STROKE}
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M10.1 19a2 2 0 0 0 3.8 0"
-      stroke={color}
-      strokeWidth={STROKE}
-      strokeLinecap="round"
-    />
-  </Svg>
-);
-
 const BeepIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
@@ -284,8 +267,7 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
     const [selectedTime, setSelectedTime] = useState(createDefaultTime);
     const [repeat, setRepeat] = useState<ReminderRepeat>('once');
     const [aiCalling, setAiCalling] = useState(false);
-    const [notification, setNotification] = useState(true);
-    const [beeping, setBeeping] = useState(false);
+    const [beeping, setBeeping] = useState(true);
 
     const resetCreateForm = useCallback(() => {
       const now = new Date();
@@ -296,8 +278,7 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
       setSelectedTime(createDefaultTime());
       setRepeat('once');
       setAiCalling(false);
-      setNotification(true);
-      setBeeping(false);
+      setBeeping(true);
       setPickerMode('none');
     }, []);
 
@@ -317,8 +298,8 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
       setSelectedTime(parseReminderTime(reminder));
       setRepeat(reminder.repeat);
       setAiCalling(reminder.aiCalling);
-      setNotification(reminder.notification);
-      setBeeping(reminder.beeping);
+      // Legacy notification-only reminders edit as alarm so they still deliver.
+      setBeeping(reminder.beeping || (!reminder.aiCalling && reminder.notification));
       setPickerMode('none');
     }, [isCreateMode, reminder]);
 
@@ -416,8 +397,8 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
           timeLabel: formatTimeLabel(selectedTime),
           repeat,
           aiCalling,
-          notification,
-          beeping,
+          notification: false,
+          beeping: beeping || !aiCalling,
         });
         if (ref && 'current' in ref) {
           ref.current?.dismiss();
@@ -427,7 +408,7 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
       }
     };
 
-    const hasAnyAlert = notification || beeping || aiCalling;
+    const hasAnyAlert = beeping || aiCalling;
 
     return (
       <>
@@ -596,26 +577,6 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
             <Text style={styles.sectionLabel}>How Buddy should reach you</Text>
 
             <View style={styles.alertCard}>
-              <View style={styles.alertRow}>
-                <View style={[styles.featureIcon, styles.featureIconNotify]}>
-                  <BellIcon color={colors.primary} />
-                </View>
-                <View style={styles.featureCopy}>
-                  <Text style={styles.featureTitle}>Notification</Text>
-                  <Text style={styles.featureSubtitle}>
-                    A banner on your phone at the scheduled time.
-                  </Text>
-                </View>
-                <Switch
-                  value={notification}
-                  onValueChange={setNotification}
-                  trackColor={{ false: colors.border, true: colors.brandBorder }}
-                  thumbColor={notification ? colors.primary : colors.white}
-                />
-              </View>
-
-              <View style={styles.alertDivider} />
-
               <View style={styles.alertRow}>
                 <View style={[styles.featureIcon, styles.featureIconBeep]}>
                   <BeepIcon color={colors.success} />
@@ -936,10 +897,6 @@ const styles = StyleSheet.create({
 
   featureIconCall: {
     backgroundColor: colors.purpleLight,
-  },
-
-  featureIconNotify: {
-    backgroundColor: colors.primarySoft,
   },
 
   featureIconBeep: {

@@ -30,6 +30,8 @@ import BriefingScreen from '../screens/BriefingScreen/BriefingScreen';
 import ShareScreen from '../screens/ShareScreen/ShareScreen';
 import CalendarScreen from '../screens/CalendarScreen/CalendarScreen';
 import GoalMonitorScreen from '../screens/GoalMonitorScreen/GoalMonitorScreen';
+import FeedbackScreen from '../screens/FeedbackScreen/FeedbackScreen';
+import HelpSupportScreen from '../screens/HelpSupportScreen/HelpSupportScreen';
 import {
   colors,
   fontSize,
@@ -194,7 +196,9 @@ const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
     currentRoute.name === 'Briefing' ||
     currentRoute.name === 'Share' ||
     currentRoute.name === 'Calendar' ||
-    currentRoute.name === 'GoalMonitor'
+    currentRoute.name === 'GoalMonitor' ||
+    currentRoute.name === 'Feedback' ||
+    currentRoute.name === 'HelpSupport'
   ) {
     return null;
   }
@@ -270,6 +274,8 @@ const MainTabs = () => {
       <Tab.Screen name="Share" component={ShareScreen} />
       <Tab.Screen name="Calendar" component={CalendarScreen} />
       <Tab.Screen name="GoalMonitor" component={GoalMonitorScreen} />
+      <Tab.Screen name="Feedback" component={FeedbackScreen} />
+      <Tab.Screen name="HelpSupport" component={HelpSupportScreen} />
     </Tab.Navigator>
   );
 };

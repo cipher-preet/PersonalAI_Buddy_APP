@@ -10,11 +10,12 @@ import {
 } from 'react-native';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
+import UpgradePlanPromptModal from '../../components/UpgradePlanPromptModal';
 import type { MainTabParamList } from '../../navigation/types';
 import {
   type BriefingInsightCard,
@@ -22,6 +23,7 @@ import {
   useForceGenerateDailyBriefingMutation,
   useGetDailyBriefingQuery,
 } from '../../store/api/home';
+import { useGetPlanStatusQuery } from '../../store/api/payments';
 import { useAppSelector } from '../../store/hooks';
 import { useToast } from '../../store/context/ToastContext';
 import {
@@ -31,7 +33,6 @@ import {
   layout,
   ms,
   radii,
-  shadows,
   spacing,
 } from '../../theme';
 import {
@@ -82,7 +83,7 @@ const SparkleIcon = ({
 );
 
 const ChatIcon = () => (
-  <Svg width={ms(32)} height={ms(32)} viewBox="0 0 24 24" fill="none">
+  <Svg width={ms(22)} height={ms(22)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M5 5.5h14a2.5 2.5 0 0 1 2.5 2.5v6.5A2.5 2.5 0 0 1 19 17H10l-5.5 3v-3.6A2.5 2.5 0 0 1 2.5 14V8A2.5 2.5 0 0 1 5 5.5Z"
       stroke={colors.primary}
@@ -161,9 +162,9 @@ const ItemSection = ({
     return null;
   }
   return (
-    <>
+    <View style={styles.sectionBlock}>
       <View style={styles.sectionHeading}>
-        <View>
+        <View style={styles.sectionHeadingCopy}>
           <Text style={styles.sectionTitle}>{title}</Text>
           <Text style={styles.sectionSubtitle}>{subtitle}</Text>
         </View>
@@ -184,26 +185,45 @@ const ItemSection = ({
           </View>
         ))}
       </View>
-    </>
+    </View>
   );
 };
 
 const BriefingScreen = () => {
   const navigation =
     useNavigation<BottomTabNavigationProp<MainTabParamList>>();
-  const token = useAppSelector(state => state.auth.token);
+  const userId = useAppSelector(state => state.auth.userId);
   const { showToast } = useToast();
   const sourceSheetRef = useRef<BottomSheetModal>(null);
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
   const [selectedInsight, setSelectedInsight] =
     useState<BriefingInsightCard | null>(null);
   const [pollMs, setPollMs] = useState(0);
+  const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [forceGenerate, { isLoading: isForceGenerating }] =
     useForceGenerateDailyBriefingMutation();
 
+  const { data: planStatus, isSuccess: isPlanLoaded } = useGetPlanStatusQuery(
+    { userId: userId ?? '' },
+    { skip: !userId },
+  );
+  const isFreePlan = isPlanLoaded && planStatus?.plan?.code === 'free';
+
+  useFocusEffect(
+    useCallback(() => {
+      if (isFreePlan) {
+        setShowUpgradePrompt(true);
+      } else {
+        setShowUpgradePrompt(false);
+      }
+    }, [isFreePlan]),
+  );
+
   const { data, error, isLoading, isError, isFetching, refetch } =
     useGetDailyBriefingQuery(undefined, {
-      skip: !token,
+      // Session auth restores userId without always having a JWT in Redux.
+      // Free-plan users see the upgrade prompt instead of briefing content.
+      skip: !userId || isFreePlan,
       pollingInterval: pollMs,
       refetchOnFocus: true,
     });
@@ -280,7 +300,10 @@ const BriefingScreen = () => {
   };
 
   const emptyVariant: BriefingEmptyVariant | null = (() => {
-    if (!token) {
+    if (isFreePlan) {
+      return null;
+    }
+    if (!userId) {
       return 'signedOut';
     }
     if (isLoading && !briefing) {
@@ -334,7 +357,7 @@ const BriefingScreen = () => {
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.content}
           refreshControl={
-            token ? (
+            userId ? (
               <RefreshControl
                 refreshing={isFetching && !isLoading}
                 onRefresh={refetch}
@@ -347,32 +370,24 @@ const BriefingScreen = () => {
           {emptyVariant ? (
             <BriefingEmptyState
               variant={emptyVariant}
-              onRetry={token ? refetch : undefined}
+              onRetry={userId ? refetch : undefined}
               onStartChat={openChat}
-              onForceGenerate={token ? handleForceGenerate : undefined}
+              onForceGenerate={userId ? handleForceGenerate : undefined}
               forceGenerating={isForceGenerating}
             />
           ) : null}
 
           {ready && briefing ? (
             <>
-              <TouchableOpacity
-                activeOpacity={0.85}
-                style={styles.forceBanner}
-                onPress={handleForceGenerate}
-                disabled={isForceGenerating}
-              >
-                <Text style={styles.forceBannerText}>
-                  {isForceGenerating
-                    ? 'Generating test briefing…'
-                    : 'Generate now (test) — rebuilds today’s briefing'}
-                </Text>
-              </TouchableOpacity>
-              {briefing.headline ? (
-                <Text style={styles.overviewText}>{briefing.headline}</Text>
-              ) : null}
-              {briefing.overview ? (
-                <Text style={styles.overviewBody}>{briefing.overview}</Text>
+              {(briefing.headline || briefing.overview) ? (
+                <View style={styles.introCard}>
+                  {briefing.headline ? (
+                    <Text style={styles.overviewText}>{briefing.headline}</Text>
+                  ) : null}
+                  {briefing.overview ? (
+                    <Text style={styles.overviewBody}>{briefing.overview}</Text>
+                  ) : null}
+                </View>
               ) : null}
 
               <LinearGradient
@@ -383,13 +398,16 @@ const BriefingScreen = () => {
               >
                 <View style={styles.dateColumn}>
                   <View style={styles.buddyPlanRow}>
-                    <SparkleIcon color={colors.white} size={14} />
-                    <Text style={styles.buddyPlanText}>YESTERDAY</Text>
+                    <SparkleIcon color={colors.white} size={13} />
+                    <Text style={styles.buddyPlanText}>Yesterday</Text>
                   </View>
                   <Text style={styles.bigDate}>
                     {dateParts.month} {dateParts.day}
                   </Text>
                   <Text style={styles.dayName}>{dateParts.dayName}</Text>
+                  {generatedLabel ? (
+                    <Text style={styles.dayMeta}>Prepared {generatedLabel}</Text>
+                  ) : null}
                 </View>
                 <View style={styles.dayMeetings}>
                   {(meetings.length ? meetings : highlights)
@@ -418,10 +436,8 @@ const BriefingScreen = () => {
                     <View style={styles.dayMeeting}>
                       <View style={styles.meetingAccent} />
                       <View style={styles.dayMeetingCopy}>
-                        <Text style={styles.dayMeetingTitle}>No meetings</Text>
-                        <Text style={styles.dayMeetingTime}>
-                          {snapshotLabel}
-                        </Text>
+                        <Text style={styles.dayMeetingTitle}>Quiet snapshot</Text>
+                        <Text style={styles.dayMeetingTime}>{snapshotLabel}</Text>
                       </View>
                     </View>
                   ) : null}
@@ -433,9 +449,9 @@ const BriefingScreen = () => {
                   <View style={styles.chatIconWrap}>
                     <ChatIcon />
                   </View>
-                  <Text style={styles.quickTitle}>Let’s plan your day</Text>
+                  <Text style={styles.quickTitle}>Plan with Buddy</Text>
                   <Text style={styles.quickBody}>
-                    Buddy is ready when you are.
+                    Turn this briefing into today’s plan.
                   </Text>
                   <TouchableOpacity
                     activeOpacity={0.82}
@@ -447,16 +463,17 @@ const BriefingScreen = () => {
                 </View>
 
                 <View style={[styles.quickCard, styles.focusCard]}>
+                  <Text style={styles.focusEyebrow}>Progress</Text>
                   <Text style={styles.focusValue}>
                     {progress.total ? `${progress.percent}%` : snapshotCount}
                   </Text>
                   <Text style={styles.focusLabel}>
                     {progress.total
-                      ? `${progress.done} of ${progress.total} wrapped up`
-                      : 'Items Buddy captured'}
+                      ? `${progress.done} of ${progress.total} done`
+                      : 'Items captured'}
                   </Text>
                   <View style={styles.focusRingWrap}>
-                    <Svg width={ms(72)} height={ms(72)} viewBox="0 0 72 72">
+                    <Svg width={ms(64)} height={ms(64)} viewBox="0 0 72 72">
                       <Circle
                         cx={36}
                         cy={36}
@@ -464,7 +481,7 @@ const BriefingScreen = () => {
                         fill="none"
                         stroke={colors.white}
                         strokeWidth={6}
-                        opacity={0.72}
+                        opacity={0.7}
                       />
                       <Circle
                         cx={36}
@@ -506,9 +523,9 @@ const BriefingScreen = () => {
               />
 
               {tasks.length ? (
-                <>
+                <View style={styles.sectionBlock}>
                   <View style={styles.sectionHeading}>
-                    <View>
+                    <View style={styles.sectionHeadingCopy}>
                       <Text style={styles.sectionTitle}>Today’s priorities</Text>
                       <Text style={styles.sectionSubtitle}>
                         {completedTasks.length} of {tasks.length} completed
@@ -578,13 +595,13 @@ const BriefingScreen = () => {
                       </Text>
                     </View>
                   </View>
-                </>
+                </View>
               ) : null}
 
               {meetings.length ? (
-                <>
+                <View style={styles.sectionBlock}>
                   <View style={styles.sectionHeading}>
-                    <View>
+                    <View style={styles.sectionHeadingCopy}>
                       <Text style={styles.sectionTitle}>Upcoming meetings</Text>
                       <Text style={styles.sectionSubtitle}>
                         From yesterday’s calendar
@@ -625,7 +642,7 @@ const BriefingScreen = () => {
                       </View>
                     ))}
                   </View>
-                </>
+                </View>
               ) : null}
 
               <ItemSection
@@ -645,16 +662,16 @@ const BriefingScreen = () => {
               />
 
               {insights.length ? (
-                <>
+                <View style={styles.sectionBlock}>
                   <View style={styles.sectionHeading}>
-                    <View>
+                    <View style={styles.sectionHeadingCopy}>
                       <Text style={styles.sectionTitle}>Captured by Buddy</Text>
                       <Text style={styles.sectionSubtitle}>
                         Context worth remembering
                       </Text>
                     </View>
                     <View style={styles.sectionIcon}>
-                      <SparkleIcon size={17} />
+                      <SparkleIcon size={16} />
                     </View>
                   </View>
 
@@ -673,8 +690,8 @@ const BriefingScreen = () => {
                       >
                         <View style={styles.insightTop}>
                           <View style={styles.insightBadge}>
-                            <SparkleIcon size={13} />
-                            <Text style={styles.insightBadgeText}>KEY INSIGHT</Text>
+                            <SparkleIcon size={12} />
+                            <Text style={styles.insightBadgeText}>Insight</Text>
                           </View>
                           <Text style={styles.insightSource}>{insight.source}</Text>
                         </View>
@@ -691,7 +708,7 @@ const BriefingScreen = () => {
                       </TouchableOpacity>
                     ))}
                   </ScrollView>
-                </>
+                </View>
               ) : null}
 
               {people.length || topics.length ? (
@@ -731,6 +748,19 @@ const BriefingScreen = () => {
                     : 'Buddy prepares your briefing after each local day ends.'}
                 </Text>
               </View>
+
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.forceBanner}
+                onPress={handleForceGenerate}
+                disabled={isForceGenerating}
+              >
+                <Text style={styles.forceBannerText}>
+                  {isForceGenerating
+                    ? 'Generating briefing…'
+                    : 'Regenerate today’s briefing'}
+                </Text>
+              </TouchableOpacity>
             </>
           ) : null}
         </ScrollView>
@@ -739,6 +769,20 @@ const BriefingScreen = () => {
       <BriefingSourceBottomSheet
         ref={sourceSheetRef}
         insight={selectedInsight}
+      />
+
+      <UpgradePlanPromptModal
+        visible={showUpgradePrompt}
+        title="Daily Briefing is a Pro feature"
+        message="Upgrade to Pro to unlock personalized daily briefings from your conversations, tasks, notes, and meetings."
+        onClose={() => {
+          setShowUpgradePrompt(false);
+          navigation.goBack();
+        }}
+        onUpgrade={() => {
+          setShowUpgradePrompt(false);
+          navigation.navigate('Plans');
+        }}
       />
     </View>
   );
@@ -759,7 +803,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: layout.screenPadding,
-    paddingVertical: spacing.sm,
+    paddingTop: layout.screenTop,
+    paddingBottom: spacing.md,
   },
   headerButton: {
     width: layout.headerButton,
@@ -774,19 +819,21 @@ const styles = StyleSheet.create({
   headerCopy: {
     flex: 1,
     alignItems: 'center',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   headerTitle: {
     color: colors.text,
-    fontSize: fontSize.xl,
+    fontSize: fontSize['2xl'],
     fontWeight: fontWeight.bold,
-    letterSpacing: -0.3,
+    letterSpacing: -0.4,
+    lineHeight: ms(24),
   },
   headerDate: {
     marginTop: spacing.xxs,
     color: colors.subText,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+    lineHeight: ms(16),
   },
   buddyBadge: {
     width: layout.headerButton,
@@ -800,49 +847,44 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.md,
-    paddingBottom: spacing['5xl'],
+    paddingTop: spacing.sm,
+    paddingBottom: layout.tabBarClearance,
+    gap: spacing['2xl'],
   },
-  forceBanner: {
-    marginBottom: spacing.md,
-    minHeight: ms(40),
-    paddingHorizontal: spacing.xl,
-    borderRadius: radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.brandBorder,
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  forceBannerText: {
-    color: colors.primaryDark,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-    textAlign: 'center',
+  introCard: {
+    backgroundColor: colors.white,
+    borderRadius: radii['2xl'],
+    borderWidth: layout.hairline,
+    borderColor: colors.border,
+    paddingHorizontal: spacing['2xl'],
+    paddingVertical: spacing['2xl'],
+    gap: spacing.sm,
   },
   overviewText: {
     color: colors.text,
-    fontSize: fontSize.lg,
+    fontSize: fontSize['2xl'],
     fontWeight: fontWeight.bold,
-    marginBottom: spacing.xs,
+    letterSpacing: -0.35,
+    lineHeight: ms(26),
   },
   overviewBody: {
-    color: colors.subText,
-    fontSize: fontSize.sm,
-    marginBottom: spacing.md,
+    color: colors.textSecondary,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.medium,
+    lineHeight: ms(22),
   },
   dayCard: {
-    minHeight: ms(142),
+    minHeight: ms(148),
     flexDirection: 'row',
     padding: spacing['2xl'],
     borderRadius: radii['2xl'],
     overflow: 'hidden',
-    ...shadows.card,
+    gap: spacing.md,
   },
   dateColumn: {
-    width: '36%',
+    width: '38%',
     justifyContent: 'center',
-    paddingRight: spacing.md,
+    paddingRight: spacing.sm,
   },
   buddyPlanRow: {
     flexDirection: 'row',
@@ -851,21 +893,29 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   buddyPlanText: {
-    color: 'rgba(255,255,255,0.78)',
+    color: 'rgba(255,255,255,0.8)',
     fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
-    letterSpacing: 0.6,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
   },
   bigDate: {
     color: colors.white,
-    fontSize: fontSize['2xl'] + ms(4),
+    fontSize: fontSize['4xl'],
     fontWeight: fontWeight.extrabold,
-    letterSpacing: -0.7,
+    letterSpacing: -0.8,
+    lineHeight: ms(30),
   },
   dayName: {
     marginTop: spacing.xs,
-    color: 'rgba(255,255,255,0.76)',
-    fontSize: fontSize.sm,
+    color: 'rgba(255,255,255,0.82)',
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+  },
+  dayMeta: {
+    marginTop: spacing.md,
+    color: 'rgba(255,255,255,0.65)',
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
   },
   dayMeetings: {
@@ -874,13 +924,13 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   dayMeeting: {
-    minHeight: ms(50),
+    minHeight: ms(52),
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: radii.md,
-    backgroundColor: 'rgba(255,255,255,0.95)',
+    borderRadius: radii.lg,
+    backgroundColor: 'rgba(255,255,255,0.96)',
   },
   meetingAccent: {
     width: ms(3),
@@ -894,57 +944,62 @@ const styles = StyleSheet.create({
   },
   dayMeetingCopy: {
     flex: 1,
+    minWidth: 0,
   },
   dayMeetingTitle: {
     color: colors.text,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
+    lineHeight: ms(16),
   },
   dayMeetingTime: {
     marginTop: spacing.xxs,
     color: colors.subText,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.medium,
+    lineHeight: ms(14),
   },
   quickGrid: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
+    gap: spacing.md,
   },
   quickCard: {
     flex: 1,
-    minHeight: ms(178),
+    minHeight: ms(168),
     padding: spacing['2xl'],
     borderRadius: radii['2xl'],
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: layout.hairline,
     borderColor: colors.border,
     overflow: 'hidden',
   },
   chatCard: {
-    backgroundColor: colors.primarySoft,
+    backgroundColor: colors.white,
   },
   focusCard: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.brandBorder,
   },
   chatIconWrap: {
-    width: ms(50),
+    width: ms(44),
     height: ms(44),
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.lg,
-    backgroundColor: colors.white,
+    backgroundColor: colors.primaryLight,
   },
   quickTitle: {
-    marginTop: spacing.md,
+    marginTop: spacing.xl,
     color: colors.text,
     fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
+    lineHeight: ms(20),
   },
   quickBody: {
     marginTop: spacing.xs,
     color: colors.subText,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+    lineHeight: ms(17),
   },
   chatButton: {
     alignSelf: 'flex-start',
@@ -952,30 +1007,40 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing['2xl'],
     paddingVertical: spacing.md,
     borderRadius: radii.pill,
-    backgroundColor: colors.text,
+    backgroundColor: colors.primary,
   },
   chatButtonText: {
     color: colors.white,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
   },
-  focusValue: {
+  focusEyebrow: {
     color: colors.primaryDark,
-    fontSize: fontSize['2xl'] + ms(4),
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.bold,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+  focusValue: {
+    marginTop: spacing.sm,
+    color: colors.primaryDark,
+    fontSize: fontSize['4xl'],
     fontWeight: fontWeight.extrabold,
-    letterSpacing: -0.6,
+    letterSpacing: -0.7,
+    lineHeight: ms(30),
   },
   focusLabel: {
-    marginTop: spacing.xxs,
+    marginTop: spacing.xs,
     color: colors.subText,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+    lineHeight: ms(17),
   },
   focusRingWrap: {
     position: 'relative',
     alignSelf: 'flex-end',
-    width: ms(72),
-    height: ms(72),
+    width: ms(64),
+    height: ms(64),
     marginTop: 'auto',
   },
   focusRingCenter: {
@@ -992,83 +1057,91 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
   },
+  sectionBlock: {
+    gap: spacing.md,
+  },
   sectionHeading: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: spacing['2xl'],
-    marginBottom: spacing.sm,
+    gap: spacing.md,
+  },
+  sectionHeadingCopy: {
+    flex: 1,
+    minWidth: 0,
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: fontSize.lg,
+    fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
-    letterSpacing: -0.2,
+    letterSpacing: -0.25,
+    lineHeight: ms(22),
   },
   sectionSubtitle: {
     marginTop: spacing.xxs,
     color: colors.subText,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+    lineHeight: ms(16),
   },
   viewAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.xl,
     paddingVertical: spacing.sm,
     borderRadius: radii.pill,
     backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: layout.hairline,
     borderColor: colors.border,
   },
   viewAllText: {
     color: colors.primary,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
   },
   sectionIcon: {
-    width: ms(34),
-    height: ms(34),
-    borderRadius: ms(11),
+    width: ms(36),
+    height: ms(36),
+    borderRadius: ms(12),
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primaryLight,
   },
   priorityCard: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.xl,
-    borderRadius: radii.xl,
+    paddingHorizontal: spacing['2xl'],
+    paddingBottom: spacing['2xl'],
+    borderRadius: radii['2xl'],
     backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: layout.hairline,
     borderColor: colors.border,
   },
   listCard: {
-    paddingHorizontal: spacing.xl,
-    borderRadius: radii.xl,
+    paddingHorizontal: spacing['2xl'],
+    borderRadius: radii['2xl'],
     backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: layout.hairline,
     borderColor: colors.border,
   },
   listRow: {
-    minHeight: ms(58),
+    minHeight: ms(60),
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.xl,
   },
   listBullet: {
-    width: ms(8),
-    height: ms(8),
+    width: ms(7),
+    height: ms(7),
     borderRadius: ms(4),
-    marginTop: spacing.sm,
-    marginRight: spacing.md,
+    marginTop: ms(7),
+    marginRight: spacing.xl,
     backgroundColor: colors.primary,
   },
   taskRow: {
-    minHeight: ms(64),
+    minHeight: ms(62),
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.xl,
   },
   checkbox: {
     width: ms(22),
@@ -1076,9 +1149,9 @@ const styles = StyleSheet.create({
     borderRadius: ms(7),
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: spacing.md,
+    marginRight: spacing.xl,
     backgroundColor: colors.inputBg,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: layout.hairline,
     borderColor: colors.borderFocus,
   },
   checkboxCompleted: {
@@ -1087,24 +1160,27 @@ const styles = StyleSheet.create({
   },
   taskCopy: {
     flex: 1,
+    minWidth: 0,
   },
   taskTitle: {
     color: colors.text,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    lineHeight: ms(20),
   },
   taskTitleCompleted: {
     color: colors.muted,
     textDecorationLine: 'line-through',
   },
   taskMeta: {
-    marginTop: spacing.xxs,
+    marginTop: spacing.xs,
     color: colors.subText,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+    lineHeight: ms(17),
   },
   divider: {
-    height: StyleSheet.hairlineWidth,
+    height: layout.hairline,
     backgroundColor: colors.border,
   },
   progressRow: {
@@ -1115,7 +1191,7 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     flex: 1,
-    height: ms(8),
+    height: ms(7),
     overflow: 'hidden',
     borderRadius: radii.pill,
     backgroundColor: colors.lightGray,
@@ -1127,38 +1203,38 @@ const styles = StyleSheet.create({
   },
   progressText: {
     color: colors.primaryDark,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
   },
   meetingsCard: {
-    paddingHorizontal: spacing.xl,
-    borderRadius: radii.xl,
+    paddingHorizontal: spacing['2xl'],
+    borderRadius: radii['2xl'],
     backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: layout.hairline,
     borderColor: colors.border,
   },
   meetingRow: {
-    minHeight: ms(68),
+    minHeight: ms(70),
     flexDirection: 'row',
     alignItems: 'stretch',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.xl,
   },
   meetingTimeColumn: {
-    width: ms(62),
+    width: ms(58),
     paddingTop: spacing.xxs,
   },
   meetingTime: {
     color: colors.text,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
   },
   timelineColumn: {
-    width: ms(28),
+    width: ms(24),
     alignItems: 'center',
   },
   timelineDot: {
-    width: ms(10),
-    height: ms(10),
+    width: ms(9),
+    height: ms(9),
     marginTop: spacing.xs,
     borderRadius: ms(5),
     backgroundColor: colors.primary,
@@ -1175,40 +1251,43 @@ const styles = StyleSheet.create({
   },
   timelineLine: {
     flex: 1,
-    width: StyleSheet.hairlineWidth,
+    width: layout.hairline,
     marginTop: spacing.xs,
-    marginBottom: -spacing.md,
+    marginBottom: -spacing.xl,
     backgroundColor: colors.borderFocus,
   },
   meetingCopy: {
     flex: 1,
+    minWidth: 0,
   },
   meetingTitle: {
     color: colors.text,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    lineHeight: ms(20),
   },
   meetingMeta: {
-    marginTop: spacing.xxs,
+    marginTop: spacing.xs,
     color: colors.subText,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+    lineHeight: ms(17),
   },
   insightsScroll: {
     marginHorizontal: -layout.screenPadding,
   },
   insightsContent: {
-    gap: spacing.sm,
+    gap: spacing.md,
     paddingHorizontal: layout.screenPadding,
   },
   insightCard: {
-    width: ms(280),
-    minHeight: ms(182),
+    width: ms(268),
+    minHeight: ms(176),
     padding: spacing['2xl'],
-    borderRadius: radii.xl,
+    borderRadius: radii['2xl'],
     backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.brandBorder,
+    borderWidth: layout.hairline,
+    borderColor: colors.border,
   },
   insightTop: {
     flexDirection: 'row',
@@ -1220,7 +1299,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
     borderRadius: radii.pill,
     backgroundColor: colors.primaryLight,
@@ -1229,7 +1308,7 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   insightSource: {
     flexShrink: 1,
@@ -1241,46 +1320,45 @@ const styles = StyleSheet.create({
   insightTitle: {
     marginTop: spacing.xl,
     color: colors.text,
-    fontSize: fontSize.base,
+    fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
-    lineHeight: ms(21),
+    lineHeight: ms(22),
   },
   insightBody: {
     marginTop: spacing.sm,
     color: colors.textSecondary,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
-    lineHeight: ms(17),
+    lineHeight: ms(18),
   },
   insightAction: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
     marginTop: 'auto',
-    paddingTop: spacing.md,
+    paddingTop: spacing.xl,
   },
   insightActionText: {
     color: colors.primary,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
   },
   chipsCard: {
-    marginTop: spacing['2xl'],
-    padding: spacing.xl,
-    borderRadius: radii.xl,
+    padding: spacing['2xl'],
+    borderRadius: radii['2xl'],
     backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: layout.hairline,
     borderColor: colors.border,
     gap: spacing.xl,
   },
   chipBlock: {
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   chipLabel: {
     color: colors.subText,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
-    letterSpacing: 0.4,
+    letterSpacing: 0.35,
     textTransform: 'uppercase',
   },
   chipsRow: {
@@ -1289,30 +1367,47 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   chip: {
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.xl,
     paddingVertical: spacing.sm,
     borderRadius: radii.pill,
     backgroundColor: colors.primarySoft,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: layout.hairline,
     borderColor: colors.brandBorder,
   },
   chipText: {
     color: colors.primaryDark,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
   },
   endNote: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
     gap: spacing.sm,
-    marginTop: spacing['2xl'],
+    paddingHorizontal: spacing.md,
   },
   endNoteText: {
     flexShrink: 1,
     color: colors.muted,
-    fontSize: fontSize.xs,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+    textAlign: 'center',
+    lineHeight: ms(18),
+  },
+  forceBanner: {
+    minHeight: ms(44),
+    paddingHorizontal: spacing['2xl'],
+    borderRadius: radii.xl,
+    borderWidth: layout.hairline,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  forceBannerText: {
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
     textAlign: 'center',
   },
 });

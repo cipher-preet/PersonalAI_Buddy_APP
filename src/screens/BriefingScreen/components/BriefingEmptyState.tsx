@@ -6,13 +6,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 
 import {
   colors,
   fontSize,
   fontWeight,
+  layout,
   ms,
   mvs,
   radii,
@@ -102,7 +102,7 @@ const BriefingEmptyState = ({
     return (
       <View style={styles.container}>
         <ActivityIndicator color={colors.primary} />
-        <Text style={styles.body}>Loading your briefing…</Text>
+        <Text style={styles.loadingText}>Loading your briefing…</Text>
       </View>
     );
   }
@@ -111,52 +111,51 @@ const BriefingEmptyState = ({
 
   return (
     <View style={styles.container}>
-      <View style={styles.iconRing}>
-        <View style={styles.iconInner}>
-          <SparkleIcon size={22} />
-        </View>
+      <View style={styles.iconWrap}>
+        <SparkleIcon size={22} />
       </View>
       <Text style={styles.title}>{content.title}</Text>
       <Text style={styles.body}>{content.body}</Text>
-      {content.retry && onRetry ? (
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={styles.retryButton}
-          onPress={onRetry}
-        >
-          <Text style={styles.retryText}>{content.retry}</Text>
-        </TouchableOpacity>
-      ) : null}
-      {content.chat && onStartChat ? (
-        <TouchableOpacity
-          activeOpacity={0.9}
-          style={styles.chatWrap}
-          onPress={onStartChat}
-        >
-          <LinearGradient
-            colors={[colors.primaryPurple, colors.primaryPurpleDark, colors.primary]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.chatButton}
+
+      <View style={styles.actions}>
+        {content.retry && onRetry ? (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.primaryButton}
+            onPress={onRetry}
           >
-            <Text style={styles.chatText}>{content.chat}</Text>
-          </LinearGradient>
-        </TouchableOpacity>
-      ) : null}
-      {onForceGenerate ? (
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={[styles.forceButton, forceGenerating && styles.forceButtonDisabled]}
-          onPress={onForceGenerate}
-          disabled={forceGenerating}
-        >
-          {forceGenerating ? (
-            <ActivityIndicator color={colors.primaryDark} />
-          ) : (
-            <Text style={styles.forceText}>Generate now (test)</Text>
-          )}
-        </TouchableOpacity>
-      ) : null}
+            <Text style={styles.primaryButtonText}>{content.retry}</Text>
+          </TouchableOpacity>
+        ) : null}
+        {content.chat && onStartChat ? (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={styles.secondaryButton}
+            onPress={onStartChat}
+          >
+            <Text style={styles.secondaryButtonText}>{content.chat}</Text>
+          </TouchableOpacity>
+        ) : null}
+        {onForceGenerate ? (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={[
+              styles.tertiaryButton,
+              forceGenerating && styles.buttonDisabled,
+            ]}
+            onPress={onForceGenerate}
+            disabled={forceGenerating}
+          >
+            {forceGenerating ? (
+              <ActivityIndicator color={colors.subText} />
+            ) : (
+              <Text style={styles.tertiaryButtonText}>
+                Generate now
+              </Text>
+            )}
+          </TouchableOpacity>
+        ) : null}
+      </View>
     </View>
   );
 };
@@ -165,98 +164,100 @@ export default BriefingEmptyState;
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: spacing.lg,
-    paddingVertical: spacing['4xl'],
+    marginTop: spacing.xl,
+    paddingVertical: spacing['5xl'],
     paddingHorizontal: spacing['3xl'],
     alignItems: 'center',
     backgroundColor: colors.white,
-    borderRadius: radii['3xl'],
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.primaryLight,
-    borderStyle: 'dashed',
+    borderRadius: radii['2xl'],
+    borderWidth: layout.hairline,
+    borderColor: colors.border,
   },
-  iconRing: {
-    width: ms(72),
-    height: ms(72),
-    borderRadius: ms(36),
-    backgroundColor: colors.primarySoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: mvs(18),
-  },
-  iconInner: {
-    width: ms(52),
-    height: ms(52),
+  iconWrap: {
+    width: ms(56),
+    height: ms(56),
     borderRadius: ms(18),
     backgroundColor: colors.primaryLight,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: mvs(20),
   },
   title: {
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.extrabold,
+    fontSize: fontSize['2xl'],
+    fontWeight: fontWeight.bold,
     color: colors.text,
-    letterSpacing: -0.3,
+    letterSpacing: -0.35,
+    lineHeight: ms(26),
     textAlign: 'center',
-    marginBottom: spacing.md,
   },
   body: {
-    marginTop: spacing.sm,
-    fontSize: fontSize.sm,
-    lineHeight: ms(20),
+    marginTop: spacing.md,
+    fontSize: fontSize.base,
+    lineHeight: ms(22),
     fontWeight: fontWeight.medium,
     color: colors.subText,
     textAlign: 'center',
-    paddingHorizontal: spacing.sm,
+    maxWidth: ms(300),
   },
-  retryButton: {
-    marginTop: spacing['2xl'],
-    minHeight: ms(44),
-    paddingHorizontal: spacing['3xl'],
-    borderRadius: radii.pill,
+  loadingText: {
+    marginTop: spacing.xl,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.medium,
+    color: colors.subText,
+  },
+  actions: {
+    marginTop: spacing['3xl'],
+    width: '100%',
+    gap: spacing.md,
+    alignItems: 'center',
+  },
+  primaryButton: {
+    minHeight: ms(48),
+    minWidth: ms(160),
+    paddingHorizontal: spacing['4xl'],
+    borderRadius: radii.xl,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  retryText: {
+  primaryButtonText: {
     color: colors.white,
-    fontSize: fontSize.sm,
+    fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
   },
-  chatWrap: {
-    marginTop: spacing.md,
-    borderRadius: radii.pill,
-    overflow: 'hidden',
-  },
-  chatButton: {
-    minHeight: ms(44),
-    paddingHorizontal: spacing['3xl'],
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.pill,
-  },
-  chatText: {
-    color: colors.white,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
-  },
-  forceButton: {
-    marginTop: spacing.xl,
-    minHeight: ms(44),
-    paddingHorizontal: spacing['3xl'],
-    borderRadius: radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.brandBorder,
+  secondaryButton: {
+    minHeight: ms(48),
+    minWidth: ms(160),
+    paddingHorizontal: spacing['4xl'],
+    borderRadius: radii.xl,
     backgroundColor: colors.primarySoft,
+    borderWidth: layout.hairline,
+    borderColor: colors.brandBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  forceButtonDisabled: {
-    opacity: 0.7,
-  },
-  forceText: {
+  secondaryButtonText: {
     color: colors.primaryDark,
-    fontSize: fontSize.sm,
+    fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
+  },
+  tertiaryButton: {
+    minHeight: ms(44),
+    minWidth: ms(160),
+    paddingHorizontal: spacing['3xl'],
+    borderRadius: radii.xl,
+    borderWidth: layout.hairline,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tertiaryButtonText: {
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.semibold,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
 });

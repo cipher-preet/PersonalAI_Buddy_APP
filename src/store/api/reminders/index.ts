@@ -8,6 +8,9 @@ import type {
 export type ReminderCard = Omit<ReminderItem, 'emoji'> & {
   createdAt?: string | null;
   updatedAt?: string | null;
+  expired?: boolean;
+  nextDateKey?: string | null;
+  nextTriggerAtUtc?: string | null;
 };
 
 export type ReminderWritePayload = {

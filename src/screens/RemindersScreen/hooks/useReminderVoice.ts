@@ -35,8 +35,8 @@ const toDraft = (reminder: ReminderVoicePayload): ReminderDraft => ({
   timeLabel: reminder.timeLabel,
   repeat: reminder.repeat || 'once',
   aiCalling: reminder.aiCalling,
-  notification: reminder.notification,
-  beeping: reminder.beeping,
+  notification: false,
+  beeping: reminder.beeping || (!reminder.aiCalling && reminder.notification),
   source: 'ai',
 });
 

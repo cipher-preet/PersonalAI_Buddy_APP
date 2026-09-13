@@ -137,18 +137,6 @@ const PinIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
   </Svg>
 );
 
-const SparkIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M12 3v4M12 17v4M4.2 6.2l2.8 2.8M17 15l2.8 2.8M3 12h4M17 12h4M4.2 17.8 7 15M17 9l2.8-2.8"
-      stroke={color}
-      strokeWidth={STROKE}
-      strokeLinecap="round"
-    />
-    <Circle cx={12} cy={12} r={2.4} stroke={color} strokeWidth={STROKE} />
-  </Svg>
-);
-
 const PhoneIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
@@ -157,23 +145,6 @@ const PhoneIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
       strokeWidth={STROKE}
       strokeLinecap="round"
       strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const BellIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M12 4a5.5 5.5 0 0 1 5.5 5.5v3l1.2 2.2a.9.9 0 0 1-.8 1.3H6.1a.9.9 0 0 1-.8-1.3l1.2-2.2v-3A5.5 5.5 0 0 1 12 4Z"
-      stroke={color}
-      strokeWidth={STROKE}
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M10.1 19a2 2 0 0 0 3.8 0"
-      stroke={color}
-      strokeWidth={STROKE}
-      strokeLinecap="round"
     />
   </Svg>
 );
@@ -218,10 +189,8 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
     const [endTime, setEndTime] = useState(() =>
       createDefaultEnd(createDefaultStart(initialDate || new Date())),
     );
-    const [aiReminder, setAiReminder] = useState(false);
     const [aiCalling, setAiCalling] = useState(false);
-    const [notification, setNotification] = useState(true);
-    const [beeping, setBeeping] = useState(false);
+    const [beeping, setBeeping] = useState(true);
     const [remindBeforeMinutes, setRemindBeforeMinutes] = useState(5);
     const [customBeforeText, setCustomBeforeText] = useState('15');
     const [remindBeforeMode, setRemindBeforeMode] = useState<
@@ -239,10 +208,8 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
       setSelectedDate(baseDate);
       setStartTime(start);
       setEndTime(createDefaultEnd(start));
-      setAiReminder(false);
       setAiCalling(false);
-      setNotification(true);
-      setBeeping(false);
+      setBeeping(true);
       setRemindBeforeMinutes(5);
       setCustomBeforeText('15');
       setRemindBeforeMode('5');
@@ -266,11 +233,15 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
       setSelectedDate(new Date(`${event.dateKey}T12:00:00`));
       setStartTime(parseTimeLabelToDate(event.dateKey, event.startTimeLabel));
       setEndTime(parseTimeLabelToDate(event.dateKey, event.endTimeLabel));
-      setAiReminder(event.aiReminder);
       setAiCalling(event.aiCalling);
-      setNotification(event.notification);
-      setBeeping(event.beeping);
-      const before = Math.max(0, Number(event.remindBeforeMinutes) || 0);
+      setBeeping(
+        event.aiReminder
+          ? event.beeping || (!event.aiCalling && event.notification)
+          : true,
+      );
+      const before = event.aiReminder
+        ? Math.max(0, Number(event.remindBeforeMinutes) || 0)
+        : 5;
       setRemindBeforeMinutes(before);
       if (before === 0) {
         setRemindBeforeMode('atStart');
@@ -366,14 +337,6 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
       setTimeError('');
     };
 
-    const handleAiReminderToggle = (value: boolean) => {
-      LayoutAnimation.configureNext(PICKER_TRANSITION);
-      setAiReminder(value);
-      if (value) {
-        setNotification(true);
-      }
-    };
-
     const applyRemindBeforeMode = (mode: 'atStart' | '5' | '10' | 'custom') => {
       setRemindBeforeMode(mode);
       if (mode === 'atStart') {
@@ -392,10 +355,10 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
       }
     };
 
+    const effectiveBeeping = beeping || !aiCalling;
+    const aiReminder = aiCalling || effectiveBeeping;
+
     const resolvedRemindBeforeMinutes = (() => {
-      if (!aiReminder) {
-        return 0;
-      }
       if (remindBeforeMode === 'atStart') {
         return 0;
       }
@@ -431,7 +394,6 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
       }
 
       if (
-        aiReminder &&
         remindBeforeMode === 'custom' &&
         (!Number.isFinite(Number.parseInt(customBeforeText, 10)) ||
           Number.parseInt(customBeforeText, 10) < 1)
@@ -456,9 +418,9 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
           startTimeLabel: formatTimeLabel(startTime),
           endTimeLabel: formatTimeLabel(endTime),
           aiReminder,
-          aiCalling: aiReminder ? aiCalling : false,
-          notification: aiReminder ? notification || (!aiCalling && !beeping) : true,
-          beeping: aiReminder ? beeping : false,
+          aiCalling,
+          notification: false,
+          beeping: effectiveBeeping,
           remindBeforeMinutes: resolvedRemindBeforeMinutes,
         });
         if (ref && 'current' in ref) {
@@ -664,154 +626,109 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
           </View>
 
           <View style={styles.section}>
+            <Text style={styles.sectionLabel}>How Buddy should reach you</Text>
+
+            <View style={styles.remindBeforeCard}>
+              <Text style={styles.remindBeforeLabel}>Remind before</Text>
+              <View style={styles.remindBeforeRow}>
+                {(
+                  [
+                    { id: 'atStart', label: 'At start' },
+                    { id: '5', label: '5 min' },
+                    { id: '10', label: '10 min' },
+                    { id: 'custom', label: 'Custom' },
+                  ] as const
+                ).map(option => {
+                  const selected = remindBeforeMode === option.id;
+                  return (
+                    <TouchableOpacity
+                      key={option.id}
+                      activeOpacity={0.85}
+                      style={[
+                        styles.remindChip,
+                        selected && styles.remindChipSelected,
+                      ]}
+                      onPress={() => applyRemindBeforeMode(option.id)}
+                    >
+                      <Text
+                        style={[
+                          styles.remindChipText,
+                          selected && styles.remindChipTextSelected,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              {remindBeforeMode === 'custom' ? (
+                <View style={styles.customBeforeRow}>
+                  <BottomSheetTextInput
+                    value={customBeforeText}
+                    onChangeText={value => {
+                      const digits = value.replace(/[^0-9]/g, '').slice(0, 4);
+                      setCustomBeforeText(digits);
+                      const parsed = Number.parseInt(digits, 10);
+                      if (Number.isFinite(parsed) && parsed > 0) {
+                        setRemindBeforeMinutes(Math.min(1440, parsed));
+                      }
+                    }}
+                    keyboardType="number-pad"
+                    placeholder="15"
+                    placeholderTextColor={colors.muted}
+                    style={styles.customBeforeInput}
+                  />
+                  <Text style={styles.customBeforeSuffix}>minutes before</Text>
+                </View>
+              ) : null}
+            </View>
+
             <View style={styles.featureCard}>
               <View style={styles.featureLeft}>
-                <View style={[styles.featureIcon, styles.featureIconAi]}>
-                  <SparkIcon color={colors.primaryMid} />
+                <View style={[styles.featureIcon, styles.featureIconCall]}>
+                  <PhoneIcon color={colors.primaryPurple} />
                 </View>
                 <View style={styles.featureCopy}>
-                  <Text style={styles.featureTitle}>AI reminder</Text>
+                  <Text style={styles.featureTitle}>AI calling</Text>
                   <Text style={styles.featureSubtitle}>
-                    Buddy reminds you with call, notification, or beep
+                    Buddy can call you for this meeting
                   </Text>
                 </View>
               </View>
               <Switch
-                value={aiReminder}
-                onValueChange={handleAiReminderToggle}
-                trackColor={{ false: colors.border, true: colors.brandBorder }}
-                thumbColor={aiReminder ? colors.primaryMid : colors.white}
+                value={aiCalling}
+                onValueChange={setAiCalling}
+                trackColor={{
+                  false: colors.border,
+                  true: colors.brandBorder,
+                }}
+                thumbColor={aiCalling ? colors.primaryPurple : colors.white}
               />
             </View>
 
-            {aiReminder ? (
-              <>
-                <View style={styles.remindBeforeCard}>
-                  <Text style={styles.remindBeforeLabel}>Remind before</Text>
-                  <View style={styles.remindBeforeRow}>
-                    {(
-                      [
-                        { id: 'atStart', label: 'At start' },
-                        { id: '5', label: '5 min' },
-                        { id: '10', label: '10 min' },
-                        { id: 'custom', label: 'Custom' },
-                      ] as const
-                    ).map(option => {
-                      const selected = remindBeforeMode === option.id;
-                      return (
-                        <TouchableOpacity
-                          key={option.id}
-                          activeOpacity={0.85}
-                          style={[
-                            styles.remindChip,
-                            selected && styles.remindChipSelected,
-                          ]}
-                          onPress={() => applyRemindBeforeMode(option.id)}
-                        >
-                          <Text
-                            style={[
-                              styles.remindChipText,
-                              selected && styles.remindChipTextSelected,
-                            ]}
-                          >
-                            {option.label}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                  {remindBeforeMode === 'custom' ? (
-                    <View style={styles.customBeforeRow}>
-                      <BottomSheetTextInput
-                        value={customBeforeText}
-                        onChangeText={value => {
-                          const digits = value.replace(/[^0-9]/g, '').slice(0, 4);
-                          setCustomBeforeText(digits);
-                          const parsed = Number.parseInt(digits, 10);
-                          if (Number.isFinite(parsed) && parsed > 0) {
-                            setRemindBeforeMinutes(Math.min(1440, parsed));
-                          }
-                        }}
-                        keyboardType="number-pad"
-                        placeholder="15"
-                        placeholderTextColor={colors.muted}
-                        style={styles.customBeforeInput}
-                      />
-                      <Text style={styles.customBeforeSuffix}>minutes before</Text>
-                    </View>
-                  ) : null}
+            <View style={styles.featureCard}>
+              <View style={styles.featureLeft}>
+                <View style={[styles.featureIcon, styles.featureIconBeep]}>
+                  <BeepIcon color={colors.success} />
                 </View>
-
-                <View style={styles.featureCard}>
-                  <View style={styles.featureLeft}>
-                    <View style={[styles.featureIcon, styles.featureIconCall]}>
-                      <PhoneIcon color={colors.primaryPurple} />
-                    </View>
-                    <View style={styles.featureCopy}>
-                      <Text style={styles.featureTitle}>AI calling</Text>
-                      <Text style={styles.featureSubtitle}>
-                        Buddy can call you for this meeting
-                      </Text>
-                    </View>
-                  </View>
-                  <Switch
-                    value={aiCalling}
-                    onValueChange={setAiCalling}
-                    trackColor={{
-                      false: colors.border,
-                      true: colors.brandBorder,
-                    }}
-                    thumbColor={aiCalling ? colors.primaryPurple : colors.white}
-                  />
+                <View style={styles.featureCopy}>
+                  <Text style={styles.featureTitle}>Alarm sound</Text>
+                  <Text style={styles.featureSubtitle}>
+                    Alarm-style sound with the alert
+                  </Text>
                 </View>
-
-                <View style={styles.featureCard}>
-                  <View style={styles.featureLeft}>
-                    <View style={[styles.featureIcon, styles.featureIconNotify]}>
-                      <BellIcon color={colors.info} />
-                    </View>
-                    <View style={styles.featureCopy}>
-                      <Text style={styles.featureTitle}>Notification</Text>
-                      <Text style={styles.featureSubtitle}>
-                        Push alert at the reminder time
-                      </Text>
-                    </View>
-                  </View>
-                  <Switch
-                    value={notification}
-                    onValueChange={setNotification}
-                    trackColor={{
-                      false: colors.border,
-                      true: colors.brandBorder,
-                    }}
-                    thumbColor={notification ? colors.info : colors.white}
-                  />
-                </View>
-
-                <View style={styles.featureCard}>
-                  <View style={styles.featureLeft}>
-                    <View style={[styles.featureIcon, styles.featureIconBeep]}>
-                      <BeepIcon color={colors.success} />
-                    </View>
-                    <View style={styles.featureCopy}>
-                      <Text style={styles.featureTitle}>Beeping</Text>
-                      <Text style={styles.featureSubtitle}>
-                        Alarm-style sound with the alert
-                      </Text>
-                    </View>
-                  </View>
-                  <Switch
-                    value={beeping}
-                    onValueChange={setBeeping}
-                    trackColor={{
-                      false: colors.border,
-                      true: colors.successSoft,
-                    }}
-                    thumbColor={beeping ? colors.success : colors.white}
-                  />
-                </View>
-              </>
-            ) : null}
+              </View>
+              <Switch
+                value={beeping}
+                onValueChange={setBeeping}
+                trackColor={{
+                  false: colors.border,
+                  true: colors.successSoft,
+                }}
+                thumbColor={beeping ? colors.success : colors.white}
+              />
+            </View>
           </View>
 
           <TouchableOpacity
@@ -914,6 +831,12 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: spacing.xl,
+  },
+  sectionLabel: {
+    color: colors.text,
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.bold,
+    marginBottom: spacing.md,
   },
   fieldCard: {
     backgroundColor: colors.inputBg,
@@ -1033,14 +956,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  featureIconAi: {
-    backgroundColor: colors.primarySoft,
-  },
   featureIconCall: {
     backgroundColor: colors.purpleLight,
-  },
-  featureIconNotify: {
-    backgroundColor: colors.primaryLight,
   },
   featureIconBeep: {
     backgroundColor: colors.successSoft,

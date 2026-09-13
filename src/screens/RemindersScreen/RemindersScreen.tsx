@@ -68,7 +68,11 @@ const toReminderItem = (item: ReminderApiCard): ReminderItem => ({
   aiCalling: item.aiCalling,
   notification: item.notification,
   beeping: item.beeping,
+  expired: Boolean(item.expired),
 });
+
+const sortRemindersActiveFirst = (items: ReminderItem[]) =>
+  [...items].sort((left, right) => Number(Boolean(left.expired)) - Number(Boolean(right.expired)));
 
 const RemindersScreen = () => {
   const { width } = useWindowDimensions();
@@ -140,14 +144,16 @@ const RemindersScreen = () => {
     const mapped = response.reminders.map(toReminderItem);
 
     if (remindersCursor === '') {
-      setLoadedReminders(mapped);
+      setLoadedReminders(sortRemindersActiveFirst(mapped));
       return;
     }
 
     setLoadedReminders(prev => {
       const existingIds = new Set(prev.map(item => item.id));
       const newItems = mapped.filter(item => !existingIds.has(item.id));
-      return newItems.length > 0 ? [...prev, ...newItems] : prev;
+      return newItems.length > 0
+        ? sortRemindersActiveFirst([...prev, ...newItems])
+        : prev;
     });
   }, [remindersCursor, remindersData]);
 
@@ -184,7 +190,9 @@ const RemindersScreen = () => {
             : { ...selectedReminder, ...draft };
 
           setLoadedReminders(prev =>
-            prev.map(item => (item.id === updated.id ? updated : item)),
+            sortRemindersActiveFirst(
+              prev.map(item => (item.id === updated.id ? updated : item)),
+            ),
           );
           setSelectedReminder(updated);
 
@@ -201,10 +209,12 @@ const RemindersScreen = () => {
           : null;
 
         if (created) {
-          setLoadedReminders(prev => [
-            created,
-            ...prev.filter(item => item.id !== created.id),
-          ]);
+          setLoadedReminders(prev =>
+            sortRemindersActiveFirst([
+              created,
+              ...prev.filter(item => item.id !== created.id),
+            ]),
+          );
         }
 
         if (remindersCursor !== '') {
@@ -250,10 +260,12 @@ const RemindersScreen = () => {
           : null;
 
         if (created) {
-          setLoadedReminders(prev => [
-            created,
-            ...prev.filter(item => item.id !== created.id),
-          ]);
+          setLoadedReminders(prev =>
+            sortRemindersActiveFirst([
+              created,
+              ...prev.filter(item => item.id !== created.id),
+            ]),
+          );
         }
 
         if (remindersCursor !== '') {
