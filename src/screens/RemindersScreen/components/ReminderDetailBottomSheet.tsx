@@ -11,7 +11,6 @@ import {
   Keyboard,
   Platform,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -22,7 +21,6 @@ import {
   BottomSheetBackdrop,
   BottomSheetModal,
   BottomSheetScrollView,
-  BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
 
 import ReminderDatePicker from './ReminderDatePicker';
@@ -32,6 +30,12 @@ import {
   ReminderItem,
   ReminderRepeat,
 } from './mockReminders';
+import {
+  SheetSegmentedControl,
+  SheetTextField,
+  SheetToggleRow,
+  sheetFormStyles,
+} from '../../../components/sheet/SheetFormControls';
 import {
   colors,
   fontSize,
@@ -146,21 +150,13 @@ const BeepIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
   </Svg>
 );
 
-const REPEAT_OPTIONS: ReminderRepeat[] = [
-  'once',
-  'daily',
-  'weekly',
-  'weekdays',
-  'monthly',
+const REPEAT_OPTIONS: { id: ReminderRepeat; label: string }[] = [
+  { id: 'once', label: 'Once' },
+  { id: 'daily', label: 'Daily' },
+  { id: 'weekly', label: 'Weekly' },
+  { id: 'weekdays', label: 'Weekdays' },
+  { id: 'monthly', label: 'Monthly' },
 ];
-
-const REPEAT_LABELS: Record<ReminderRepeat, string> = {
-  once: 'Once',
-  daily: 'Daily',
-  weekly: 'Weekly',
-  weekdays: 'Weekdays',
-  monthly: 'Monthly',
-};
 
 const CloseIcon = () => (
   <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
@@ -423,6 +419,7 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
         backdropComponent={renderBackdrop}
         backgroundStyle={styles.sheetBackground}
         handleIndicatorStyle={styles.indicator}
+        animateOnMount
         onChange={index => {
           const open = index >= 0;
           if (open && !isSheetOpen && isCreateMode) {
@@ -456,47 +453,36 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
             </TouchableOpacity>
           </View>
 
-          <View style={styles.section}>
-            <View
-              style={[styles.fieldCard, nameError ? styles.fieldCardError : null]}
-            >
-              <Text style={styles.fieldLabel}>Name</Text>
-              <BottomSheetTextInput
-                value={name}
-                onChangeText={value => {
-                  setName(value);
-                  if (nameError) {
-                    setNameError('');
-                  }
-                }}
-                placeholder="Take medicine, call mom..."
-                placeholderTextColor={colors.muted}
-                style={styles.input}
-                returnKeyType="next"
-              />
-            </View>
-            {nameError ? (
-              <Text style={styles.errorText}>{nameError}</Text>
-            ) : null}
+          <View style={sheetFormStyles.section}>
+            <SheetTextField
+              label="Name"
+              value={name}
+              onChangeText={value => {
+                setName(value);
+                if (nameError) {
+                  setNameError('');
+                }
+              }}
+              placeholder="Take medicine, call mom..."
+              error={nameError}
+              returnKeyType="next"
+              containerStyle={styles.fieldSpacing}
+            />
 
-            <View style={styles.fieldCard}>
-              <Text style={styles.fieldLabel}>Notes (optional)</Text>
-              <BottomSheetTextInput
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Add extra context if you need it"
-                placeholderTextColor={colors.muted}
-                style={[styles.input, styles.multilineInput]}
-                multiline
-                textAlignVertical="top"
-              />
-            </View>
+            <SheetTextField
+              label="Notes (optional)"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Add extra context if you need it"
+              multiline
+              containerStyle={styles.fieldSpacingLast}
+            />
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>When</Text>
+          <View style={sheetFormStyles.section}>
+            <Text style={sheetFormStyles.sectionTitle}>When</Text>
 
-            <View style={styles.scheduleCard}>
+            <View style={sheetFormStyles.groupCard}>
               <SheetPressable
                 style={[
                   styles.scheduleRow,
@@ -510,15 +496,15 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
                   <CalendarIcon color={colors.primary} />
                 </View>
                 <View style={styles.metaCopy}>
-                  <Text style={styles.fieldLabel}>Date</Text>
-                  <Text style={styles.fieldValue}>
+                  <Text style={styles.metaLabel}>Date</Text>
+                  <Text style={styles.metaValue}>
                     {formatRelativeDate(selectedDate)}
                   </Text>
                 </View>
                 <ChevronIcon />
               </SheetPressable>
 
-              <View style={styles.scheduleDivider} />
+              <View style={sheetFormStyles.groupDivider} />
 
               <SheetPressable
                 style={[
@@ -533,8 +519,8 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
                   <ClockIcon color={colors.primary} />
                 </View>
                 <View style={styles.metaCopy}>
-                  <Text style={styles.fieldLabel}>Time</Text>
-                  <Text style={styles.fieldValue}>
+                  <Text style={styles.metaLabel}>Time</Text>
+                  <Text style={styles.metaValue}>
                     {formatTimeLabel(selectedTime)}
                   </Text>
                 </View>
@@ -543,77 +529,38 @@ const ReminderDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
             </View>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Repeat</Text>
-
-            <View style={styles.chipGrid}>
-              {REPEAT_OPTIONS.map(option => {
-                const isActive = repeat === option;
-
-                return (
-                  <TouchableOpacity
-                    key={option}
-                    activeOpacity={0.85}
-                    style={[styles.chip, isActive && styles.chipActive]}
-                    onPress={() => setRepeat(option)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isActive }}
-                  >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        isActive && styles.chipTextActive,
-                      ]}
-                    >
-                      {REPEAT_LABELS[option]}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+          <View style={sheetFormStyles.section}>
+            <SheetSegmentedControl
+              label="Repeat"
+              options={REPEAT_OPTIONS}
+              value={repeat}
+              onChange={setRepeat}
+            />
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>How Buddy should reach you</Text>
+          <View style={sheetFormStyles.section}>
+            <Text style={sheetFormStyles.sectionTitle}>
+              How Buddy should reach you
+            </Text>
 
-            <View style={styles.alertCard}>
-              <View style={styles.alertRow}>
-                <View style={[styles.featureIcon, styles.featureIconBeep]}>
-                  <BeepIcon color={colors.success} />
-                </View>
-                <View style={styles.featureCopy}>
-                  <Text style={styles.featureTitle}>Alarm sound</Text>
-                  <Text style={styles.featureSubtitle}>
-                    Play a sound with the reminder so it is harder to miss.
-                  </Text>
-                </View>
-                <Switch
-                  value={beeping}
-                  onValueChange={setBeeping}
-                  trackColor={{ false: colors.border, true: colors.successSoft }}
-                  thumbColor={beeping ? colors.success : colors.white}
-                />
-              </View>
-
-              <View style={styles.alertDivider} />
-
-              <View style={styles.alertRow}>
-                <View style={[styles.featureIcon, styles.featureIconCall]}>
-                  <PhoneIcon color={colors.primaryMid} />
-                </View>
-                <View style={styles.featureCopy}>
-                  <Text style={styles.featureTitle}>Buddy call</Text>
-                  <Text style={styles.featureSubtitle}>
-                    Buddy calls you and reads the reminder aloud.
-                  </Text>
-                </View>
-                <Switch
-                  value={aiCalling}
-                  onValueChange={setAiCalling}
-                  trackColor={{ false: colors.border, true: colors.brandBorder }}
-                  thumbColor={aiCalling ? colors.primaryMid : colors.white}
-                />
-              </View>
+            <View style={sheetFormStyles.groupCard}>
+              <SheetToggleRow
+                title="Alarm sound"
+                subtitle="Play a sound with the reminder so it is harder to miss."
+                value={beeping}
+                onValueChange={setBeeping}
+                icon={<BeepIcon color={colors.success} />}
+                iconTone="success"
+                showDivider
+              />
+              <SheetToggleRow
+                title="Buddy call"
+                subtitle="Buddy calls you and reads the reminder aloud."
+                value={aiCalling}
+                onValueChange={setAiCalling}
+                icon={<PhoneIcon color={colors.primary} />}
+                iconTone="brand"
+              />
             </View>
 
             {hasAnyAlert ? null : (
@@ -699,7 +646,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xl,
   },
 
   closeButton: {
@@ -719,62 +666,12 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.bold,
   },
 
-  section: {
-    marginBottom: spacing['2xl'],
+  fieldSpacing: {
+    marginBottom: spacing.lg,
   },
 
-  sectionLabel: {
-    color: colors.text,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    marginBottom: spacing.md,
-  },
-
-  fieldCard: {
-    backgroundColor: colors.white,
-    borderRadius: radii.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.sm,
-  },
-
-  fieldCardError: {
-    borderColor: colors.error,
-    backgroundColor: colors.errorSoft,
-  },
-
-  errorText: {
-    marginTop: -spacing.xs,
-    marginBottom: spacing.sm,
-    marginLeft: spacing.md,
-    color: colors.error,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
-  },
-
-  fieldLabel: {
-    color: colors.muted,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    marginBottom: spacing.xs,
-    letterSpacing: 0.2,
-  },
-
-  fieldValue: {
-    color: colors.text,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
-    lineHeight: ms(20),
-  },
-
-  scheduleCard: {
-    backgroundColor: colors.white,
-    borderRadius: radii.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    overflow: 'hidden',
+  fieldSpacingLast: {
+    marginBottom: 0,
   },
 
   scheduleRow: {
@@ -790,34 +687,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primarySoft,
   },
 
-  scheduleDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-    marginLeft: ms(58),
-  },
-
   metaIcon: {
-    width: ms(34),
-    height: ms(34),
-    borderRadius: ms(11),
+    width: ms(40),
+    height: ms(40),
+    borderRadius: ms(12),
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  input: {
-    color: colors.text,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
-    padding: 0,
-    margin: 0,
-    minHeight: ms(22),
-  },
-
-  multilineInput: {
-    minHeight: ms(56),
-    lineHeight: ms(20),
-    fontWeight: fontWeight.medium,
   },
 
   metaCopy: {
@@ -825,58 +701,19 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
 
-  chipGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-
-  chip: {
-    minHeight: layout.chipHeight,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radii.pill,
-    backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  chipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-
-  chipText: {
-    color: colors.subText,
-    fontSize: fontSize.sm,
+  metaLabel: {
+    color: colors.muted,
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
+    marginBottom: 2,
+    letterSpacing: 0.2,
   },
 
-  chipTextActive: {
-    color: colors.white,
-  },
-
-  alertCard: {
-    backgroundColor: colors.white,
-    borderRadius: radii.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    overflow: 'hidden',
-  },
-
-  alertRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-
-  alertDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-    marginLeft: ms(62),
+  metaValue: {
+    color: colors.text,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    lineHeight: ms(20),
   },
 
   alertWarning: {
@@ -884,41 +721,6 @@ const styles = StyleSheet.create({
     color: colors.warningText,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
-    lineHeight: ms(18),
-  },
-
-  featureIcon: {
-    width: ms(36),
-    height: ms(36),
-    borderRadius: ms(12),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  featureIconCall: {
-    backgroundColor: colors.purpleLight,
-  },
-
-  featureIconBeep: {
-    backgroundColor: colors.successSoft,
-  },
-
-  featureCopy: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  featureTitle: {
-    color: colors.text,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
-    marginBottom: spacing.xxs,
-  },
-
-  featureSubtitle: {
-    color: colors.subText,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
     lineHeight: ms(18),
   },
 

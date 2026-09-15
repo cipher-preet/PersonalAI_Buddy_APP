@@ -67,6 +67,7 @@ import {
   spacing,
   vSpacing,
 } from '../../theme';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import {
   getPlanLimitPrompt,
   getPlanLimitResource,
@@ -144,6 +145,8 @@ type TabParamList = MainTabParamList;
 
 const Home = () => {
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
+  const { tabBarClearance, screenPadding, contentMaxWidth, isTablet } =
+    useResponsiveLayout();
   const bottomSheetRef = useRef<BottomSheetModal>(null);
   const spaceSheetRef = useRef<BottomSheetModal>(null);
   const spaceDetailRef = useRef<BottomSheetModal>(null);
@@ -833,7 +836,16 @@ const Home = () => {
           ListHeaderComponent={listHeader}
           ListFooterComponent={listFooter}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContainer}
+          contentContainerStyle={[
+            styles.scrollContainer,
+            {
+              paddingBottom: tabBarClearance,
+              paddingHorizontal: screenPadding,
+              maxWidth: isTablet ? contentMaxWidth : undefined,
+              width: '100%',
+              alignSelf: 'center',
+            },
+          ]}
           bounces
           overScrollMode="never"
           decelerationRate="normal"
@@ -895,8 +907,6 @@ const styles = StyleSheet.create({
 
   scrollContainer: {
     paddingTop: vSpacing.md,
-    paddingHorizontal: layout.screenPadding,
-    paddingBottom: layout.tabBarClearance,
     flexGrow: 1,
   },
 

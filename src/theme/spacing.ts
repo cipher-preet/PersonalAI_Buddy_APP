@@ -1,6 +1,13 @@
 import { StyleSheet } from 'react-native';
 
-import { isCompactHeight, isSmallDevice, ms, mvs } from './responsive';
+import {
+  contentMaxWidth,
+  isCompactHeight,
+  isSmallDevice,
+  isTablet,
+  ms,
+  mvs,
+} from './responsive';
 
 /**
  * Consistent spacing scale (padding / margin / gap).
@@ -48,13 +55,23 @@ export const vSpacing = {
 /** Screen / section layout constants */
 export const layout = {
   /** Horizontal padding for most screens */
-  screenPadding: spacing['3xl'],
+  screenPadding: isTablet
+    ? spacing['5xl']
+    : isSmallDevice
+      ? spacing['2xl']
+      : spacing['3xl'],
   /** Top inset below the status/safe area */
   screenTop: isCompactHeight ? mvs(4) : mvs(8),
-  /** Floating tab bar height */
-  tabBarHeight: isSmallDevice ? ms(72) : ms(80),
-  /** Bottom padding above floating tab bar */
-  tabBarClearance: isSmallDevice || isCompactHeight ? mvs(96) : mvs(110),
+  /** Floating tab bar height (static fallback; prefer useResponsiveLayout) */
+  tabBarHeight: isSmallDevice ? ms(68) : isTablet ? ms(76) : ms(80),
+  /**
+   * Bottom padding above floating tab bar (static fallback).
+   * Screens with Android nav buttons should add safe-area inset via
+   * useResponsiveLayout().tabBarClearance instead.
+   */
+  tabBarClearance: isSmallDevice || isCompactHeight ? mvs(108) : mvs(120),
+  /** Max content width on tablets */
+  contentMaxWidth,
   /** Standard card padding */
   cardPadding: spacing['2xl'],
   /** Gap between major sections */
@@ -62,9 +79,9 @@ export const layout = {
   /** Gap between list items */
   listGap: spacing.xl,
   /** Primary CTA / button height */
-  buttonHeight: ms(54),
+  buttonHeight: isSmallDevice ? ms(50) : ms(54),
   /** Text input field height */
-  inputHeight: ms(56),
+  inputHeight: isSmallDevice ? ms(50) : ms(56),
   /** Compact pill / chip control height */
   chipHeight: ms(36),
   /** Icon button hit target */

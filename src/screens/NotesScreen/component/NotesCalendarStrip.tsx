@@ -6,6 +6,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
   type ListRenderItemInfo,
 } from 'react-native';
@@ -18,7 +19,6 @@ import {
   layout,
   ms,
   radii,
-  screenWidth,
   spacing,
 } from '../../../theme';
 
@@ -40,7 +40,6 @@ const MONTH_NAMES = [
 const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const VISIBLE_DAYS = 7;
 const SCREEN_INSET = spacing['2xl'];
-const DAY_WIDTH = Math.round((screenWidth - SCREEN_INSET * 2) / VISIBLE_DAYS);
 const DAY_HEIGHT = ms(52);
 
 export const toDateKey = (date: Date) => {
@@ -70,6 +69,7 @@ type DayCellProps = {
   selected: boolean;
   isToday: boolean;
   hasNotes: boolean;
+  dayWidth: number;
   onPress: (date: Date) => void;
 };
 
@@ -121,36 +121,38 @@ const ChevronIcon = ({
   </Svg>
 );
 
-const DayCell = memo(({ item, selected, isToday, hasNotes, onPress }: DayCellProps) => (
-  <TouchableOpacity
-    activeOpacity={0.82}
-    onPress={() => onPress(item.date)}
-    style={styles.dayCell}
-    accessibilityRole="button"
-    accessibilityLabel={`${item.dayLabel} ${item.dayNumber}`}
-    accessibilityState={{ selected }}
-  >
-    <Text style={[styles.dayLabel, selected && styles.dayLabelSelected]}>
-      {item.dayLabel}
-    </Text>
-    <View
-      style={[
-        styles.dateNumberWrap,
-        isToday && !selected && styles.todayRing,
-        selected && styles.dateNumberWrapSelected,
-      ]}
+const DayCell = memo(
+  ({ item, selected, isToday, hasNotes, dayWidth, onPress }: DayCellProps) => (
+    <TouchableOpacity
+      activeOpacity={0.82}
+      onPress={() => onPress(item.date)}
+      style={[styles.dayCell, { width: dayWidth }]}
+      accessibilityRole="button"
+      accessibilityLabel={`${item.dayLabel} ${item.dayNumber}`}
+      accessibilityState={{ selected }}
     >
-      <Text style={[styles.dateNumber, selected && styles.dateNumberSelected]}>
-        {item.dayNumber}
+      <Text style={[styles.dayLabel, selected && styles.dayLabelSelected]}>
+        {item.dayLabel}
       </Text>
-    </View>
-    {hasNotes ? (
-      <View style={[styles.noteDot, selected && styles.noteDotSelected]} />
-    ) : (
-      <View style={styles.noteDotSpacer} />
-    )}
-  </TouchableOpacity>
-));
+      <View
+        style={[
+          styles.dateNumberWrap,
+          isToday && !selected && styles.todayRing,
+          selected && styles.dateNumberWrapSelected,
+        ]}
+      >
+        <Text style={[styles.dateNumber, selected && styles.dateNumberSelected]}>
+          {item.dayNumber}
+        </Text>
+      </View>
+      {hasNotes ? (
+        <View style={[styles.noteDot, selected && styles.noteDotSelected]} />
+      ) : (
+        <View style={styles.noteDotSpacer} />
+      )}
+    </TouchableOpacity>
+  ),
+);
 
 DayCell.displayName = 'DayCell';
 
@@ -160,6 +162,11 @@ const NotesCalendarStrip = ({
   onSelectDate,
   onAddPress,
 }: Props) => {
+  const { width: windowWidth } = useWindowDimensions();
+  const dayWidth = useMemo(
+    () => Math.round((windowWidth - SCREEN_INSET * 2) / VISIBLE_DAYS),
+    [windowWidth],
+  );
   const listRef = useRef<FlatList<CalendarDay>>(null);
   const today = useMemo(() => startOfDay(new Date()), []);
   const todayKey = useMemo(() => toDateKey(today), [today]);
@@ -236,19 +243,20 @@ const NotesCalendarStrip = ({
         selected={item.key === toDateKey(selectedDate)}
         isToday={item.key === todayKey}
         hasNotes={Boolean(markedDateKeys?.has(item.key))}
+        dayWidth={dayWidth}
         onPress={handleSelectDate}
       />
     ),
-    [handleSelectDate, markedDateKeys, selectedDate, todayKey],
+    [dayWidth, handleSelectDate, markedDateKeys, selectedDate, todayKey],
   );
 
   const getItemLayout = useCallback(
     (_: ArrayLike<CalendarDay> | null | undefined, index: number) => ({
-      length: DAY_WIDTH,
-      offset: SCREEN_INSET + DAY_WIDTH * index,
+      length: dayWidth,
+      offset: SCREEN_INSET + dayWidth * index,
       index,
     }),
-    [],
+    [dayWidth],
   );
 
   return (
@@ -442,7 +450,6 @@ const styles = StyleSheet.create({
   },
 
   dayCell: {
-    width: DAY_WIDTH,
     height: DAY_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',

@@ -87,7 +87,7 @@ const ReminderTimePicker = ({
     }
     Animated.timing(appear, {
       toValue: 1,
-      duration: 260,
+      duration: 160,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();

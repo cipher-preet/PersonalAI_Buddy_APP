@@ -449,6 +449,9 @@ const CalendarScreen = () => {
         <ScrollView
           style={styles.timelineScroll}
           showsVerticalScrollIndicator={false}
+          removeClippedSubviews
+          scrollEventThrottle={32}
+          overScrollMode="never"
           contentContainerStyle={[
             styles.timelineScrollContent,
             { paddingBottom: insets.bottom + spacing['6xl'] },

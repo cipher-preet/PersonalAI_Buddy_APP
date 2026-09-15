@@ -98,7 +98,7 @@ const ReminderDatePicker = ({
     }
     Animated.timing(appear, {
       toValue: 1,
-      duration: 260,
+      duration: 160,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
@@ -122,7 +122,7 @@ const ReminderDatePicker = ({
     setCursor(prev => new Date(prev.getFullYear(), prev.getMonth() + delta, 1));
     Animated.timing(monthFade, {
       toValue: 1,
-      duration: 180,
+      duration: 140,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();

@@ -17,8 +17,10 @@ export {
   isSmallDevice,
   isCompactHeight,
   isTablet,
+  contentMaxWidth,
+  useMs,
 } from './responsive';
-export { listPerf, chatListPerf } from './performance';
+export { listPerf, chatListPerf, scrollThrottle, motion } from './performance';
 
 import { colors } from './colors';
 import { fontSize, fontWeight, typography } from './typography';
@@ -33,8 +35,14 @@ import {
   isSmallDevice,
   isCompactHeight,
   isTablet,
+  contentMaxWidth,
 } from './responsive';
-import { listPerf, chatListPerf } from './performance';
+import {
+  listPerf,
+  chatListPerf,
+  scrollThrottle,
+  motion,
+} from './performance';
 
 /** Single import: `import { theme } from '../theme'` */
 export const theme = {
@@ -56,8 +64,11 @@ export const theme = {
   isSmallDevice,
   isCompactHeight,
   isTablet,
+  contentMaxWidth,
   listPerf,
   chatListPerf,
+  scrollThrottle,
+  motion,
 } as const;
 
 export default theme;

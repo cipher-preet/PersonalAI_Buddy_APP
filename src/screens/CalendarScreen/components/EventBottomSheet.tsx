@@ -9,24 +9,22 @@ import {
   ActivityIndicator,
   BackHandler,
   Keyboard,
-  LayoutAnimation,
   Platform,
   StyleSheet,
-  Switch,
   Text,
   TouchableOpacity,
-  UIManager,
   View,
 } from 'react-native';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import { Pressable as SheetPressable } from 'react-native-gesture-handler';
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
   BottomSheetScrollView,
-  BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
 
 import ReminderDatePicker from '../../RemindersScreen/components/ReminderDatePicker';
+import ReminderPickerPopup from '../../RemindersScreen/components/ReminderPickerPopup';
 import ReminderTimePicker from '../../RemindersScreen/components/ReminderTimePicker';
 import type {
   CalendarEventCard,
@@ -41,9 +39,16 @@ import {
   toDateKey,
 } from '../calendarUtils';
 import {
+  SheetSegmentedControl,
+  SheetTextField,
+  SheetToggleRow,
+  sheetFormStyles,
+} from '../../../components/sheet/SheetFormControls';
+import {
   colors,
   fontSize,
   fontWeight,
+  layout,
   ms,
   mvs,
   radii,
@@ -67,30 +72,16 @@ type IconProps = {
 };
 
 type PickerMode = 'none' | 'date' | 'start' | 'end';
+type RemindBeforeMode = 'atStart' | '5' | '10' | 'custom';
 
 const STROKE = 1.7;
 
-if (
-  Platform.OS === 'android' &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
-
-const PICKER_TRANSITION = {
-  duration: 240,
-  create: {
-    type: LayoutAnimation.Types.easeInEaseOut,
-    property: LayoutAnimation.Properties.opacity,
-  },
-  update: {
-    type: LayoutAnimation.Types.easeInEaseOut,
-  },
-  delete: {
-    type: LayoutAnimation.Types.easeInEaseOut,
-    property: LayoutAnimation.Properties.opacity,
-  },
-};
+const REMIND_BEFORE_OPTIONS: { id: RemindBeforeMode; label: string }[] = [
+  { id: 'atStart', label: 'At start' },
+  { id: '5', label: '5 min' },
+  { id: '10', label: '10 min' },
+  { id: 'custom', label: 'Custom' },
+];
 
 const CalendarIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -125,15 +116,15 @@ const ClockIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
   </Svg>
 );
 
-const PinIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
+const ChevronIcon = ({ color = colors.muted, size = ms(16) }: IconProps) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11Z"
+      d="m9 18 6-6-6-6"
       stroke={color}
       strokeWidth={STROKE}
+      strokeLinecap="round"
       strokeLinejoin="round"
     />
-    <Circle cx={12} cy={10} r={2.2} stroke={color} strokeWidth={STROKE} />
   </Svg>
 );
 
@@ -166,6 +157,17 @@ const BeepIcon = ({ color = colors.primary, size = ms(18) }: IconProps) => (
   </Svg>
 );
 
+const CloseIcon = () => (
+  <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M18 6 6 18M6 6l12 12"
+      stroke={colors.subText}
+      strokeWidth={2.2}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
 const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
   (
     { event, mode = 'create', initialDate, isSaving = false, onSave, onDelete },
@@ -191,11 +193,9 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
     );
     const [aiCalling, setAiCalling] = useState(false);
     const [beeping, setBeeping] = useState(true);
-    const [remindBeforeMinutes, setRemindBeforeMinutes] = useState(5);
     const [customBeforeText, setCustomBeforeText] = useState('15');
-    const [remindBeforeMode, setRemindBeforeMode] = useState<
-      'atStart' | '5' | '10' | 'custom'
-    >('5');
+    const [remindBeforeMode, setRemindBeforeMode] =
+      useState<RemindBeforeMode>('5');
 
     const resetCreateForm = useCallback(() => {
       const baseDate = initialDate || new Date();
@@ -210,7 +210,6 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
       setEndTime(createDefaultEnd(start));
       setAiCalling(false);
       setBeeping(true);
-      setRemindBeforeMinutes(5);
       setCustomBeforeText('15');
       setRemindBeforeMode('5');
       setPickerMode('none');
@@ -242,7 +241,6 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
       const before = event.aiReminder
         ? Math.max(0, Number(event.remindBeforeMinutes) || 0)
         : 5;
-      setRemindBeforeMinutes(before);
       if (before === 0) {
         setRemindBeforeMode('atStart');
       } else if (before === 5) {
@@ -288,7 +286,6 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
         'hardwareBackPress',
         () => {
           if (pickerMode !== 'none') {
-            LayoutAnimation.configureNext(PICKER_TRANSITION);
             setPickerMode('none');
             return true;
           }
@@ -301,12 +298,11 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
     }, [handleClose, isSheetOpen, pickerMode]);
 
     const togglePicker = (next: PickerMode) => {
-      LayoutAnimation.configureNext(PICKER_TRANSITION);
+      Keyboard.dismiss();
       setPickerMode(prev => (prev === next ? 'none' : next));
     };
 
     const closePicker = () => {
-      LayoutAnimation.configureNext(PICKER_TRANSITION);
       setPickerMode('none');
     };
 
@@ -337,22 +333,9 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
       setTimeError('');
     };
 
-    const applyRemindBeforeMode = (mode: 'atStart' | '5' | '10' | 'custom') => {
+    const applyRemindBeforeMode = (mode: RemindBeforeMode) => {
       setRemindBeforeMode(mode);
-      if (mode === 'atStart') {
-        setRemindBeforeMinutes(0);
-      } else if (mode === '5') {
-        setRemindBeforeMinutes(5);
-      } else if (mode === '10') {
-        setRemindBeforeMinutes(10);
-      } else {
-        const parsed = Number.parseInt(customBeforeText, 10);
-        setRemindBeforeMinutes(
-          Number.isFinite(parsed) && parsed > 0
-            ? Math.min(1440, parsed)
-            : 15,
-        );
-      }
+      setTimeError('');
     };
 
     const effectiveBeeping = beeping || !aiCalling;
@@ -432,68 +415,55 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
     };
 
     return (
-      <BottomSheetModal
-        ref={ref}
-        index={0}
-        snapPoints={snapPoints}
-        enablePanDownToClose={!isSaving}
-        keyboardBehavior="interactive"
-        keyboardBlurBehavior="restore"
-        android_keyboardInputMode="adjustResize"
-        backdropComponent={renderBackdrop}
-        backgroundStyle={styles.sheetBackground}
-        handleIndicatorStyle={styles.indicator}
-        onChange={index => {
-          const open = index >= 0;
-          if (open && !isSheetOpen && isCreateMode) {
-            resetCreateForm();
-          }
-          setIsSheetOpen(open);
-          if (index < 0) {
-            setPickerMode('none');
-          }
-        }}
-      >
-        <BottomSheetScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
+      <>
+        <BottomSheetModal
+          ref={ref}
+          index={0}
+          snapPoints={snapPoints}
+          enablePanDownToClose={!isSaving && pickerMode === 'none'}
+          keyboardBehavior="interactive"
+          keyboardBlurBehavior="restore"
+          android_keyboardInputMode="adjustResize"
+          backdropComponent={renderBackdrop}
+          backgroundStyle={styles.sheetBackground}
+          handleIndicatorStyle={styles.indicator}
+          animateOnMount
+          onChange={index => {
+            const open = index >= 0;
+            if (open && !isSheetOpen && isCreateMode) {
+              resetCreateForm();
+            }
+            setIsSheetOpen(open);
+            if (index < 0) {
+              setPickerMode('none');
+            }
+          }}
         >
-          <View style={styles.headerRow}>
-            <View style={styles.sourceBadge}>
-              <Text style={styles.sourceText}>
-                {isCreateMode ? 'New event' : 'Meeting'}
+          <BottomSheetScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            <View style={styles.headerRow}>
+              <Text style={styles.sheetTitle}>
+                {isCreateMode ? 'Add event' : 'Event details'}
               </Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={handleClose}
+                activeOpacity={0.75}
+                disabled={isSaving}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                accessibilityRole="button"
+                accessibilityLabel="Close"
+              >
+                <CloseIcon />
+              </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={handleClose}
-              activeOpacity={0.75}
-              disabled={isSaving}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-            >
-              <Text style={styles.closeIcon}>×</Text>
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.sheetTitle}>
-            {isCreateMode ? 'Add event' : 'Event details'}
-          </Text>
-          <Text style={styles.sheetHint}>
-            {isCreateMode
-              ? 'Schedule a meeting and optionally let Buddy remind you.'
-              : 'Update the schedule, location, or AI reminder for this meeting.'}
-          </Text>
-
-          <View style={styles.section}>
-            <View
-              style={[styles.fieldCard, titleError ? styles.fieldCardError : null]}
-            >
-              <Text style={styles.fieldLabel}>Title</Text>
-              <BottomSheetTextInput
+            <View style={sheetFormStyles.section}>
+              <SheetTextField
+                label="Title"
                 value={title}
                 onChangeText={value => {
                   setTitle(value);
@@ -502,262 +472,222 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
                   }
                 }}
                 placeholder="Product review, standup…"
-                placeholderTextColor={colors.muted}
-                style={styles.input}
+                error={titleError}
                 returnKeyType="next"
+                containerStyle={styles.fieldSpacing}
               />
-            </View>
-            {titleError ? <Text style={styles.errorText}>{titleError}</Text> : null}
 
-            <View style={styles.fieldCard}>
-              <Text style={styles.fieldLabel}>Description</Text>
-              <BottomSheetTextInput
+              <SheetTextField
+                label="Description"
                 value={description}
                 onChangeText={setDescription}
                 placeholder="Agenda, notes, or context"
-                placeholderTextColor={colors.muted}
-                style={[styles.input, styles.multilineInput]}
                 multiline
-                textAlignVertical="top"
+                containerStyle={styles.fieldSpacing}
               />
-            </View>
 
-            <View style={styles.fieldCard}>
-              <View style={styles.inlineLabelRow}>
-                <PinIcon size={ms(15)} />
-                <Text style={styles.fieldLabelInline}>Location</Text>
-              </View>
-              <BottomSheetTextInput
+              <SheetTextField
+                label="Location"
                 value={location}
                 onChangeText={setLocation}
                 placeholder="Office, Zoom, or leave blank"
-                placeholderTextColor={colors.muted}
-                style={styles.input}
                 returnKeyType="done"
+                containerStyle={styles.fieldSpacingLast}
               />
             </View>
 
-            <TouchableOpacity
-              activeOpacity={0.88}
-              style={[
-                styles.fieldCard,
-                styles.metaRowCard,
-                pickerMode === 'date' && styles.metaCardActive,
-              ]}
-              onPress={() => togglePicker('date')}
-            >
-              <View style={styles.metaIcon}>
-                <CalendarIcon />
-              </View>
-              <View style={styles.metaCopy}>
-                <Text style={styles.fieldLabel}>Date</Text>
-                <Text style={styles.fieldValue}>
-                  {formatDateLabel(selectedDate)}
-                </Text>
-              </View>
-            </TouchableOpacity>
+            <View style={sheetFormStyles.section}>
+              <Text style={sheetFormStyles.sectionTitle}>Schedule</Text>
 
-            <View style={styles.metaRow}>
-              <TouchableOpacity
-                activeOpacity={0.88}
-                style={[
-                  styles.fieldCard,
-                  styles.metaCard,
-                  pickerMode === 'start' && styles.metaCardActive,
-                ]}
-                onPress={() => togglePicker('start')}
-              >
-                <View style={styles.metaIcon}>
-                  <ClockIcon />
-                </View>
-                <View style={styles.metaCopy}>
-                  <Text style={styles.fieldLabel}>Starts</Text>
-                  <Text style={styles.fieldValue}>
-                    {formatTimeLabel(startTime)}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+              <View style={sheetFormStyles.groupCard}>
+                <SheetPressable
+                  style={[
+                    styles.scheduleRow,
+                    pickerMode === 'date' && styles.scheduleRowActive,
+                  ]}
+                  onPress={() => togglePicker('date')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Set event date"
+                >
+                  <View style={styles.metaIcon}>
+                    <CalendarIcon />
+                  </View>
+                  <View style={styles.metaCopy}>
+                    <Text style={styles.metaLabel}>Date</Text>
+                    <Text style={styles.metaValue}>
+                      {formatDateLabel(selectedDate)}
+                    </Text>
+                  </View>
+                  <ChevronIcon />
+                </SheetPressable>
 
-              <TouchableOpacity
-                activeOpacity={0.88}
-                style={[
-                  styles.fieldCard,
-                  styles.metaCard,
-                  pickerMode === 'end' && styles.metaCardActive,
-                ]}
-                onPress={() => togglePicker('end')}
-              >
-                <View style={styles.metaIcon}>
-                  <ClockIcon color={colors.primaryPurple} />
-                </View>
-                <View style={styles.metaCopy}>
-                  <Text style={styles.fieldLabel}>Ends</Text>
-                  <Text style={styles.fieldValue}>
-                    {formatTimeLabel(endTime)}
-                  </Text>
-                </View>
-              </TouchableOpacity>
+                <View style={sheetFormStyles.groupDivider} />
+
+                <SheetPressable
+                  style={[
+                    styles.scheduleRow,
+                    pickerMode === 'start' && styles.scheduleRowActive,
+                  ]}
+                  onPress={() => togglePicker('start')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Set start time"
+                >
+                  <View style={styles.metaIcon}>
+                    <ClockIcon />
+                  </View>
+                  <View style={styles.metaCopy}>
+                    <Text style={styles.metaLabel}>Starts</Text>
+                    <Text style={styles.metaValue}>
+                      {formatTimeLabel(startTime)}
+                    </Text>
+                  </View>
+                  <ChevronIcon />
+                </SheetPressable>
+
+                <View style={sheetFormStyles.groupDivider} />
+
+                <SheetPressable
+                  style={[
+                    styles.scheduleRow,
+                    pickerMode === 'end' && styles.scheduleRowActive,
+                  ]}
+                  onPress={() => togglePicker('end')}
+                  accessibilityRole="button"
+                  accessibilityLabel="Set end time"
+                >
+                  <View style={[styles.metaIcon, styles.metaIconAlt]}>
+                    <ClockIcon color={colors.primaryPurple} />
+                  </View>
+                  <View style={styles.metaCopy}>
+                    <Text style={styles.metaLabel}>Ends</Text>
+                    <Text style={styles.metaValue}>
+                      {formatTimeLabel(endTime)}
+                    </Text>
+                  </View>
+                  <ChevronIcon />
+                </SheetPressable>
+              </View>
+              {timeError ? <Text style={styles.errorText}>{timeError}</Text> : null}
             </View>
-            {timeError ? <Text style={styles.errorText}>{timeError}</Text> : null}
 
-            {pickerMode === 'date' ? (
-              <ReminderDatePicker
-                value={selectedDate}
-                onChange={applyDateToTimes}
-                onComplete={closePicker}
+            <View style={sheetFormStyles.section}>
+              <SheetSegmentedControl
+                label="Remind before"
+                options={REMIND_BEFORE_OPTIONS}
+                value={remindBeforeMode}
+                onChange={applyRemindBeforeMode}
               />
-            ) : null}
-
-            {pickerMode === 'start' ? (
-              <ReminderTimePicker
-                value={startTime}
-                onChange={handleStartChange}
-                onComplete={closePicker}
-              />
-            ) : null}
-
-            {pickerMode === 'end' ? (
-              <ReminderTimePicker
-                value={endTime}
-                onChange={handleEndChange}
-                onComplete={closePicker}
-              />
-            ) : null}
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>How Buddy should reach you</Text>
-
-            <View style={styles.remindBeforeCard}>
-              <Text style={styles.remindBeforeLabel}>Remind before</Text>
-              <View style={styles.remindBeforeRow}>
-                {(
-                  [
-                    { id: 'atStart', label: 'At start' },
-                    { id: '5', label: '5 min' },
-                    { id: '10', label: '10 min' },
-                    { id: 'custom', label: 'Custom' },
-                  ] as const
-                ).map(option => {
-                  const selected = remindBeforeMode === option.id;
-                  return (
-                    <TouchableOpacity
-                      key={option.id}
-                      activeOpacity={0.85}
-                      style={[
-                        styles.remindChip,
-                        selected && styles.remindChipSelected,
-                      ]}
-                      onPress={() => applyRemindBeforeMode(option.id)}
-                    >
-                      <Text
-                        style={[
-                          styles.remindChipText,
-                          selected && styles.remindChipTextSelected,
-                        ]}
-                      >
-                        {option.label}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
               {remindBeforeMode === 'custom' ? (
                 <View style={styles.customBeforeRow}>
-                  <BottomSheetTextInput
+                  <SheetTextField
+                    label="Minutes"
                     value={customBeforeText}
                     onChangeText={value => {
                       const digits = value.replace(/[^0-9]/g, '').slice(0, 4);
                       setCustomBeforeText(digits);
-                      const parsed = Number.parseInt(digits, 10);
-                      if (Number.isFinite(parsed) && parsed > 0) {
-                        setRemindBeforeMinutes(Math.min(1440, parsed));
-                      }
                     }}
                     keyboardType="number-pad"
                     placeholder="15"
-                    placeholderTextColor={colors.muted}
-                    style={styles.customBeforeInput}
+                    containerStyle={styles.customBeforeField}
                   />
-                  <Text style={styles.customBeforeSuffix}>minutes before</Text>
+                  <Text style={styles.customBeforeSuffix}>before start</Text>
                 </View>
               ) : null}
             </View>
 
-            <View style={styles.featureCard}>
-              <View style={styles.featureLeft}>
-                <View style={[styles.featureIcon, styles.featureIconCall]}>
-                  <PhoneIcon color={colors.primaryPurple} />
-                </View>
-                <View style={styles.featureCopy}>
-                  <Text style={styles.featureTitle}>AI calling</Text>
-                  <Text style={styles.featureSubtitle}>
-                    Buddy can call you for this meeting
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={aiCalling}
-                onValueChange={setAiCalling}
-                trackColor={{
-                  false: colors.border,
-                  true: colors.brandBorder,
-                }}
-                thumbColor={aiCalling ? colors.primaryPurple : colors.white}
-              />
-            </View>
-
-            <View style={styles.featureCard}>
-              <View style={styles.featureLeft}>
-                <View style={[styles.featureIcon, styles.featureIconBeep]}>
-                  <BeepIcon color={colors.success} />
-                </View>
-                <View style={styles.featureCopy}>
-                  <Text style={styles.featureTitle}>Alarm sound</Text>
-                  <Text style={styles.featureSubtitle}>
-                    Alarm-style sound with the alert
-                  </Text>
-                </View>
-              </View>
-              <Switch
-                value={beeping}
-                onValueChange={setBeeping}
-                trackColor={{
-                  false: colors.border,
-                  true: colors.successSoft,
-                }}
-                thumbColor={beeping ? colors.success : colors.white}
-              />
-            </View>
-          </View>
-
-          <TouchableOpacity
-            activeOpacity={0.88}
-            style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
-            onPress={handleSave}
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <Text style={styles.saveButtonText}>
-                {isCreateMode ? 'Save event' : 'Save changes'}
+            <View style={sheetFormStyles.section}>
+              <Text style={sheetFormStyles.sectionTitle}>
+                How Buddy should reach you
               </Text>
-            )}
-          </TouchableOpacity>
 
-          {!isCreateMode && onDelete ? (
+              <View style={sheetFormStyles.groupCard}>
+                <SheetToggleRow
+                  title="Alarm sound"
+                  subtitle="Alarm-style sound with the alert"
+                  value={beeping}
+                  onValueChange={setBeeping}
+                  icon={<BeepIcon color={colors.success} />}
+                  iconTone="success"
+                  showDivider
+                />
+                <SheetToggleRow
+                  title="Buddy call"
+                  subtitle="Buddy can call you for this meeting"
+                  value={aiCalling}
+                  onValueChange={setAiCalling}
+                  icon={<PhoneIcon color={colors.primary} />}
+                  iconTone="brand"
+                />
+              </View>
+            </View>
+
             <TouchableOpacity
-              activeOpacity={0.85}
-              style={styles.deleteButton}
-              onPress={onDelete}
+              activeOpacity={0.88}
+              style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+              onPress={handleSave}
               disabled={isSaving}
             >
-              <Text style={styles.deleteButtonText}>Delete event</Text>
+              {isSaving ? (
+                <ActivityIndicator color={colors.white} />
+              ) : (
+                <Text style={styles.saveButtonText}>
+                  {isCreateMode ? 'Save event' : 'Save changes'}
+                </Text>
+              )}
             </TouchableOpacity>
-          ) : null}
-        </BottomSheetScrollView>
-      </BottomSheetModal>
+
+            {!isCreateMode && onDelete ? (
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={styles.deleteButton}
+                onPress={onDelete}
+                disabled={isSaving}
+              >
+                <Text style={styles.deleteButtonText}>Delete event</Text>
+              </TouchableOpacity>
+            ) : null}
+          </BottomSheetScrollView>
+        </BottomSheetModal>
+
+        <ReminderPickerPopup
+          visible={pickerMode === 'date'}
+          title="Select date"
+          onClose={closePicker}
+          onDone={closePicker}
+        >
+          <ReminderDatePicker
+            embedded
+            value={selectedDate}
+            onChange={applyDateToTimes}
+          />
+        </ReminderPickerPopup>
+
+        <ReminderPickerPopup
+          visible={pickerMode === 'start'}
+          title="Start time"
+          onClose={closePicker}
+          onDone={closePicker}
+        >
+          <ReminderTimePicker
+            embedded
+            value={startTime}
+            onChange={handleStartChange}
+          />
+        </ReminderPickerPopup>
+
+        <ReminderPickerPopup
+          visible={pickerMode === 'end'}
+          title="End time"
+          onClose={closePicker}
+          onDone={closePicker}
+        >
+          <ReminderTimePicker
+            embedded
+            value={endTime}
+            onChange={handleEndChange}
+          />
+        </ReminderPickerPopup>
+      </>
     );
   },
 );
@@ -768,13 +698,13 @@ export default EventBottomSheet;
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: colors.white,
+    backgroundColor: colors.background,
     borderTopLeftRadius: ms(28),
     borderTopRightRadius: ms(28),
   },
   indicator: {
     backgroundColor: colors.border,
-    width: ms(48),
+    width: ms(44),
     height: ms(5),
     borderRadius: radii.pill,
   },
@@ -787,264 +717,94 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-  sourceBadge: {
-    backgroundColor: colors.primarySoft,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: ms(5),
-    borderRadius: ms(8),
-  },
-  sourceText: {
-    color: colors.primaryDark,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 0.3,
+    gap: spacing.md,
+    marginBottom: spacing.xl,
   },
   closeButton: {
-    width: ms(34),
-    height: ms(34),
-    borderRadius: ms(17),
-    backgroundColor: colors.lightGray,
+    width: ms(32),
+    height: ms(32),
+    borderRadius: ms(16),
+    backgroundColor: colors.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  closeIcon: {
-    fontSize: fontSize['2xl'] + ms(4),
-    lineHeight: ms(24),
-    color: colors.muted,
-    marginTop: -1,
   },
   sheetTitle: {
     color: colors.text,
-    fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.extrabold,
-    letterSpacing: -0.4,
-  },
-  sheetHint: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.xl,
-    color: colors.subText,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-    lineHeight: ms(18),
-  },
-  section: {
-    marginBottom: spacing.xl,
-  },
-  sectionLabel: {
-    color: colors.text,
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
-    marginBottom: spacing.md,
   },
-  fieldCard: {
-    backgroundColor: colors.inputBg,
-    borderRadius: radii.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+  fieldSpacing: {
+    marginBottom: spacing.lg,
+  },
+  fieldSpacingLast: {
+    marginBottom: 0,
+  },
+  scheduleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    marginBottom: spacing.sm,
+    minHeight: ms(64),
   },
-  fieldCardError: {
-    borderColor: colors.error,
-    backgroundColor: colors.errorSoft,
-  },
-  errorText: {
-    marginTop: -spacing.xs,
-    marginBottom: spacing.sm,
-    marginLeft: spacing.md,
-    color: colors.error,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
-  },
-  fieldLabel: {
-    color: colors.muted,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    marginBottom: spacing.xs,
-    letterSpacing: 0.2,
-  },
-  fieldLabelInline: {
-    color: colors.muted,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    letterSpacing: 0.2,
-  },
-  inlineLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
-  },
-  fieldValue: {
-    color: colors.text,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
-    lineHeight: ms(20),
-  },
-  input: {
-    color: colors.text,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
-    padding: 0,
-    margin: 0,
-    minHeight: ms(22),
-  },
-  multilineInput: {
-    minHeight: ms(68),
-    lineHeight: ms(20),
-    fontWeight: fontWeight.medium,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  metaRowCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  metaCard: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  metaCardActive: {
-    borderColor: colors.brandBorder,
+  scheduleRowActive: {
     backgroundColor: colors.primarySoft,
   },
   metaIcon: {
-    width: ms(34),
-    height: ms(34),
-    borderRadius: ms(10),
-    backgroundColor: colors.white,
+    width: ms(40),
+    height: ms(40),
+    borderRadius: ms(12),
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+  },
+  metaIconAlt: {
+    backgroundColor: colors.purpleLight,
   },
   metaCopy: {
     flex: 1,
+    minWidth: 0,
   },
-  featureCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: colors.inputBg,
-    borderRadius: radii.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  featureLeft: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginRight: spacing.md,
-  },
-  featureIcon: {
-    width: ms(36),
-    height: ms(36),
-    borderRadius: ms(10),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  featureIconCall: {
-    backgroundColor: colors.purpleLight,
-  },
-  featureIconBeep: {
-    backgroundColor: colors.successSoft,
-  },
-  featureCopy: {
-    flex: 1,
-  },
-  featureTitle: {
-    color: colors.text,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
-  },
-  featureSubtitle: {
-    marginTop: spacing.xxs,
-    color: colors.subText,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
-    lineHeight: ms(16),
-  },
-  remindBeforeCard: {
-    backgroundColor: colors.inputBg,
-    borderRadius: radii.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  remindBeforeLabel: {
+  metaLabel: {
     color: colors.muted,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
+    marginBottom: 2,
     letterSpacing: 0.2,
-    marginBottom: spacing.sm,
   },
-  remindBeforeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
+  metaValue: {
+    color: colors.text,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.semibold,
+    lineHeight: ms(20),
   },
-  remindChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.lg,
-    backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-  remindChipSelected: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.brandBorder,
-  },
-  remindChipText: {
-    color: colors.subText,
+  errorText: {
+    marginTop: spacing.sm,
+    marginLeft: spacing.xs,
+    color: colors.error,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
   },
-  remindChipTextSelected: {
-    color: colors.primaryDark,
-    fontWeight: fontWeight.bold,
-  },
   customBeforeRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
+    alignItems: 'flex-end',
+    gap: spacing.md,
+    marginTop: spacing.lg,
   },
-  customBeforeInput: {
-    minWidth: ms(72),
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radii.lg,
-    backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    color: colors.text,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
-    textAlign: 'center',
+  customBeforeField: {
+    flex: 1,
+    marginBottom: 0,
   },
   customBeforeSuffix: {
     color: colors.subText,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
+    paddingBottom: spacing.lg,
   },
   saveButton: {
-    minHeight: ms(52),
+    minHeight: layout.buttonHeight,
     borderRadius: radii.xl,
     backgroundColor: colors.primary,
     alignItems: 'center',

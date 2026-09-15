@@ -194,7 +194,7 @@ const CreateSpaceBottomSheet = forwardRef((_props: any, ref: any) => {
   const bottomPadding =
     keyboardHeight > 0
       ? keyboardHeight - insets.bottom + KEYBOARD_BUTTON_GAP
-      : spacing.md;
+      : spacing.md + Math.max(insets.bottom, spacing.sm);
 
   return (
     <>

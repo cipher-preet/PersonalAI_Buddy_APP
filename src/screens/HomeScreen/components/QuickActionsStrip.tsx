@@ -180,6 +180,9 @@ const GoalMonitorIcon = ({
   </Svg>
 );
 
+// Kept for when Goal Monitor returns to the home strip.
+void GoalMonitorIcon;
+
 const TILE_SIZE = ms(78);
 const TILE_GAP = spacing.xl;
 const DOT_SIZE = ms(6);
@@ -193,57 +196,64 @@ const QuickActionsStrip = () => {
   const [viewportWidth, setViewportWidth] = useState(0);
   const [contentWidth, setContentWidth] = useState(0);
 
-  const showComingSoon = (feature: string) => {
-    showToast({
-      message: `${feature} is coming soon.`,
-      type: 'success',
-    });
-  };
+  const showComingSoon = React.useCallback(
+    (feature: string) => {
+      showToast({
+        message: `${feature} is coming soon.`,
+        type: 'success',
+      });
+    },
+    [showToast],
+  );
 
-  const actions: QuickAction[] = [
-    {
-      id: 'smart-reminder',
-      title: 'Reminder',
-      accent: '#7C3AED',
-      Icon: SmartReminderIcon,
-      onPress: () => navigation.navigate('Reminders'),
-    },
-    {
-      id: 'daily-briefing',
-      title: 'Briefing',
-      accent: '#2563EB',
-      Icon: DailyBriefingIcon,
-      onPress: () => navigation.navigate('Briefing'),
-    },
-    {
-      id: 'ai-calendar',
-      title: 'Calendar',
-      accent: '#EA580C',
-      Icon: AICalendarIcon,
-      onPress: () => navigation.navigate('Calendar'),
-    },
-    {
-      id: 'goal-monitor',
-      title: 'Goal Monitor',
-      accent: '#4338CA',
-      Icon: GoalMonitorIcon,
-      onPress: () => navigation.navigate('GoalMonitor'),
-    },
-    {
-      id: 'share-space',
-      title: 'Share',
-      accent: '#0D9488',
-      Icon: ShareSpaceIcon,
-      onPress: () => navigation.navigate('Share'),
-    },
-    {
-      id: 'team-workspace',
-      title: 'Team',
-      accent: '#DB2777',
-      Icon: TeamWorkspaceIcon,
-      onPress: () => showComingSoon('Team Workspace'),
-    },
-  ];
+  const actions: QuickAction[] = useMemo(
+    () => [
+      {
+        id: 'smart-reminder',
+        title: 'Reminder',
+        accent: '#7C3AED',
+        Icon: SmartReminderIcon,
+        onPress: () => navigation.navigate('Reminders'),
+      },
+      {
+        id: 'daily-briefing',
+        title: 'Briefing',
+        accent: '#2563EB',
+        Icon: DailyBriefingIcon,
+        onPress: () => navigation.navigate('Briefing'),
+      },
+      {
+        id: 'ai-calendar',
+        title: 'Calendar',
+        accent: '#EA580C',
+        Icon: AICalendarIcon,
+        onPress: () => navigation.navigate('Calendar'),
+      },
+      // Goal Monitor hidden from home strip for launch; tab remains available.
+      // {
+      //   id: 'goal-monitor',
+      //   title: 'Goal Monitor',
+      //   accent: '#4338CA',
+      //   Icon: GoalMonitorIcon,
+      //   onPress: () => navigation.navigate('GoalMonitor'),
+      // },
+      {
+        id: 'share-space',
+        title: 'Share',
+        accent: '#0D9488',
+        Icon: ShareSpaceIcon,
+        onPress: () => navigation.navigate('Share'),
+      },
+      {
+        id: 'team-workspace',
+        title: 'Team',
+        accent: '#DB2777',
+        Icon: TeamWorkspaceIcon,
+        onPress: () => showComingSoon('Team Workspace'),
+      },
+    ],
+    [navigation, showComingSoon],
+  );
 
   const pageCount = useMemo(() => {
     if (!viewportWidth || !contentWidth) {
@@ -276,7 +286,7 @@ const QuickActionsStrip = () => {
         decelerationRate="fast"
         contentContainerStyle={styles.scrollContent}
         nestedScrollEnabled
-        scrollEventThrottle={16}
+        scrollEventThrottle={32}
         onLayout={event => setViewportWidth(event.nativeEvent.layout.width)}
         onContentSizeChange={width => setContentWidth(width)}
         onScroll={handleScroll}
@@ -346,7 +356,7 @@ const QuickActionsStrip = () => {
   );
 };
 
-export default QuickActionsStrip;
+export default React.memo(QuickActionsStrip);
 
 const styles = StyleSheet.create({
   wrapper: {

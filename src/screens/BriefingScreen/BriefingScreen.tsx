@@ -35,6 +35,7 @@ import {
   radii,
   spacing,
 } from '../../theme';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import {
   capturedCount,
   deriveProgress,
@@ -192,6 +193,8 @@ const ItemSection = ({
 const BriefingScreen = () => {
   const navigation =
     useNavigation<BottomTabNavigationProp<MainTabParamList>>();
+  const { tabBarClearance, screenPadding, contentMaxWidth, isTablet } =
+    useResponsiveLayout();
   const userId = useAppSelector(state => state.auth.userId);
   const { showToast } = useToast();
   const sourceSheetRef = useRef<BottomSheetModal>(null);
@@ -355,7 +358,16 @@ const BriefingScreen = () => {
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[
+            styles.content,
+            {
+              paddingBottom: tabBarClearance,
+              paddingHorizontal: screenPadding,
+              maxWidth: isTablet ? contentMaxWidth : undefined,
+              width: '100%',
+              alignSelf: 'center',
+            },
+          ]}
           refreshControl={
             userId ? (
               <RefreshControl
@@ -846,9 +858,7 @@ const styles = StyleSheet.create({
     borderColor: colors.brandBorder,
   },
   content: {
-    paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.sm,
-    paddingBottom: layout.tabBarClearance,
     gap: spacing['2xl'],
   },
   introCard: {

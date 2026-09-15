@@ -5,12 +5,13 @@ import React, {
   useMemo,
   useState,
 } from 'react';
-import { BackHandler, Platform, StyleSheet } from 'react-native';
+import { BackHandler, StyleSheet } from 'react-native';
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
   BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Space, SpaceStats } from '../../../../store/api/home';
 import { NotesIcon, TaskIcons } from '../../../../../styles/icons';
 import SpaceSheetHeader from './SpaceSheetHeader';
@@ -64,6 +65,7 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
     },
     ref,
   ) => {
+    const insets = useSafeAreaInsets();
     const snapPoints = useMemo(() => ['72%'], []);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -154,7 +156,13 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
         {space ? (
           <BottomSheetScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContent}
+            contentContainerStyle={[
+              styles.scrollContent,
+              {
+                paddingBottom:
+                  vSpacing['2xl'] + Math.max(insets.bottom, spacing.md),
+              },
+            ]}
           >
             <SpaceSheetHeader
               title={space.spacename}
@@ -201,7 +209,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: ms(20),
     paddingTop: spacing.xs,
-    paddingBottom: Platform.OS === 'ios' ? vSpacing['3xl'] : vSpacing['2xl'],
     gap: spacing['2xl'],
   },
 });

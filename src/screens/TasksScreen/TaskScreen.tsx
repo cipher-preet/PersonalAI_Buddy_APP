@@ -65,6 +65,7 @@ import {
   radii,
   spacing,
 } from '../../theme';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 const TASKS_PAGE_SIZE = 20;
 
@@ -126,6 +127,8 @@ const isLocalTaskId = (id: string) => id.startsWith('local-');
 
 const TaskScreen = () => {
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
+  const { tabBarClearance, screenPadding, contentMaxWidth, isTablet } =
+    useResponsiveLayout();
   const route = useRoute<RouteProp<MainTabParamList, 'Tasks'>>();
   const taskSheetRef = useRef<BottomSheetModal>(null);
   const addTaskSheetRef = useRef<BottomSheetModal>(null);
@@ -697,7 +700,9 @@ const TaskScreen = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <View style={styles.headerWrap}>
+      <View
+        style={[styles.headerWrap, { paddingHorizontal: screenPadding }]}
+      >
         <Header
           searchQuery={searchQuery}
           taskFilter={taskFilter}
@@ -742,7 +747,16 @@ const TaskScreen = () => {
         ListEmptyComponent={tasksListEmpty}
         ListFooterComponent={tasksListFooter}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingBottom: tabBarClearance,
+            paddingHorizontal: screenPadding,
+            maxWidth: isTablet ? contentMaxWidth : undefined,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         style={styles.tasksScroll}
@@ -790,7 +804,6 @@ const styles = StyleSheet.create({
   },
 
   headerWrap: {
-    paddingHorizontal: spacing['2xl'],
     marginBottom: spacing.md,
   },
 
@@ -799,8 +812,7 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    paddingHorizontal: spacing['2xl'],
-    paddingBottom: layout.tabBarClearance,
+    flexGrow: 1,
   },
 
   stateBox: {

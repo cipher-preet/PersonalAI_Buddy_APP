@@ -64,6 +64,7 @@ import {
   radii,
   spacing,
 } from '../../theme';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 const NOTES_PAGE_SIZE = 10;
 
@@ -137,6 +138,8 @@ const isLocalNoteId = (id: string) => id.startsWith('local-');
 
 const Notes = () => {
   const navigation = useNavigation<BottomTabNavigationProp<MainTabParamList>>();
+  const { tabBarClearance, screenPadding, contentMaxWidth, isTablet } =
+    useResponsiveLayout();
   const route = useRoute<RouteProp<MainTabParamList, 'Notes'>>();
   const noteSheetRef = useRef<BottomSheetModal>(null);
   const addNoteSheetRef = useRef<BottomSheetModal>(null);
@@ -690,7 +693,9 @@ const Notes = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <View style={styles.headerWrap}>
+      <View
+        style={[styles.headerWrap, { paddingHorizontal: screenPadding }]}
+      >
         <Header
           searchQuery={searchQuery}
           sortOrder={sortOrder}
@@ -734,7 +739,16 @@ const Notes = () => {
         ListEmptyComponent={notesListEmpty}
         ListFooterComponent={notesListFooter}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          {
+            paddingBottom: tabBarClearance,
+            paddingHorizontal: screenPadding,
+            maxWidth: isTablet ? contentMaxWidth : undefined,
+            width: '100%',
+            alignSelf: 'center',
+          },
+        ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         style={styles.notesScroll}
@@ -801,7 +815,6 @@ const styles = StyleSheet.create({
   },
 
   headerWrap: {
-    paddingHorizontal: spacing['2xl'],
     marginBottom: spacing.md,
   },
 
@@ -810,8 +823,7 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingHorizontal: spacing['2xl'],
-    paddingBottom: layout.tabBarClearance,
+    flexGrow: 1,
   },
 
   stateBox: {

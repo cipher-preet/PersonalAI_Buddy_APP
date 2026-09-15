@@ -46,6 +46,7 @@ import {
   radii,
   spacing,
 } from '../../theme';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 const CloseIcon = () => (
   <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
@@ -61,6 +62,8 @@ const CloseIcon = () => (
 const ProfileScreen = () => {
   const dispatch = useAppDispatch();
   const { showToast } = useToast();
+  const { tabBarClearance, screenPadding, contentMaxWidth, isTablet } =
+    useResponsiveLayout();
   const { userId: storedUserId, name, email, phone, avatar } = useAppSelector(
     state => state.auth,
   );
@@ -282,7 +285,16 @@ const ProfileScreen = () => {
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[
+            styles.content,
+            {
+              paddingBottom: tabBarClearance,
+              paddingHorizontal: screenPadding,
+              maxWidth: isTablet ? contentMaxWidth : undefined,
+              width: '100%',
+              alignSelf: 'center',
+            },
+          ]}
         >
           <ProfileHeader />
           <ProfileCard
@@ -465,9 +477,7 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.sm,
-    paddingBottom: layout.tabBarClearance,
   },
 
   modalOverlay: {
@@ -479,6 +489,9 @@ const styles = StyleSheet.create({
 
   modalCard: {
     maxHeight: '92%',
+    maxWidth: ms(480),
+    width: '100%',
+    alignSelf: 'center',
     borderRadius: radii['3xl'],
     paddingTop: spacing['2xl'],
     paddingHorizontal: layout.screenPadding,

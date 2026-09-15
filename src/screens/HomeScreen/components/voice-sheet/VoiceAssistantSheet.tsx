@@ -12,6 +12,7 @@ import {
   Text,
   TouchableOpacity,
   Keyboard,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import {
@@ -21,6 +22,7 @@ import {
   BottomSheetScrollView,
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useToast } from '../../../../store/context/ToastContext';
 import { useAppSelector } from '../../../../store/hooks';
@@ -47,15 +49,16 @@ import {
   ms,
   mvs,
   radii,
-  screenHeight,
   spacing,
 } from '../../../../theme';
 
-const FOOTER_HEIGHT = Platform.OS === 'ios' ? mvs(96) : mvs(80);
-const MAX_SHEET_HEIGHT = screenHeight * 0.82;
-
 const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
   const navigation = useNavigation<any>();
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const footerPaddingBottom = Math.max(insets.bottom, spacing.md) + spacing.md;
+  const footerHeight = mvs(64) + footerPaddingBottom;
+  const maxSheetHeight = windowHeight * 0.82;
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
   const [spaceName, setSpaceName] = useState('');
@@ -78,7 +81,7 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
     { skip: !userId },
   );
 
-  const snapPoints = useMemo(() => [MAX_SHEET_HEIGHT], []);
+  const snapPoints = useMemo(() => [maxSheetHeight], [maxSheetHeight]);
 
   const showPlanLimitPrompt = useCallback(() => {
     Keyboard.dismiss();
@@ -228,7 +231,7 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
 
       return (
         <BottomSheetFooter {...props} bottomInset={0}>
-          <View style={styles.footer}>
+          <View style={[styles.footer, { paddingBottom: footerPaddingBottom }]}>
             <TouchableOpacity
               activeOpacity={0.9}
               style={styles.startButton}
@@ -243,7 +246,16 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
         </BottomSheetFooter>
       );
     },
-    [selectedSpace, onStart, isStarting, startListning, showToast, ref, showPlanLimitPrompt],
+    [
+      selectedSpace,
+      onStart,
+      isStarting,
+      startListning,
+      showToast,
+      ref,
+      showPlanLimitPrompt,
+      footerPaddingBottom,
+    ],
   );
 
   return (
@@ -351,7 +363,7 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
           </TouchableOpacity>
         ) : null}
 
-        <View style={{ height: FOOTER_HEIGHT }} />
+        <View style={{ height: footerHeight }} />
 
       </BottomSheetScrollView>
       </BottomSheetModal>
@@ -499,7 +511,6 @@ const styles = StyleSheet.create({
   footer: {
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.md,
-    paddingBottom: Platform.OS === 'ios' ? mvs(28) : spacing.xl,
     backgroundColor: colors.white,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.borderLight,

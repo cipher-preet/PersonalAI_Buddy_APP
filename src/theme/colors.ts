@@ -27,7 +27,7 @@ export const colors = {
   accentIndigo: '#6366F1',
   brandBorder: '#C7D2FE',
   tabActive: '#4338CA',
-  tabInactive: '#7E8795',
+  tabInactive: '#475569',
   tabPill: '#EEF2FF',
 
   // Gradients (upgrade CTA, etc.)

@@ -4,7 +4,6 @@ import {
   View,
   TouchableOpacity,
   Animated,
-  Platform,
 } from 'react-native';
 
 import {
@@ -32,13 +31,12 @@ import CalendarScreen from '../screens/CalendarScreen/CalendarScreen';
 import GoalMonitorScreen from '../screens/GoalMonitorScreen/GoalMonitorScreen';
 import FeedbackScreen from '../screens/FeedbackScreen/FeedbackScreen';
 import HelpSupportScreen from '../screens/HelpSupportScreen/HelpSupportScreen';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import {
   colors,
   fontSize,
   fontWeight,
-  layout,
   ms,
-  mvs,
   radii,
   shadows,
   spacing,
@@ -53,6 +51,7 @@ type TabItemProps = {
   onPress: () => void;
   onLongPress: () => void;
   accessibilityState: { selected: boolean };
+  compact?: boolean;
 };
 
 const TabItem = ({
@@ -62,6 +61,7 @@ const TabItem = ({
   onPress,
   onLongPress,
   accessibilityState,
+  compact = false,
 }: TabItemProps) => {
   const progress = useRef(new Animated.Value(isFocused ? 1 : 0)).current;
 
@@ -100,11 +100,12 @@ const TabItem = ({
 
   const translateY = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: [4, 0],
+    outputRange: [ms(4), 0],
   });
 
   const activeColor = colors.tabActive;
   const inactiveColor = colors.tabInactive;
+  const iconSize = compact ? ms(22) : ms(26);
 
   return (
     <TouchableOpacity
@@ -118,6 +119,7 @@ const TabItem = ({
       <Animated.View
         style={[
           styles.itemContainer,
+          compact && styles.itemContainerCompact,
           {
             transform: [{ scale: animScale }, { translateY }],
           },
@@ -126,6 +128,7 @@ const TabItem = ({
         <Animated.View
           style={[
             styles.pill,
+            compact && styles.pillCompact,
             {
               opacity: pillOpacity,
               transform: [{ scaleX: pillScale }],
@@ -133,10 +136,10 @@ const TabItem = ({
           ]}
         />
 
-        <View style={styles.iconArea}>
+        <View style={[styles.iconArea, compact && styles.iconAreaCompact]}>
           <Icon
-            width={ms(26)}
-            height={ms(26)}
+            width={iconSize}
+            height={iconSize}
             color={isFocused ? activeColor : inactiveColor}
           />
         </View>
@@ -144,6 +147,7 @@ const TabItem = ({
         <Animated.Text
           style={[
             styles.label,
+            compact && styles.labelCompact,
             {
               opacity: labelOpacity,
               color: isFocused ? activeColor : inactiveColor,
@@ -187,6 +191,14 @@ const TAB_CONFIG = [
 ];
 
 const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
+  const {
+    width,
+    tabBarBottom,
+    tabBarHeight,
+    tabBarSideInset,
+    isSmallDevice,
+    isTablet,
+  } = useResponsiveLayout();
   const currentRoute = state.routes[state.index];
 
   if (
@@ -203,8 +215,24 @@ const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
     return null;
   }
 
+  const barWidth = isTablet
+    ? Math.min(width - tabBarSideInset * 2, 560)
+    : width - tabBarSideInset * 2;
+  const barLeft = (width - barWidth) / 2;
+
   return (
-    <View style={styles.tabBar}>
+    <View
+      pointerEvents="box-none"
+      style={[
+        styles.tabBar,
+        {
+          left: barLeft,
+          width: barWidth,
+          bottom: tabBarBottom,
+          height: tabBarHeight,
+        },
+      ]}
+    >
       {state.routes.map((route, index) => {
         const config = TAB_CONFIG.find(tab => tab.name === route.name);
 
@@ -241,6 +269,7 @@ const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
             label={config.label}
             onPress={onPress}
             onLongPress={onLongPress}
+            compact={isSmallDevice}
             accessibilityState={{
               selected: isFocused,
             }}
@@ -283,16 +312,12 @@ const MainTabs = () => {
 const styles = StyleSheet.create({
   tabBar: {
     position: 'absolute',
-    left: spacing['2xl'],
-    right: spacing['2xl'],
-    bottom: Platform.OS === 'ios' ? mvs(24) : mvs(16),
-    height: layout.tabBarHeight,
     backgroundColor: colors.white,
     borderRadius: radii.tabBar,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    borderWidth: layout.hairline,
+    borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border,
     ...shadows.soft,
   },
@@ -310,6 +335,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
+  itemContainerCompact: {
+    width: ms(58),
+    height: ms(56),
+  },
+
   pill: {
     position: 'absolute',
     top: ms(2),
@@ -319,11 +349,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.tabPill,
   },
 
+  pillCompact: {
+    width: ms(48),
+    height: ms(36),
+  },
+
   iconArea: {
     width: ms(58),
     height: ms(40),
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  iconAreaCompact: {
+    width: ms(48),
+    height: ms(34),
   },
 
   label: {
@@ -334,6 +374,11 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     color: colors.text,
     fontWeight: fontWeight.semibold,
+  },
+
+  labelCompact: {
+    fontSize: fontSize.xs,
+    marginTop: ms(2),
   },
 });
 

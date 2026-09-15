@@ -14,7 +14,7 @@ const ProfileIcon = (props: SvgProps) => (
     {...props}>
     
     <Path
-      stroke={props.color || '#363853'}
+      stroke={props.color || '#475569'}
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
