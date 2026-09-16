@@ -20,6 +20,8 @@ const REMINDER_VOICE_URL = `${BUDDY_ENDPOINTS.reminderVoiceBase}/voice/turn`;
 const REMINDER_PROMPT_URL = `${BUDDY_ENDPOINTS.reminderVoiceBase}/voice/prompt`;
 const TURN_TIMEOUT_MS = 45000;
 const PROMPT_TIMEOUT_MS = 20000;
+const RECORDING_FILE_EXTENSION = 'wav';
+const RECORDING_MIME_TYPE = 'audio/wav';
 
 export type ReminderVoiceStatus =
   | 'need_more'
@@ -287,8 +289,8 @@ export const submitReminderVoiceTurn = async ({
   formData.append('collected', JSON.stringify(collected ?? {}));
   formData.append('file', {
     uri: ensureFileUri(filePath),
-    name: 'reminder-voice.m4a',
-    type: 'audio/mp4',
+    name: `reminder-voice.${RECORDING_FILE_EXTENSION}`,
+    type: RECORDING_MIME_TYPE,
   } as unknown as Blob);
 
   try {

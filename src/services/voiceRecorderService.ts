@@ -4,17 +4,16 @@ import {
   Permission,
   PermissionStatus,
   Platform,
+  type EmitterSubscription,
 } from 'react-native';
-import AudioRecorderPlayer, {
-  AudioEncoderAndroidType,
-  AudioSet,
-  AudioSourceAndroidType,
-  AVEncoderAudioQualityIOSType,
-  RecordBackType,
-} from 'react-native-audio-recorder-player';
 import axios, { AxiosError } from 'axios';
 
 import { BUDDY_ENDPOINTS } from '../config/apiConfig';
+import {
+  addAudioMeteringListener,
+  startAudioCapture,
+  stopAudioCapture,
+} from './PrecisionAudio';
 
 type RNFSType = typeof import('react-native-fs');
 
@@ -29,13 +28,13 @@ const { BuddyListeningService } = NativeModules as {
   BuddyListeningService?: BuddyListeningServiceModule;
 };
 
-const audioRecorderPlayer = AudioRecorderPlayer;
 const SILENCE_THRESHOLD_DB = -30;
 const SILENCE_DURATION_MS = 2000;
 const MAX_RECORDING_SEGMENT_MS = 20000;
 const MAX_UPLOAD_SEGMENT_MS = 25000;
-const AUDIO_FILE_EXTENSION = 'm4a';
-const AUDIO_MIME_TYPE = 'audio/mp4';
+const AUDIO_FILE_EXTENSION = 'wav';
+const AUDIO_MIME_TYPE = 'audio/wav';
+const PRECISION_AUDIO_GAIN = 2.0;
 const SPEECH_API_URL = BUDDY_ENDPOINTS.speechBase;
 const VOICE_MESSAGE_URL = `${SPEECH_API_URL}/transcripting`;
 const LISTENING_START_URL = `${SPEECH_API_URL}/listening/start`;
@@ -54,6 +53,7 @@ let isStopping = false;
 let isRotatingSegment = false;
 let isContinuousRecordingActive = false;
 let segmentRotationTimer: ReturnType<typeof setTimeout> | null = null;
+let meteringSubscription: EmitterSubscription | null = null;
 
 export type VoiceMode = string;
 
@@ -124,20 +124,6 @@ const getRNFS = () => {
   }
 };
 
-const getAudioFilePath = () => {
-  const RNFS = getRNFS();
-
-  return `${RNFS.CachesDirectoryPath}/buddy_voice_${Date.now()}.${AUDIO_FILE_EXTENSION}`;
-};
-
-const getAudioSet = (): AudioSet => ({
-  AudioEncoderAndroid: AudioEncoderAndroidType.AAC,
-  AudioSourceAndroid: AudioSourceAndroidType.MIC,
-  AVEncoderAudioQualityKeyIOS: AVEncoderAudioQualityIOSType.high,
-  AVFormatIDKeyIOS: 'aac',
-  AVNumberOfChannelsKeyIOS: 1,
-});
-
 const delay = (durationMs: number) =>
   new Promise<void>(resolve => setTimeout(resolve, durationMs));
 
@@ -161,15 +147,11 @@ const shouldRetryVoiceUpload = (error: unknown) => {
   );
 };
 
-const startTempRecording = async (
-  audioSet: AudioSet,
-): Promise<VoiceRecordingResult> => {
-  const path = getAudioFilePath();
+const startTempRecording = async (): Promise<VoiceRecordingResult> => {
+  const path = await startAudioCapture(PRECISION_AUDIO_GAIN);
   currentRecordingPath = path;
   silenceStartedAt = null;
   recordingStartedAt = Date.now();
-
-  await audioRecorderPlayer.startRecorder(path, audioSet, true);
 
   return {
     path,
@@ -190,10 +172,11 @@ const finalizeCurrentRecording = async (
 
   clearSegmentRotationTimer();
 
-  await audioRecorderPlayer.stopRecorder();
+  await stopAudioCapture();
 
   if (removeListener) {
-    audioRecorderPlayer.removeRecordBackListener();
+    meteringSubscription?.remove();
+    meteringSubscription = null;
   }
 
   currentRecordingPath = null;
@@ -348,8 +331,7 @@ export const startVoiceRecordingWithSilenceDetection = async ({
     await stopVoiceRecording();
   }
 
-  const audioSet = getAudioSet();
-  const firstRecording = await startTempRecording(audioSet);
+  const firstRecording = await startTempRecording();
   isContinuousRecordingActive = true;
 
   const rotateCurrentSegment = async (
@@ -376,7 +358,7 @@ export const startVoiceRecordingWithSilenceDetection = async ({
       });
 
       if (isContinuousRecordingActive) {
-        await startTempRecording(audioSet);
+        await startTempRecording();
         scheduleMaxSegmentRotation();
       }
 
@@ -397,13 +379,8 @@ export const startVoiceRecordingWithSilenceDetection = async ({
 
   scheduleMaxSegmentRotation();
 
-  audioRecorderPlayer.addRecordBackListener((event: RecordBackType) => {
-    const metering = event.currentMetering;
-
-    if (typeof metering !== 'number') {
-      return;
-    }
-
+  meteringSubscription?.remove();
+  meteringSubscription = addAudioMeteringListener(metering => {
     onMetering?.(metering);
 
     const segmentDuration = recordingStartedAt
@@ -461,7 +438,7 @@ export const startVoiceRecordingWithSilenceDetection = async ({
           return;
         }
 
-        await startTempRecording(audioSet);
+        await startTempRecording();
         scheduleMaxSegmentRotation();
 
         await onSilenceDetected?.(completedRecording);

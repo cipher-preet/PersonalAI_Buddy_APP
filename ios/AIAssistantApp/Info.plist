@@ -6,6 +6,8 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<key>NSMicrophoneUsageDescription</key>
+<string>This app requires access to the microphone to process low-volume voice inputs.</string>
 	<key>CFBundleDisplayName</key>
 	<string>AIAssistantApp</string>
 	<key>CFBundleExecutable</key>
