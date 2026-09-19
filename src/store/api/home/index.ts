@@ -234,6 +234,8 @@ interface GetStagedNotesBySpaceResponse {
   data: {
     notes: StagedNoteCard[];
     nextCursor: string | null;
+    total?: number;
+    date?: string;
   };
 }
 
@@ -247,6 +249,8 @@ interface GetStagedTasksBySpaceResponse {
   data: {
     tasks: StagedTaskCard[];
     nextCursor: string | null;
+    total?: number;
+    date?: string;
   };
 }
 
@@ -303,6 +307,7 @@ interface GetStagedNotesBySpaceArgs {
   spaceId: string;
   limit?: number;
   cursor?: string;
+  date?: string;
 }
 interface GetStagedNoteByIdArgs {
   noteId: string;
@@ -312,6 +317,21 @@ interface GetStagedTasksBySpaceArgs {
   spaceId: string;
   limit?: number;
   cursor?: string;
+  date?: string;
+}
+interface GetDateMarkersBySpaceArgs {
+  userId: string;
+  spaceId: string;
+  from: string;
+  to: string;
+}
+interface GetDateMarkersBySpaceResponse {
+  success: boolean;
+  data: {
+    dates: string[];
+    from: string;
+    to: string;
+  };
 }
 
 export const homeApi = baseApi.injectEndpoints({
@@ -417,7 +437,7 @@ export const homeApi = baseApi.injectEndpoints({
       GetStagedNotesBySpaceResponse,
       GetStagedNotesBySpaceArgs
     >({
-      query: ({ userId, spaceId, limit = 10, cursor = '' }) => ({
+      query: ({ userId, spaceId, limit = 10, cursor = '', date }) => ({
         url: 'home/getStagedNotesBySpace',
         method: 'GET',
         params: {
@@ -425,6 +445,7 @@ export const homeApi = baseApi.injectEndpoints({
           spaceId,
           limit,
           cursor,
+          ...(date ? { date } : {}),
         },
       }),
       providesTags: ['Spaces'],
@@ -460,7 +481,7 @@ export const homeApi = baseApi.injectEndpoints({
       GetStagedTasksBySpaceResponse,
       GetStagedTasksBySpaceArgs
     >({
-      query: ({ userId, spaceId, limit = 10, cursor = '' }) => ({
+      query: ({ userId, spaceId, limit = 10, cursor = '', date }) => ({
         url: 'home/getStagedTasksBySpace',
         method: 'GET',
         params: {
@@ -468,7 +489,32 @@ export const homeApi = baseApi.injectEndpoints({
           spaceId,
           limit,
           cursor,
+          ...(date ? { date } : {}),
         },
+      }),
+      providesTags: ['Spaces'],
+    }),
+
+    getNoteDateMarkersBySpace: builder.query<
+      GetDateMarkersBySpaceResponse,
+      GetDateMarkersBySpaceArgs
+    >({
+      query: ({ userId, spaceId, from, to }) => ({
+        url: 'home/getNoteDateMarkersBySpace',
+        method: 'GET',
+        params: { userId, spaceId, from, to },
+      }),
+      providesTags: ['Spaces'],
+    }),
+
+    getTaskDateMarkersBySpace: builder.query<
+      GetDateMarkersBySpaceResponse,
+      GetDateMarkersBySpaceArgs
+    >({
+      query: ({ userId, spaceId, from, to }) => ({
+        url: 'home/getTaskDateMarkersBySpace',
+        method: 'GET',
+        params: { userId, spaceId, from, to },
       }),
       providesTags: ['Spaces'],
     }),
@@ -612,6 +658,8 @@ export const {
   useGetStagedNotesBySpaceQuery,
   useLazyGetStagedNoteByIdQuery,
   useGetStagedTasksBySpaceQuery,
+  useGetNoteDateMarkersBySpaceQuery,
+  useGetTaskDateMarkersBySpaceQuery,
   useRegisterDeviceTokenMutation,
   useGetDailyBriefingQuery,
   useForceGenerateDailyBriefingMutation,

@@ -51,6 +51,7 @@ type DayChipProps = {
 
 type Props = {
   selectedDate: Date;
+  today?: Date;
   markedDateKeys?: Set<string>;
   onSelectDate: (date: Date) => void;
 };
@@ -116,6 +117,7 @@ DayChip.displayName = 'DayChip';
 
 const CalendarDateStrip = ({
   selectedDate,
+  today: todayProp,
   markedDateKeys,
   onSelectDate,
 }: Props) => {
@@ -125,7 +127,10 @@ const CalendarDateStrip = ({
   const monthKeyRef = useRef('');
   const didInitialScrollRef = useRef(false);
 
-  const today = useMemo(() => startOfDay(new Date()), []);
+  const today = useMemo(
+    () => startOfDay(todayProp ?? new Date()),
+    [todayProp],
+  );
   const todayKey = useMemo(() => toDateKey(today), [today]);
   const [pickerVisible, setPickerVisible] = useState(false);
   const [pickerYear, setPickerYear] = useState(selectedDate.getFullYear());

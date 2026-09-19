@@ -26,6 +26,7 @@ import { useAppSelector } from '../../store/hooks';
 import {
   useCreateCalendarEventMutation,
   useDeleteCalendarEventMutation,
+  useGetCalendarEventDateMarkersQuery,
   useGetCalendarEventsQuery,
   useUpdateCalendarEventMutation,
   type CalendarEventCard,
@@ -249,7 +250,7 @@ const CalendarScreen = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const range = useMemo(() => {
+  const markerRange = useMemo(() => {
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth();
     const from = toDateKey(new Date(year, month, 1));
@@ -258,6 +259,10 @@ const CalendarScreen = () => {
   }, [selectedDate]);
 
   const selectedKey = toDateKey(selectedDate);
+  const dayRange = useMemo(
+    () => ({ from: selectedKey, to: selectedKey }),
+    [selectedKey],
+  );
 
   const handleSelectDate = useCallback((date: Date) => {
     setSelectedDate(startOfDay(date));
@@ -267,8 +272,14 @@ const CalendarScreen = () => {
     data: eventsData,
     isFetching,
     isError,
+    isSuccess,
     refetch,
-  } = useGetCalendarEventsQuery(range, { skip: !userId });
+  } = useGetCalendarEventsQuery(dayRange, { skip: !userId });
+
+  const { data: markersData } = useGetCalendarEventDateMarkersQuery(
+    markerRange,
+    { skip: !userId },
+  );
 
   const [createEvent, { isLoading: isCreating }] =
     useCreateCalendarEventMutation();
@@ -278,23 +289,36 @@ const CalendarScreen = () => {
     useDeleteCalendarEventMutation();
 
   const isSaving = isCreating || isUpdating;
-  const allEvents = eventsData?.data?.events ?? [];
-  const dayEvents = useMemo(
-    () =>
-      allEvents
-        .filter(event => event.dateKey === selectedKey)
-        .slice()
-        .sort((first, second) => {
-          const startA = parseTimeToHours(first.startTimeLabel) ?? 0;
-          const startB = parseTimeToHours(second.startTimeLabel) ?? 0;
-          return startA - startB;
-        }),
-    [allEvents, selectedKey],
-  );
-  const daysWithEvents = useMemo(
-    () => new Set(allEvents.map(event => event.dateKey)),
-    [allEvents],
-  );
+
+  const dayEvents = useMemo(() => {
+    const events = eventsData?.data?.events ?? [];
+    // Guard against stale cache while the selected day is changing.
+    if (eventsData?.data?.date && eventsData.data.date !== selectedKey) {
+      return [];
+    }
+
+    return events
+      .filter(event => event.dateKey === selectedKey)
+      .slice()
+      .sort((first, second) => {
+        const startA = parseTimeToHours(first.startTimeLabel) ?? 0;
+        const startB = parseTimeToHours(second.startTimeLabel) ?? 0;
+        return startA - startB;
+      });
+  }, [eventsData, selectedKey]);
+
+  const daysWithEvents = useMemo(() => {
+    const keys = new Set<string>(markersData?.data?.dates ?? []);
+    if (dayEvents.length > 0) {
+      keys.add(selectedKey);
+    }
+    return keys;
+  }, [dayEvents.length, markersData?.data?.dates, selectedKey]);
+
+  const isInitialLoading =
+    Boolean(userId) &&
+    isFetching &&
+    (!isSuccess || eventsData?.data?.date !== selectedKey);
 
   const openCreateSheet = () => {
     setSheetMode('create');
@@ -408,6 +432,7 @@ const CalendarScreen = () => {
 
         <CalendarDateStrip
           selectedDate={selectedDate}
+          today={today}
           markedDateKeys={daysWithEvents}
           onSelectDate={handleSelectDate}
         />
@@ -422,11 +447,13 @@ const CalendarScreen = () => {
                   } ${selectedDate.getDate()}`}
             </Text>
             <Text style={styles.agendaSubtitle}>
-              {dayEvents.length === 0
-                ? 'No meetings scheduled'
-                : `${dayEvents.length} meeting${
-                    dayEvents.length === 1 ? '' : 's'
-                  }`}
+              {isInitialLoading
+                ? 'Loading schedule…'
+                : dayEvents.length === 0
+                  ? 'No meetings scheduled'
+                  : `${dayEvents.length} meeting${
+                      dayEvents.length === 1 ? '' : 's'
+                    }`}
             </Text>
           </View>
           {!isSameDay(selectedDate, today) ? (
@@ -464,7 +491,7 @@ const CalendarScreen = () => {
                 Sign in to add meetings and see them on your calendar.
               </Text>
             </View>
-          ) : isFetching && allEvents.length === 0 ? (
+          ) : isInitialLoading ? (
             <View style={styles.emptyState}>
               <ActivityIndicator color={colors.primary} />
               <Text style={styles.emptyCopy}>Loading your schedule…</Text>

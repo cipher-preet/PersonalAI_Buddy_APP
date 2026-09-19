@@ -47,6 +47,22 @@ interface GetCalendarEventsResponse {
   data: {
     events: CalendarEventCard[];
     windows?: Record<string, { startHour: number; endHour: number }>;
+    total?: number;
+    date?: string;
+  };
+}
+
+interface GetCalendarEventDateMarkersArgs {
+  from: string;
+  to: string;
+}
+
+interface GetCalendarEventDateMarkersResponse {
+  success: boolean;
+  data: {
+    dates: string[];
+    from: string;
+    to: string;
   };
 }
 
@@ -75,6 +91,18 @@ export const calendarApi = baseApi.injectEndpoints({
     >({
       query: ({ from, to }) => ({
         url: 'home/getCalendarEvents',
+        method: 'GET',
+        params: { from, to },
+      }),
+      providesTags: ['Calendar'],
+    }),
+
+    getCalendarEventDateMarkers: builder.query<
+      GetCalendarEventDateMarkersResponse,
+      GetCalendarEventDateMarkersArgs
+    >({
+      query: ({ from, to }) => ({
+        url: 'home/getCalendarEventDateMarkers',
         method: 'GET',
         params: { from, to },
       }),
@@ -127,9 +155,16 @@ export const calendarApi = baseApi.injectEndpoints({
                   if (!draft?.data?.events) {
                     return;
                   }
+                  const before = draft.data.events.length;
                   draft.data.events = draft.data.events.filter(
                     event => event.id !== eventId,
                   );
+                  if (
+                    typeof draft.data.total === 'number' &&
+                    draft.data.events.length < before
+                  ) {
+                    draft.data.total = Math.max(0, draft.data.total - 1);
+                  }
                 },
               ),
             ),
@@ -148,6 +183,7 @@ export const calendarApi = baseApi.injectEndpoints({
 
 export const {
   useGetCalendarEventsQuery,
+  useGetCalendarEventDateMarkersQuery,
   useCreateCalendarEventMutation,
   useUpdateCalendarEventMutation,
   useDeleteCalendarEventMutation,

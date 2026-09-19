@@ -40,6 +40,7 @@ import {
   StagedNoteCard,
   useCreateStagedNoteMutation,
   useDeleteStagedNoteMutation,
+  useGetNoteDateMarkersBySpaceQuery,
   useGetNoteWorkspacesQuery,
   useGetStagedNotesBySpaceQuery,
   useLazyGetStagedNoteByIdQuery,
@@ -147,6 +148,9 @@ const Notes = () => {
   const [selectedSpaceId, setSelectedSpaceId] = useState('');
   const [notesCursor, setNotesCursor] = useState('');
   const [loadedNotes, setLoadedNotes] = useState<StagedNoteCard[]>([]);
+  const [loadedNotesDateKey, setLoadedNotesDateKey] = useState('');
+  const [dayNotesTotal, setDayNotesTotal] = useState(0);
+  const appliedNotesCursorsRef = useRef<Set<string>>(new Set());
   const [localNotes, setLocalNotes] = useState<LocalNote[]>([]);
   const [nextNotesCursor, setNextNotesCursor] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState('');
@@ -189,10 +193,20 @@ const Notes = () => {
   );
   const isSpacesInitialLoading = isFetching && spaces.length === 0;
   const selectedSpace = spaces.find(space => space.id === selectedSpaceId);
+  const selectedDateKey = useMemo(() => toDateKey(selectedDate), [selectedDate]);
+  const markerRange = useMemo(() => {
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth();
+    const from = toDateKey(new Date(year, month, 1));
+    const to = toDateKey(new Date(year, month + 1, 0));
+    return { from, to };
+  }, [selectedDate]);
+
   const {
     data: stagedNotesData,
     isFetching: isFetchingNotes,
     isError: isNotesError,
+    isSuccess: isNotesSuccess,
     refetch: refetchNotes,
   } = useGetStagedNotesBySpaceQuery(
     {
@@ -200,49 +214,60 @@ const Notes = () => {
       spaceId: selectedSpaceId,
       limit: NOTES_PAGE_SIZE,
       cursor: notesCursor,
+      date: selectedDateKey,
+    },
+    { skip: !userId || !selectedSpaceId || !selectedDateKey },
+  );
+
+  const { data: noteMarkersData } = useGetNoteDateMarkersBySpaceQuery(
+    {
+      userId,
+      spaceId: selectedSpaceId,
+      from: markerRange.from,
+      to: markerRange.to,
     },
     { skip: !userId || !selectedSpaceId },
   );
 
-  const isInitialNotesLoading = isFetchingNotes && loadedNotes.length === 0;
-  const isLoadingMoreNotes = isFetchingNotes && loadedNotes.length > 0;
-
-  const selectedDateKey = useMemo(() => toDateKey(selectedDate), [selectedDate]);
+  const isInitialNotesLoading =
+    isFetchingNotes &&
+    (loadedNotesDateKey !== selectedDateKey || loadedNotes.length === 0) &&
+    notesCursor === '';
+  const isLoadingMoreNotes = isFetchingNotes && notesCursor !== '';
 
   const spaceLocalNotes = useMemo(
-    () => localNotes.filter(note => note.spaceId === selectedSpaceId),
-    [localNotes, selectedSpaceId],
+    () =>
+      localNotes.filter(
+        note =>
+          note.spaceId === selectedSpaceId && note.dateKey === selectedDateKey,
+      ),
+    [localNotes, selectedDateKey, selectedSpaceId],
   );
 
-  const markedDateKeys = useMemo(() => {
-    const keys = new Set<string>();
-
+  const calendarMarkedDateKeys = useMemo(() => {
+    const keys = new Set<string>(noteMarkersData?.data?.dates ?? []);
     spaceLocalNotes.forEach(note => {
       keys.add(note.dateKey);
     });
-
-    loadedNotes.forEach(note => {
-      const key = formatDateKey(note.createdAt || note.updatedAt);
-      if (key) {
-        keys.add(key);
-      }
-    });
-
+    if (loadedNotesDateKey === selectedDateKey && loadedNotes.length > 0) {
+      keys.add(selectedDateKey);
+    }
     return keys;
-  }, [loadedNotes, spaceLocalNotes]);
+  }, [
+    loadedNotes.length,
+    loadedNotesDateKey,
+    noteMarkersData?.data?.dates,
+    selectedDateKey,
+    spaceLocalNotes,
+  ]);
+
+  const dateScopedNotes =
+    loadedNotesDateKey === selectedDateKey ? loadedNotes : [];
 
   const displayedNotes = useMemo(() => {
-    const localForDate = spaceLocalNotes
-      .filter(note => note.dateKey === selectedDateKey)
-      .map(toLocalStagedNote);
-
-    const apiForDate = loadedNotes.filter(note => {
-      const key = formatDateKey(note.createdAt || note.updatedAt);
-      return key === selectedDateKey;
-    });
-
+    const localForDate = spaceLocalNotes.map(toLocalStagedNote);
     const normalizedQuery = searchQuery.trim().toLowerCase();
-    let result = [...localForDate, ...apiForDate];
+    let result = [...localForDate, ...dateScopedNotes];
 
     if (normalizedQuery) {
       result = result.filter(note => {
@@ -266,7 +291,7 @@ const Notes = () => {
     });
 
     return result;
-  }, [loadedNotes, searchQuery, selectedDateKey, sortOrder, spaceLocalNotes]);
+  }, [dateScopedNotes, searchQuery, sortOrder, spaceLocalNotes]);
 
   useFocusEffect(
     useCallback(() => {
@@ -296,19 +321,45 @@ const Notes = () => {
   useEffect(() => {
     setNotesCursor('');
     setLoadedNotes([]);
+    setLoadedNotesDateKey('');
+    setDayNotesTotal(0);
     setNextNotesCursor(null);
-  }, [selectedSpaceId]);
+    appliedNotesCursorsRef.current = new Set();
+  }, [selectedSpaceId, selectedDateKey]);
 
   useEffect(() => {
     const response = stagedNotesData?.data;
 
-    if (!response) {
+    if (!response || !isNotesSuccess || isFetchingNotes) {
       return;
     }
 
+    // Ignore stale responses from a previous date/space while args are changing.
+    if (response.date && response.date !== selectedDateKey) {
+      return;
+    }
+
+    const cursorKey = notesCursor || '__root__';
+
+    // First page: always replace. Later pages: apply once per cursor (avoids
+    // duplicates when RTK refetches the same cursor after invalidation).
+    if (notesCursor !== '' && appliedNotesCursorsRef.current.has(cursorKey)) {
+      setNextNotesCursor(response.nextCursor);
+      if (typeof response.total === 'number') {
+        setDayNotesTotal(response.total);
+      }
+      return;
+    }
+
+    appliedNotesCursorsRef.current.add(cursorKey);
     setNextNotesCursor(response.nextCursor);
+    setLoadedNotesDateKey(selectedDateKey);
+    if (typeof response.total === 'number') {
+      setDayNotesTotal(response.total);
+    }
 
     if (notesCursor === '') {
+      appliedNotesCursorsRef.current = new Set(['__root__']);
       setLoadedNotes(response.notes);
       return;
     }
@@ -316,10 +367,15 @@ const Notes = () => {
     setLoadedNotes(prev => {
       const existingIds = new Set(prev.map(note => note.id));
       const newNotes = response.notes.filter(note => !existingIds.has(note.id));
-
       return newNotes.length > 0 ? [...prev, ...newNotes] : prev;
     });
-  }, [notesCursor, stagedNotesData]);
+  }, [
+    isFetchingNotes,
+    isNotesSuccess,
+    notesCursor,
+    selectedDateKey,
+    stagedNotesData,
+  ]);
 
   const handleOpenNote = useCallback(
     (note: NoteItem) => {
@@ -386,10 +442,37 @@ const Notes = () => {
         const createdNote = response?.data?.note;
 
         if (createdNote) {
-          setLoadedNotes(prev => [
-            createdNote,
-            ...prev.filter(item => item.id !== createdNote.id),
-          ]);
+          const createdDateKey =
+            formatDateKey(createdNote.createdAt || createdNote.updatedAt) ||
+            selectedDateKey;
+
+          if (createdDateKey === selectedDateKey) {
+            setLoadedNotes(prev => [
+              createdNote,
+              ...prev.filter(item => item.id !== createdNote.id),
+            ]);
+            setLoadedNotesDateKey(selectedDateKey);
+            setDayNotesTotal(prev => prev + 1);
+          }
+
+          if (userId) {
+            dispatch(
+              homeApi.util.updateQueryData(
+                'getNoteDateMarkersBySpace',
+                {
+                  userId,
+                  spaceId: selectedSpaceId,
+                  from: markerRange.from,
+                  to: markerRange.to,
+                },
+                draft => {
+                  if (!draft?.data?.dates.includes(createdDateKey)) {
+                    draft.data.dates = [...draft.data.dates, createdDateKey].sort();
+                  }
+                },
+              ),
+            );
+          }
         }
 
         if (userId) {
@@ -427,7 +510,7 @@ const Notes = () => {
         throw error;
       }
     },
-    [createStagedNote, dispatch, selectedDateKey, selectedSpaceId, showToast, userId],
+    [createStagedNote, dispatch, markerRange.from, markerRange.to, selectedDateKey, selectedSpaceId, showToast, userId],
   );
 
   const handleRetryNoteDetail = useCallback(() => {
@@ -462,6 +545,33 @@ const Notes = () => {
         }).unwrap();
 
         setLoadedNotes(prev => prev.filter(item => item.id !== note.id));
+        setDayNotesTotal(prev => {
+          const next = Math.max(0, prev - 1);
+          if (
+            next === 0 &&
+            userId &&
+            selectedSpaceId &&
+            loadedNotesDateKey === selectedDateKey
+          ) {
+            dispatch(
+              homeApi.util.updateQueryData(
+                'getNoteDateMarkersBySpace',
+                {
+                  userId,
+                  spaceId: selectedSpaceId,
+                  from: markerRange.from,
+                  to: markerRange.to,
+                },
+                draft => {
+                  draft.data.dates = draft.data.dates.filter(
+                    key => key !== selectedDateKey,
+                  );
+                },
+              ),
+            );
+          }
+          return next;
+        });
 
         if (selectedSpaceId && userId) {
           dispatch(
@@ -503,6 +613,10 @@ const Notes = () => {
     [
       deleteStagedNote,
       dispatch,
+      loadedNotesDateKey,
+      markerRange.from,
+      markerRange.to,
+      selectedDateKey,
       selectedNoteId,
       selectedSpaceId,
       showToast,
@@ -563,7 +677,7 @@ const Notes = () => {
   );
 
   const notesListEmpty = useMemo(() => {
-    if (isInitialNotesLoading) {
+    if (isInitialNotesLoading || (isFetchingNotes && displayedNotes.length === 0)) {
       return (
         <View style={styles.stateBox}>
           <ActivityIndicator size="small" color={colors.primaryDark} />
@@ -596,17 +710,6 @@ const Notes = () => {
       );
     }
 
-    if (loadedNotes.length === 0 && spaceLocalNotes.length === 0) {
-      return (
-        <View style={styles.stateBox}>
-          <Text style={styles.emptyTitle}>No notes yet</Text>
-          <Text style={styles.stateText}>
-            Tap + to add a note for this day.
-          </Text>
-        </View>
-      );
-    }
-
     if (searchQuery.trim()) {
       return (
         <View style={styles.stateBox}>
@@ -627,14 +730,14 @@ const Notes = () => {
       </View>
     );
   }, [
+    displayedNotes.length,
+    isFetchingNotes,
     isInitialNotesLoading,
     isNotesError,
-    loadedNotes.length,
     refetchNotes,
     searchQuery,
     selectedDate,
     selectedSpaceId,
-    spaceLocalNotes.length,
   ]);
 
   const notesListFooter = useMemo(() => {
@@ -642,14 +745,16 @@ const Notes = () => {
       return null;
     }
 
-    if (nextNotesCursor) {
-      return (
-        <View style={styles.paginationFooter}>
-          <Text style={styles.paginationText}>
-            Showing {loadedNotes.length}
-            {selectedSpace?.notesCount ? ` of ${selectedSpace.notesCount}` : ''}{' '}
-            notes
-          </Text>
+    const loadedCount = dateScopedNotes.length;
+    const totalForDay = Math.max(dayNotesTotal, loadedCount);
+
+    return (
+      <View style={styles.paginationFooter}>
+        <Text style={styles.paginationText}>
+          Showing {loadedCount}
+          {totalForDay > 0 ? ` of ${totalForDay}` : ''} notes for this day
+        </Text>
+        {nextNotesCursor ? (
           <View style={styles.loadMoreWrap}>
             <TouchableOpacity
               activeOpacity={0.8}
@@ -667,28 +772,16 @@ const Notes = () => {
               )}
             </TouchableOpacity>
           </View>
-        </View>
-      );
-    }
-
-    if (loadedNotes.length >= NOTES_PAGE_SIZE) {
-      return (
-        <View style={styles.paginationFooter}>
-          <Text style={styles.paginationText}>
-            All {loadedNotes.length} notes loaded
-          </Text>
-        </View>
-      );
-    }
-
-    return null;
+        ) : null}
+      </View>
+    );
   }, [
+    dateScopedNotes.length,
+    dayNotesTotal,
     displayedNotes.length,
     handleLoadMoreNotes,
     isLoadingMoreNotes,
-    loadedNotes.length,
     nextNotesCursor,
-    selectedSpace?.notesCount,
   ]);
 
   return (
@@ -722,7 +815,7 @@ const Notes = () => {
 
       <NotesCalendarStrip
         selectedDate={selectedDate}
-        markedDateKeys={markedDateKeys}
+        markedDateKeys={calendarMarkedDateKeys}
         onSelectDate={setSelectedDate}
         onAddPress={handleOpenAddNote}
       />
@@ -730,7 +823,7 @@ const Notes = () => {
       <FlatList
         data={
           displayedNotes.length === 0 &&
-          (isInitialNotesLoading || isNotesError)
+          (isInitialNotesLoading || isNotesError || isFetchingNotes)
             ? []
             : displayedNotes
         }
