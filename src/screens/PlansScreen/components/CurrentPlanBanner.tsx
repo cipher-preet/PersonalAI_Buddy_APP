@@ -14,7 +14,6 @@ import {
   fontWeight,
   ms,
   radii,
-  shadows,
   spacing,
 } from '../../../theme';
 
@@ -137,9 +136,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: radii['2xl'],
     padding: spacing['2xl'],
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.card,
   },
 
   topRow: {
@@ -202,7 +200,7 @@ const styles = StyleSheet.create({
   statChip: {
     flex: 1,
     minHeight: ms(56),
-    borderRadius: radii.md,
+    borderRadius: radii.lg,
     backgroundColor: colors.inputBg,
     alignItems: 'center',
     justifyContent: 'center',

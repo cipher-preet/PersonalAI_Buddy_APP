@@ -5,7 +5,6 @@ import React, {
   useState,
 } from 'react';
 import {
-  ActivityIndicator,
   BackHandler,
   Keyboard,
   KeyboardEvent,
@@ -18,17 +17,20 @@ import {
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
-  BottomSheetTextInput,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
+  SheetPrimaryButton,
+  SheetTextField,
+  sheetFormStyles,
+} from '../../../components/sheet/SheetFormControls';
+import {
   colors,
   fontSize,
   fontWeight,
   ms,
-  mvs,
   radii,
   spacing,
 } from '../../../theme';
@@ -121,20 +123,6 @@ const AddNoteBottomSheet = forwardRef<BottomSheetModal, Props>(
       return () => subscription.remove();
     }, [handleClose, isSheetOpen]);
 
-    const handleTitleChange = (value: string) => {
-      setTitle(value);
-      if (titleError) {
-        setTitleError('');
-      }
-    };
-
-    const handleDescriptionChange = (value: string) => {
-      setDescription(value);
-      if (descriptionError) {
-        setDescriptionError('');
-      }
-    };
-
     const handleSave = async () => {
       if (isSaving) {
         return;
@@ -210,55 +198,49 @@ const AddNoteBottomSheet = forwardRef<BottomSheetModal, Props>(
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.fieldLabel}>Title</Text>
-          <BottomSheetTextInput
-            value={title}
-            onChangeText={handleTitleChange}
-            placeholder="Note title"
-            placeholderTextColor={colors.muted}
-            style={[styles.input, titleError && styles.inputError]}
-            autoFocus={isSheetOpen}
-            returnKeyType="next"
-            maxLength={80}
-            editable={!isSaving}
-          />
-          {titleError ? (
-            <Text style={styles.errorText}>{titleError}</Text>
-          ) : null}
+          <View style={sheetFormStyles.section}>
+            <SheetTextField
+              label="Title"
+              value={title}
+              onChangeText={value => {
+                setTitle(value);
+                if (titleError) {
+                  setTitleError('');
+                }
+              }}
+              placeholder="Type here..."
+              error={titleError}
+              autoFocus={isSheetOpen}
+              returnKeyType="next"
+              maxLength={80}
+              editable={!isSaving}
+              containerStyle={styles.fieldSpacing}
+            />
 
-          <Text style={[styles.fieldLabel, styles.descriptionLabel]}>
-            Description
-          </Text>
-          <BottomSheetTextInput
-            value={description}
-            onChangeText={handleDescriptionChange}
-            placeholder="Write a short description..."
-            placeholderTextColor={colors.muted}
-            style={[
-              styles.descriptionInput,
-              descriptionError && styles.inputError,
-            ]}
-            multiline
-            textAlignVertical="top"
-            maxLength={500}
-            editable={!isSaving}
-          />
-          {descriptionError ? (
-            <Text style={styles.errorText}>{descriptionError}</Text>
-          ) : null}
+            <SheetTextField
+              label="Description"
+              value={description}
+              onChangeText={value => {
+                setDescription(value);
+                if (descriptionError) {
+                  setDescriptionError('');
+                }
+              }}
+              placeholder="Write a short description..."
+              error={descriptionError}
+              multiline
+              maxLength={500}
+              editable={!isSaving}
+              containerStyle={styles.fieldSpacingLast}
+            />
+          </View>
 
-          <TouchableOpacity
-            activeOpacity={0.86}
-            style={[styles.button, !canSave && styles.buttonDisabled]}
+          <SheetPrimaryButton
+            label="Save note"
             onPress={handleSave}
             disabled={!canSave}
-          >
-            {isSaving ? (
-              <ActivityIndicator color={colors.white} />
-            ) : (
-              <Text style={styles.buttonText}>Save note</Text>
-            )}
-          </TouchableOpacity>
+            loading={isSaving}
+          />
         </BottomSheetView>
       </BottomSheetModal>
     );
@@ -331,73 +313,11 @@ const styles = StyleSheet.create({
     marginTop: -ms(1),
   },
 
-  fieldLabel: {
-    marginBottom: spacing.sm,
-    color: colors.black,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.bold,
+  fieldSpacing: {
+    marginBottom: spacing.lg,
   },
 
-  descriptionLabel: {
-    marginTop: spacing.xl,
-  },
-
-  input: {
-    height: mvs(52),
-    borderRadius: ms(16),
-    paddingHorizontal: spacing.xl,
-    backgroundColor: colors.inputBg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderLight,
-    color: colors.black,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.medium,
-  },
-
-  inputError: {
-    borderColor: colors.error,
-    backgroundColor: colors.errorSoft,
-  },
-
-  errorText: {
-    marginTop: spacing.sm,
-    marginLeft: spacing.md,
-    color: colors.error,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
-  },
-
-  descriptionInput: {
-    minHeight: mvs(112),
-    borderRadius: ms(16),
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xl,
-    backgroundColor: colors.inputBg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderLight,
-    color: colors.black,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.medium,
-    lineHeight: ms(22),
-  },
-
-  button: {
-    height: mvs(52),
-    marginTop: spacing['2xl'],
-    borderRadius: ms(16),
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  buttonDisabled: {
-    opacity: 0.45,
-  },
-
-  buttonText: {
-    color: colors.white,
-    fontSize: fontSize.xl,
-    fontWeight: fontWeight.bold,
+  fieldSpacingLast: {
+    marginBottom: 0,
   },
 });

@@ -6,7 +6,6 @@ import React, {
   useState,
 } from 'react';
 import {
-  ActivityIndicator,
   BackHandler,
   Keyboard,
   Platform,
@@ -39,6 +38,7 @@ import {
   toDateKey,
 } from '../calendarUtils';
 import {
+  SheetPrimaryButton,
   SheetSegmentedControl,
   SheetTextField,
   SheetToggleRow,
@@ -48,7 +48,6 @@ import {
   colors,
   fontSize,
   fontWeight,
-  layout,
   ms,
   mvs,
   radii,
@@ -600,7 +599,7 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
                 How Buddy should reach you
               </Text>
 
-              <View style={sheetFormStyles.groupCard}>
+              <View style={sheetFormStyles.toggleStack}>
                 <SheetToggleRow
                   title="Alarm sound"
                   subtitle="Alarm-style sound with the alert"
@@ -608,7 +607,6 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
                   onValueChange={setBeeping}
                   icon={<BeepIcon color={colors.success} />}
                   iconTone="success"
-                  showDivider
                 />
                 <SheetToggleRow
                   title="Buddy call"
@@ -621,20 +619,11 @@ const EventBottomSheet = forwardRef<BottomSheetModal, Props>(
               </View>
             </View>
 
-            <TouchableOpacity
-              activeOpacity={0.88}
-              style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+            <SheetPrimaryButton
+              label={isCreateMode ? 'Save event' : 'Save changes'}
               onPress={handleSave}
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <ActivityIndicator color={colors.white} />
-              ) : (
-                <Text style={styles.saveButtonText}>
-                  {isCreateMode ? 'Save event' : 'Save changes'}
-                </Text>
-              )}
-            </TouchableOpacity>
+              loading={isSaving}
+            />
 
             {!isCreateMode && onDelete ? (
               <TouchableOpacity
@@ -698,7 +687,7 @@ export default EventBottomSheet;
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
     borderTopLeftRadius: ms(28),
     borderTopRightRadius: ms(28),
   },
@@ -724,19 +713,17 @@ const styles = StyleSheet.create({
     width: ms(32),
     height: ms(32),
     borderRadius: ms(16),
-    backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    backgroundColor: colors.lightGray,
     alignItems: 'center',
     justifyContent: 'center',
   },
   sheetTitle: {
-    color: colors.text,
+    color: colors.black,
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
   },
   fieldSpacing: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   fieldSpacingLast: {
     marginBottom: 0,
@@ -746,16 +733,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    minHeight: ms(64),
+    paddingVertical: spacing.sm,
+    minHeight: ms(52),
   },
   scheduleRowActive: {
     backgroundColor: colors.primarySoft,
   },
   metaIcon: {
-    width: ms(40),
-    height: ms(40),
-    borderRadius: ms(12),
+    width: ms(34),
+    height: ms(34),
+    borderRadius: radii.sm,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
@@ -803,25 +790,9 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
     paddingBottom: spacing.lg,
   },
-  saveButton: {
-    minHeight: layout.buttonHeight,
-    borderRadius: radii.xl,
-    backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing.sm,
-  },
-  saveButtonDisabled: {
-    opacity: 0.7,
-  },
-  saveButtonText: {
-    color: colors.white,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
-  },
   deleteButton: {
     minHeight: ms(48),
-    borderRadius: radii.xl,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.md,

@@ -8,7 +8,6 @@ import {
   fontWeight,
   ms,
   radii,
-  shadows,
   spacing,
 } from '../../../theme';
 import type { UiPlan } from '../planCatalog';
@@ -113,10 +112,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: radii['2xl'],
     padding: spacing['2xl'],
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
     gap: spacing.lg,
-    ...shadows.card,
   },
 
   topRow: {
@@ -140,7 +138,7 @@ const styles = StyleSheet.create({
   iconWrap: {
     width: ms(28),
     height: ms(28),
-    borderRadius: ms(14),
+    borderRadius: radii.sm,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',

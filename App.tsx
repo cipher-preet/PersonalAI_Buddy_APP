@@ -13,7 +13,8 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { colors } from './src/theme';
 import CustomToast from './src/components/CustomToast';
 import RootNavigator from './src/navigation/RootNavigator';
-import { ToastProvider, useToast } from './src/store/context/ToastContext';
+import { ListeningProvider } from './src/store/context/ListeningContext';
+import { ToastProvider, useToast, useToastState } from './src/store/context/ToastContext';
 import { store } from './src/store/store';
 import { configureGoogleSignIn } from './src/services/googleSignInService';
 import { setupReminderNotifications } from './src/services/reminderNotificationService';
@@ -36,8 +37,8 @@ const AppContent = () => {
     toastDescription,
     toastType,
     toastDuration,
-    hideToast,
-  } = useToast();
+  } = useToastState();
+  const { hideToast } = useToast();
 
   return (
     <>
@@ -73,7 +74,9 @@ const App = () => {
     <Provider store={store}>
       <SafeAreaProvider>
         <ToastProvider>
-          <AppContent />
+          <ListeningProvider>
+            <AppContent />
+          </ListeningProvider>
         </ToastProvider>
       </SafeAreaProvider>
     </Provider>

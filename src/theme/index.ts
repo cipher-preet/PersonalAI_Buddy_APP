@@ -20,7 +20,7 @@ export {
   contentMaxWidth,
   useMs,
 } from './responsive';
-export { listPerf, chatListPerf, scrollThrottle, motion } from './performance';
+export { listPerf, chatListPerf, scrollThrottle, motion, listeningWaveCount } from './performance';
 
 import { colors } from './colors';
 import { fontSize, fontWeight, typography } from './typography';
@@ -42,6 +42,7 @@ import {
   chatListPerf,
   scrollThrottle,
   motion,
+  listeningWaveCount,
 } from './performance';
 
 /** Single import: `import { theme } from '../theme'` */
@@ -69,6 +70,7 @@ export const theme = {
   chatListPerf,
   scrollThrottle,
   motion,
+  listeningWaveCount,
 } as const;
 
 export default theme;

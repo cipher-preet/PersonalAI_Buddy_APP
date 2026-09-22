@@ -201,14 +201,14 @@ export default memo(NoteCard);
 const styles = StyleSheet.create({
   shadowWrap: {
     marginBottom: layout.listGap,
-    borderRadius: radii.xl,
+    borderRadius: radii['2xl'],
     backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
   },
 
   card: {
-    borderRadius: radii.xl,
+    borderRadius: radii['2xl'],
     backgroundColor: colors.white,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,

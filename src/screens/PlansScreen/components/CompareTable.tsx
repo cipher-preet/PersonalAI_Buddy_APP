@@ -8,7 +8,6 @@ import {
   fontWeight,
   ms,
   radii,
-  shadows,
   spacing,
 } from '../../../theme';
 import type { CompareIcon, CompareRow, UiPlan, UiPlanId } from '../planCatalog';
@@ -214,9 +213,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing['2xl'],
     paddingTop: spacing['2xl'],
     paddingBottom: spacing.md,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.card,
   },
 
   heading: {
@@ -279,7 +277,7 @@ const styles = StyleSheet.create({
   iconWrap: {
     width: ms(34),
     height: ms(34),
-    borderRadius: ms(17),
+    borderRadius: radii.sm,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',

@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
-import Svg, { Defs, LinearGradient as SvgGradient, Path, Stop } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import {
   BottomSheetBackdrop,
@@ -29,7 +29,6 @@ import {
   layout,
   ms,
   radii,
-  shadows,
   spacing,
 } from '../../theme';
 import { useToast } from '../../store/context/ToastContext';
@@ -72,28 +71,6 @@ const BackIcon = () => (
       stroke={colors.text}
       strokeWidth={2}
       strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const DiamondIcon = () => (
-  <Svg width={ms(44)} height={ms(44)} viewBox="0 0 48 48" fill="none">
-    <Defs>
-      <SvgGradient id="diamondGrad" x1="8" y1="6" x2="40" y2="42">
-        <Stop offset="0%" stopColor={colors.upgradeGradientStart} />
-        <Stop offset="55%" stopColor={colors.upgradeGradientMid} />
-        <Stop offset="100%" stopColor={colors.upgradeGradientEnd} />
-      </SvgGradient>
-    </Defs>
-    <Path
-      d="M24 6.5 39.5 18.2 24 41.5 8.5 18.2 24 6.5Z"
-      fill="url(#diamondGrad)"
-    />
-    <Path
-      d="M8.5 18.2h31M16.2 18.2 24 41.5M31.8 18.2 24 41.5M16.2 18.2 24 6.5M31.8 18.2 24 6.5"
-      stroke="rgba(255,255,255,0.55)"
-      strokeWidth={1.4}
       strokeLinejoin="round"
     />
   </Svg>
@@ -428,16 +405,6 @@ const PlansScreen = () => {
             },
           ]}
         >
-          <View style={styles.hero}>
-            <View style={styles.heroIconWrap}>
-              <DiamondIcon />
-            </View>
-            <Text style={styles.heroTitle}>Get Premium!</Text>
-            <Text style={styles.heroSubtitle}>
-              Supercharge your productivity with Buddy.
-            </Text>
-          </View>
-
           {planStatus ? <CurrentPlanBanner planStatus={planStatus} /> : null}
 
           <View style={styles.billingBlock}>
@@ -658,11 +625,11 @@ const styles = StyleSheet.create({
   headerButton: {
     width: layout.headerButton,
     height: layout.headerButton,
-    borderRadius: layout.headerButton / 2,
+    borderRadius: radii.sm,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
   },
 
@@ -678,42 +645,6 @@ const styles = StyleSheet.create({
     gap: spacing['2xl'],
   },
 
-  hero: {
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-  },
-
-  heroIconWrap: {
-    width: ms(72),
-    height: ms(72),
-    borderRadius: ms(24),
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.brandBorder,
-    ...shadows.card,
-  },
-
-  heroTitle: {
-    marginTop: spacing.xl,
-    color: colors.text,
-    fontSize: ms(28),
-    fontWeight: fontWeight.extrabold,
-    letterSpacing: -0.6,
-    textAlign: 'center',
-  },
-
-  heroSubtitle: {
-    marginTop: spacing.sm,
-    color: colors.subText,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.medium,
-    textAlign: 'center',
-    lineHeight: ms(22),
-  },
-
   billingBlock: {
     gap: spacing.md,
   },
@@ -726,14 +657,13 @@ const styles = StyleSheet.create({
 
   loaderCard: {
     minHeight: ms(140),
-    borderRadius: radii.xl,
+    borderRadius: radii['2xl'],
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing['2xl'],
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.card,
   },
 
   loaderTitle: {
@@ -765,17 +695,16 @@ const styles = StyleSheet.create({
     bottom: 0,
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.md,
-    backgroundColor: 'rgba(247,247,251,0.96)',
-    borderTopWidth: StyleSheet.hairlineWidth,
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
     borderTopColor: colors.border,
   },
 
   primaryButton: {
     minHeight: layout.buttonHeight,
-    borderRadius: radii.lg,
+    borderRadius: radii['2xl'],
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.primary,
   },
 
   primaryButtonDisabled: {
@@ -806,8 +735,8 @@ const styles = StyleSheet.create({
 
   sheetBackground: {
     backgroundColor: colors.white,
-    borderTopLeftRadius: ms(28),
-    borderTopRightRadius: ms(28),
+    borderTopLeftRadius: radii['2xl'],
+    borderTopRightRadius: radii['2xl'],
   },
 
   sheetIndicator: {
@@ -825,9 +754,9 @@ const styles = StyleSheet.create({
 
   sheetHero: {
     backgroundColor: colors.primarySoft,
-    borderRadius: radii.xl,
+    borderRadius: radii['2xl'],
     padding: spacing['2xl'],
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.brandBorder,
   },
 
@@ -888,7 +817,7 @@ const styles = StyleSheet.create({
   },
 
   featuresBox: {
-    borderRadius: radii.xl,
+    borderRadius: radii['2xl'],
     backgroundColor: colors.inputBg,
     padding: spacing.lg,
     gap: spacing.md,
@@ -917,9 +846,9 @@ const styles = StyleSheet.create({
   },
 
   sheetLanguages: {
-    borderRadius: radii.xl,
+    borderRadius: radii['2xl'],
     backgroundColor: colors.primarySoft,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.brandBorder,
     padding: spacing.lg,
     gap: spacing.md,
@@ -942,7 +871,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radii.pill,
     backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.brandBorder,
   },
 
@@ -954,10 +883,9 @@ const styles = StyleSheet.create({
 
   subscribeButton: {
     minHeight: layout.buttonHeight,
-    borderRadius: radii.lg,
+    borderRadius: radii['2xl'],
     alignItems: 'center',
     justifyContent: 'center',
-    ...shadows.primary,
   },
 
   subscribeDisabled: {

@@ -248,13 +248,13 @@ const styles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
     minHeight: ms(108),
-    borderRadius: radii.xl,
+    borderRadius: radii['2xl'],
     backgroundColor: colors.white,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: spacing.sm,
     justifyContent: 'space-between',
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: 'transparent',
   },
 
@@ -272,7 +272,7 @@ const styles = StyleSheet.create({
   iconWrap: {
     width: ms(26),
     height: ms(26),
-    borderRadius: ms(9),
+    borderRadius: radii.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -323,12 +323,12 @@ const styles = StyleSheet.create({
   stateCard: {
     width: CARD_WIDTH,
     minHeight: ms(108),
-    borderRadius: radii.xl,
+    borderRadius: radii['2xl'],
     backgroundColor: colors.white,
     paddingHorizontal: spacing.lg,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
   },
 

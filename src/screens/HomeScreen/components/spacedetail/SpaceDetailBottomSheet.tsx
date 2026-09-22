@@ -194,7 +194,7 @@ export default SpaceDetailBottomSheet;
 
 const styles = StyleSheet.create({
   sheetBackground: {
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
     borderTopLeftRadius: ms(28),
     borderTopRightRadius: ms(28),
   },

@@ -8,7 +8,6 @@ import {
   fontWeight,
   ms,
   radii,
-  shadows,
   spacing,
 } from '../../../theme';
 
@@ -88,9 +87,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: radii['2xl'],
     padding: spacing['2xl'],
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
-    ...shadows.card,
   },
 
   heading: {
@@ -139,7 +137,7 @@ const styles = StyleSheet.create({
   chevron: {
     width: ms(28),
     height: ms(28),
-    borderRadius: ms(14),
+    borderRadius: radii.sm,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',

@@ -4,9 +4,9 @@
  */
 export const colors = {
   // Surfaces
-  background: '#F7F7FB',
-  gradientStart: '#F9F7FF',
-  gradientMid: '#EFF3FF',
+  background: '#FFFFFF',
+  gradientStart: '#FFFFFF',
+  gradientMid: '#FFFFFF',
   gradientEnd: '#FFFFFF',
   white: '#FFFFFF',
   inputBg: '#F8FAFC',

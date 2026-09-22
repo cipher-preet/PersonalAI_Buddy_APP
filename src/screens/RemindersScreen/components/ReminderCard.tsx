@@ -149,7 +149,7 @@ export default memo(ReminderCard);
 const styles = StyleSheet.create({
   shadowWrap: {
     borderRadius: radii['2xl'],
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
   },
 

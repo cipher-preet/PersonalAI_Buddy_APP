@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -10,21 +10,15 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import { COLORS } from '../styles';
-import {
-  colors,
-  fontSize,
-  fontWeight,
-  ms,
-  radii,
-  spacing,
-} from '../../../theme';
+import { CHAT } from '../styles';
+import { ms, radii, spacing } from '../../../theme';
 
-const DOT_SIZE = ms(7);
-const BOUNCE_HEIGHT = -ms(5);
+const DOT_SIZE = ms(6);
+const BOUNCE_HEIGHT = -ms(3);
 
 const Dot = ({ delay }: { delay: number }) => {
   const translateY = useSharedValue(0);
+  const opacity = useSharedValue(0.35);
 
   useEffect(() => {
     translateY.value = withDelay(
@@ -32,11 +26,11 @@ const Dot = ({ delay }: { delay: number }) => {
       withRepeat(
         withSequence(
           withTiming(BOUNCE_HEIGHT, {
-            duration: 320,
+            duration: 280,
             easing: Easing.out(Easing.quad),
           }),
           withTiming(0, {
-            duration: 320,
+            duration: 280,
             easing: Easing.in(Easing.quad),
           }),
           withTiming(0, { duration: 280 }),
@@ -45,9 +39,23 @@ const Dot = ({ delay }: { delay: number }) => {
         false,
       ),
     );
-  }, [delay, translateY]);
+
+    opacity.value = withDelay(
+      delay,
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration: 280 }),
+          withTiming(0.35, { duration: 280 }),
+          withTiming(0.35, { duration: 280 }),
+        ),
+        -1,
+        false,
+      ),
+    );
+  }, [delay, opacity, translateY]);
 
   const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
     transform: [{ translateY: translateY.value }],
   }));
 
@@ -58,12 +66,9 @@ const TypingIndicator = () => {
   return (
     <View style={styles.row}>
       <View style={styles.bubble}>
-        <View style={styles.dotsRow}>
-          <Dot delay={0} />
-          <Dot delay={140} />
-          <Dot delay={280} />
-        </View>
-        <Text style={styles.label}>Buddy is typing</Text>
+        <Dot delay={0} />
+        <Dot delay={150} />
+        <Dot delay={300} />
       </View>
     </View>
   );
@@ -73,40 +78,24 @@ export default TypingIndicator;
 
 const styles = StyleSheet.create({
   row: {
-    marginTop: spacing.md,
     alignItems: 'flex-start',
   },
 
   bubble: {
-    maxWidth: '72%',
-    backgroundColor: COLORS.aiBubble,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
-    borderRadius: radii.xl,
-    borderBottomLeftRadius: radii.xs,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.primaryLight,
-  },
-
-  dotsRow: {
+    minHeight: ms(36),
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    height: ms(18),
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radii.pill,
+    backgroundColor: CHAT.surfaceMuted,
   },
 
   dot: {
     width: DOT_SIZE,
     height: DOT_SIZE,
     borderRadius: DOT_SIZE / 2,
-    backgroundColor: COLORS.primarySoft,
-  },
-
-  label: {
-    marginTop: spacing.xs,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    color: COLORS.muted,
-    letterSpacing: 0.1,
+    backgroundColor: CHAT.typingDot,
   },
 });

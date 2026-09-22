@@ -9,7 +9,6 @@ import {
   fontWeight,
   ms,
   radii,
-  shadows,
   spacing,
 } from '../../../theme';
 import type { BillingCycle, UiPlan } from '../planCatalog';
@@ -166,22 +165,20 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     minHeight: ms(148),
-    borderRadius: radii.xl,
+    borderRadius: radii['2xl'],
     backgroundColor: colors.white,
-    borderWidth: 1.5,
+    borderWidth: 1,
     borderColor: colors.border,
     paddingHorizontal: spacing.md,
     paddingTop: spacing['2xl'],
     paddingBottom: spacing.xl,
     alignItems: 'center',
     overflow: 'hidden',
-    ...shadows.soft,
   },
 
   cardSelected: {
     backgroundColor: colors.primarySoft,
     borderColor: colors.primary,
-    ...shadows.card,
   },
 
   cardFeaturedSelected: {
@@ -201,8 +198,8 @@ const styles = StyleSheet.create({
     maxWidth: '92%',
     paddingHorizontal: spacing.sm,
     paddingVertical: ms(3),
-    borderTopLeftRadius: radii.xl,
-    borderBottomRightRadius: radii.md,
+    borderTopLeftRadius: radii['2xl'],
+    borderBottomRightRadius: radii.sm,
     backgroundColor: colors.primary,
     zIndex: 2,
   },

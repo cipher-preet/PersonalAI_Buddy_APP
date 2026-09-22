@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   StyleSheet,
   View,
   Text,
@@ -15,15 +16,16 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import Header from './components/Header';
 import QuickActionsStrip from './components/QuickActionsStrip';
 import TopCard from './components/TopCard';
+import ListeningControlCard from './components/ListeningControlCard';
 import SpacesGrid from './components/SpacesGrid';
 import SpacesEmptyState from './components/SpacesEmptyState';
 import SpaceDetailBottomSheet from './components/spacedetail/SpaceDetailBottomSheet';
 import {
   AddSpace,
-  MicIcon,
 } from '../../../styles/icons';
 import VoiceAssistantSheet from './components/voice-sheet/VoiceAssistantSheet';
 
+import { useListening } from '../../store/context/ListeningContext';
 import { useToast } from '../../store/context/ToastContext';
 import { useAppSelector } from '../../store/hooks';
 
@@ -64,6 +66,7 @@ import {
   ms,
   mvs,
   radii,
+  scrollThrottle,
   spacing,
   vSpacing,
 } from '../../theme';
@@ -76,13 +79,23 @@ import {
 } from '../../utils/planLimitError';
 import {
   UNLIMITED_LIMIT,
-  formatClock,
-  formatHoursShort,
   getRecordingRemainingMs,
   hasReachedCountLimit,
 } from '../../utils/planUsage';
+import { devLog } from '../../utils/logger';
 
 const SPACE_PAGE_LIMIT = 10;
+
+const HOME_GRADIENT_COLORS = [
+  colors.gradientStart,
+  colors.gradientMid,
+  colors.background,
+  colors.gradientEnd,
+];
+const HOME_GRADIENT_LOCATIONS = [0, 0.2, 0.65, 1];
+const HOME_GRADIENT_START = { x: 0, y: 0 };
+const HOME_GRADIENT_END = { x: 1, y: 1 };
+const emptyRenderItem = () => null;
 
 type SpaceProcessingState = {
   status?: string;
@@ -160,13 +173,13 @@ const Home = () => {
 
   const [isListening, setIsListening] = useState(false);
   const [isUploadingVoice, setIsUploadingVoice] = useState(false);
-  const [nowTs, setNowTs] = useState(Date.now());
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [upgradeResource, setUpgradeResource] =
     useState<PlanLimitResource>('spaces');
   const listeningStartedAtRef = useRef<number | null>(null);
   const stopListeningRef = useRef<() => Promise<void>>(async () => undefined);
   const exhaustedPromptedRef = useRef(false);
+  const forceStoppedListeningRef = useRef(false);
   const [spaces, setSpaces] = useState<Space[]>([]);
   const [spaceProcessing, setSpaceProcessing] = useState<
     Record<string, SpaceProcessingState>
@@ -178,6 +191,12 @@ const Home = () => {
   const userId = useAppSelector(state => state.auth.userId) ?? '';
   const authToken = useAppSelector(state => state.auth.token);
   const { showToast } = useToast();
+  const {
+    startListeningSession: registerListeningBar,
+    updateListeningSession,
+    clearListeningSession,
+    startedAt: listeningSessionStartedAt,
+  } = useListening();
   const [startListning] = useStartListningMutation();
   const [deleteSpace, { isLoading: isDeletingSpace }] =
     useDeleteSpaceMutation();
@@ -294,7 +313,7 @@ const Home = () => {
       token: authToken,
       onStatusChange: handleStatusChange,
       onError: error => {
-        console.log('Conversation status SSE error:', error);
+        devLog('Conversation status SSE error:', error);
       },
     });
 
@@ -322,12 +341,12 @@ const Home = () => {
     const recordingContext = recordingContextRef.current;
 
     if (!recordingContext) {
-      console.log('Voice upload skipped: missing recording context.');
+      devLog('Voice upload skipped: missing recording context.');
       return Promise.resolve();
     }
 
     updateUploadingState(1);
-    console.log('Voice upload queued:', {
+    devLog('Voice upload queued:', {
       filePath: recording.path,
       durationMs: recording.durationMs,
       spaceId: recordingContext.spaceId,
@@ -352,7 +371,7 @@ const Home = () => {
             message: 'Voice upload failed. Try again.',
             type: 'error',
           });
-          console.log('Voice upload failed:', error);
+          devLog('Voice upload failed:', error);
         } finally {
           updateUploadingState(-1);
         }
@@ -378,7 +397,6 @@ const Home = () => {
         mode,
       };
       listeningStartedAtRef.current = Date.now();
-      setNowTs(Date.now());
 
       await requestVoiceListeningPermissions();
 
@@ -399,38 +417,37 @@ const Home = () => {
 
       await startVoiceRecordingWithSilenceDetection({
         onSegmentReady: async recording => {
-          showToast({
-            message: 'Sending voice chunk...',
-            type: 'success',
-          });
           await enqueueRecordedVoiceUpload(recording);
         },
         onSilenceDetected: async recording => {
-          showToast({
-            message: 'Sending voice chunk...',
-            type: 'success',
-          });
           await enqueueRecordedVoiceUpload(recording);
         },
         stopOnSilence: false,
       });
 
       setIsListening(true);
+      forceStoppedListeningRef.current = false;
+      registerListeningBar({
+        spaceName: voiceSpace.spacename || 'Space',
+        startedAt: listeningStartedAtRef.current || Date.now(),
+        onStop: () => stopListeningRef.current(),
+      });
       showToast({ message: 'Recording started. Speak now.', type: 'success' });
     } catch (error) {
-      console.log('START ERROR:', error);
+      devLog('START ERROR:', error);
       const failedContext = recordingContextRef.current;
       recordingContextRef.current = null;
       setIsListening(false);
+      clearListeningSession();
       await stopBackgroundListeningNotification().catch(serviceError => {
-        console.log('Unable to stop listening notification:', serviceError);
+        devLog('Unable to stop listening notification:', serviceError);
       });
       if (failedContext?.spaceId) {
         await endListeningSession({
           userId,
           spaceId: failedContext.spaceId,
         }).catch(serviceError => {
-          console.log('Unable to end failed listening session:', serviceError);
+          devLog('Unable to end failed listening session:', serviceError);
         });
       }
       try {
@@ -439,7 +456,7 @@ const Home = () => {
           isListning: false,
         }).unwrap();
       } catch (statusError) {
-        console.log('Unable to reset listening status:', statusError);
+        devLog('Unable to reset listening status:', statusError);
       }
       if (isPlanLimitError(error)) {
         setUpgradeResource(getPlanLimitResource(error) || 'recordingHours');
@@ -461,61 +478,85 @@ const Home = () => {
 
   const isUserListening = activeSpace?.isListning === true;
   const isVoiceActive = isListening || isUserListening;
-  const elapsedMs = listeningStartedAtRef.current
-    ? Math.max(0, nowTs - listeningStartedAtRef.current)
-    : 0;
-  const remainingMs = getRecordingRemainingMs(
-    planStatus,
-    isVoiceActive ? elapsedMs : 0,
-  );
+  const remainingMs = getRecordingRemainingMs(planStatus, 0);
   const upgradePrompt = getPlanLimitPrompt(upgradeResource);
 
   useEffect(() => {
     if (!isVoiceActive) {
       listeningStartedAtRef.current = null;
       exhaustedPromptedRef.current = false;
+      forceStoppedListeningRef.current = false;
+      clearListeningSession();
       return;
     }
 
-    if (listeningStartedAtRef.current) {
+    if (forceStoppedListeningRef.current) {
+      clearListeningSession();
       return;
     }
 
-    const startedAt = activeSpace?.listeningStartedAt
-      ? new Date(activeSpace.listeningStartedAt).getTime()
-      : Date.now();
-    listeningStartedAtRef.current = Number.isNaN(startedAt)
-      ? Date.now()
-      : startedAt;
-  }, [activeSpace?.listeningStartedAt, isVoiceActive]);
+    if (!listeningStartedAtRef.current) {
+      const startedAt = activeSpace?.listeningStartedAt
+        ? new Date(activeSpace.listeningStartedAt).getTime()
+        : Date.now();
+      listeningStartedAtRef.current = Number.isNaN(startedAt)
+        ? Date.now()
+        : startedAt;
+    }
+
+    registerListeningBar({
+      spaceName: activeSpace?.spacename || 'Space',
+      startedAt: listeningStartedAtRef.current,
+      onStop: () => stopListeningRef.current(),
+    });
+  }, [
+    activeSpace?.listeningStartedAt,
+    activeSpace?.spacename,
+    clearListeningSession,
+    isVoiceActive,
+    registerListeningBar,
+  ]);
+
+  useEffect(() => {
+    if (
+      !isVoiceActive ||
+      forceStoppedListeningRef.current ||
+      !activeSpace?.spacename
+    ) {
+      return;
+    }
+
+    updateListeningSession({ spaceName: activeSpace.spacename });
+  }, [activeSpace?.spacename, isVoiceActive, updateListeningSession]);
 
   useEffect(() => {
     if (!isVoiceActive) {
       return;
     }
 
-    const timer = setInterval(() => {
-      setNowTs(Date.now());
-    }, 1000);
+    const checkExhausted = () => {
+      const elapsed = listeningStartedAtRef.current
+        ? Math.max(0, Date.now() - listeningStartedAtRef.current)
+        : 0;
+      const left = getRecordingRemainingMs(planStatus, elapsed);
+      if (
+        left === UNLIMITED_LIMIT ||
+        left > 0 ||
+        exhaustedPromptedRef.current
+      ) {
+        return;
+      }
 
+      exhaustedPromptedRef.current = true;
+      setUpgradeResource('recordingHours');
+      setShowUpgradePrompt(true);
+      stopListeningRef.current();
+    };
+
+    checkExhausted();
+    const timer = setInterval(checkExhausted, 5000);
     return () => clearInterval(timer);
-  }, [isVoiceActive]);
-
-  useEffect(() => {
-    if (
-      !isVoiceActive ||
-      remainingMs === UNLIMITED_LIMIT ||
-      remainingMs > 0 ||
-      exhaustedPromptedRef.current
-    ) {
-      return;
-    }
-
-    exhaustedPromptedRef.current = true;
-    setUpgradeResource('recordingHours');
-    setShowUpgradePrompt(true);
-    stopListeningRef.current();
-  }, [isVoiceActive, remainingMs]);
+  }, [isVoiceActive, planStatus]);
 
   /**
    * OPEN BOTTOM SHEET
@@ -538,7 +579,7 @@ const Home = () => {
       if (recordingContext) {
         const recording = await stopVoiceRecording();
         await stopBackgroundListeningNotification().catch(serviceError => {
-          console.log('Unable to stop listening notification:', serviceError);
+          devLog('Unable to stop listening notification:', serviceError);
         });
         showToast({
           message: 'Recording stopped. Sending final voice...',
@@ -547,7 +588,7 @@ const Home = () => {
 
         const finalUpload = enqueueRecordedVoiceUpload(recording);
         await finalUpload.catch(uploadError => {
-          console.log('Final voice upload failed before stop:', uploadError);
+          devLog('Final voice upload failed before stop:', uploadError);
         });
 
         await endListeningSession({
@@ -571,18 +612,20 @@ const Home = () => {
 
         recordingContextRef.current = null;
         setIsListening(false);
+        forceStoppedListeningRef.current = true;
+        clearListeningSession();
         return;
       }
 
       if (activeSpace?._id) {
         await stopBackgroundListeningNotification().catch(serviceError => {
-          console.log('Unable to stop listening notification:', serviceError);
+          devLog('Unable to stop listening notification:', serviceError);
         });
         await endListeningSession({
           userId,
           spaceId: activeSpace._id,
         }).catch(serviceError => {
-          console.log('Unable to end listening session:', serviceError);
+          devLog('Unable to end listening session:', serviceError);
         });
         const res = await startListning({
           spaceId: activeSpace._id,
@@ -591,6 +634,8 @@ const Home = () => {
         if (res?.success) {
           showToast({ message: 'Stopped listening.', type: 'success' });
           setIsListening(false);
+          forceStoppedListeningRef.current = true;
+          clearListeningSession();
         } else {
           showToast({
             message: res?.data?.message || 'Unable to stop.',
@@ -600,10 +645,10 @@ const Home = () => {
       }
     } catch (err) {
       await stopBackgroundListeningNotification().catch(serviceError => {
-        console.log('Unable to stop listening notification:', serviceError);
+        devLog('Unable to stop listening notification:', serviceError);
       });
       showToast({ message: 'Stop failed. Try again.', type: 'error' });
-      console.log('stopListening error:', err);
+      devLog('stopListening error:', err);
     }
   };
 
@@ -691,6 +736,14 @@ const Home = () => {
     });
   }, []);
 
+  const handleListeningCardPress = useCallback(() => {
+    if (isVoiceActive) {
+      void stopListeningRef.current();
+      return;
+    }
+    openVoiceSheet();
+  }, [isVoiceActive, openVoiceSheet]);
+
   const keyExtractor = useCallback((item: Space) => item._id, []);
 
   const listHeader = useMemo(
@@ -708,45 +761,16 @@ const Home = () => {
             onPress={openSpaceSheet}
           />
 
-          <TopCard
-            title={isVoiceActive ? 'Stop Listening' : 'Start Listening'}
-            subtitle={
-              isUploadingVoice
-                ? 'Uploading voice message...'
-                : isFetchingActiveSpace && !isVoiceActive
-                  ? 'Checking active space...'
-                  : isVoiceActive
-                    ? formatClock(elapsedMs)
-                    : remainingMs === UNLIMITED_LIMIT
-                      ? 'Unlimited recording time'
-                      : remainingMs <= 0
-                        ? 'Upgrade to keep listening'
-                        : `${formatHoursShort(remainingMs)} remaining`
+          <ListeningControlCard
+            isVoiceActive={isVoiceActive}
+            isUploadingVoice={isUploadingVoice}
+            isFetchingActiveSpace={isFetchingActiveSpace}
+            spaceName={activeSpace?.spacename}
+            startedAt={
+              listeningSessionStartedAt ?? listeningStartedAtRef.current
             }
-            meta={
-              isVoiceActive
-                ? `${activeSpace?.spacename || 'Space'} · ${
-                    remainingMs === UNLIMITED_LIMIT
-                      ? 'Unlimited'
-                      : remainingMs <= 0
-                        ? 'Time up'
-                        : `${formatHoursShort(remainingMs)} left`
-                  }`
-                : undefined
-            }
-            color={colors.accentCyan}
-            active={isVoiceActive}
-            activeColor={colors.accentCyan}
-            icon={
-              <MicIcon width={ms(18)} height={ms(18)} color={colors.white} />
-            }
-            onPress={() => {
-              if (isVoiceActive) {
-                handleStopListening();
-                return;
-              }
-              openVoiceSheet();
-            }}
+            planStatus={planStatus}
+            onPress={handleListeningCardPress}
           />
         </View>
 
@@ -773,18 +797,17 @@ const Home = () => {
     [
       activeSpace?.spacename,
       deletingSpaceId,
-      elapsedMs,
       getSpaceSubtitle,
       handleDeleteSpace,
+      handleListeningCardPress,
       handleSpacePress,
-      handleStopListening,
       isFetchingActiveSpace,
       isInitialSpacesLoading,
       isUploadingVoice,
       isVoiceActive,
+      listeningSessionStartedAt,
       openSpaceSheet,
-      openVoiceSheet,
-      remainingMs,
+      planStatus,
       spaces,
     ],
   );
@@ -815,24 +838,12 @@ const Home = () => {
     );
   }, [isFetchingSpaces, nextCursor, spaces.length]);
 
-  return (
-    <LinearGradient
-      colors={[
-        colors.gradientStart,
-        colors.gradientMid,
-        colors.background,
-        colors.gradientEnd,
-      ]}
-      locations={[0, 0.2, 0.65, 1]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.container}
-    >
+  const homeBody = (
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <FlatList
           data={[] as Space[]}
           keyExtractor={keyExtractor}
-          renderItem={() => null}
+          renderItem={emptyRenderItem}
           ListHeaderComponent={listHeader}
           ListFooterComponent={listFooter}
           showsVerticalScrollIndicator={false}
@@ -849,7 +860,7 @@ const Home = () => {
           bounces
           overScrollMode="never"
           decelerationRate="normal"
-          scrollEventThrottle={16}
+          scrollEventThrottle={scrollThrottle}
           nestedScrollEnabled
           {...listPerf}
         />
@@ -888,6 +899,21 @@ const Home = () => {
           }}
         />
       </SafeAreaView>
+  );
+
+  if (Platform.OS === 'android') {
+    return <View style={styles.container}>{homeBody}</View>;
+  }
+
+  return (
+    <LinearGradient
+      colors={HOME_GRADIENT_COLORS}
+      locations={HOME_GRADIENT_LOCATIONS}
+      start={HOME_GRADIENT_START}
+      end={HOME_GRADIENT_END}
+      style={styles.container}
+    >
+      {homeBody}
     </LinearGradient>
   );
 };

@@ -27,7 +27,12 @@ import {
   useDeleteAccountMutation,
   useLogoutUserMutation,
 } from '../../../store/api/auth';
+import type { PlanStatus } from '../../../store/api/payments';
 import LogoutConfirmationModal from '../../../components/LogoutConfirmationModal';
+import {
+  getRecordingUsedMs,
+  isUnlimitedLimit,
+} from '../../../utils/planUsage';
 import {
   colors,
   fontSize,
@@ -44,30 +49,78 @@ type IconProps = {
 const KEYBOARD_BUTTON_GAP = ms(32);
 
 type ProfileActionGridProps = {
-  planName?: string;
+  planStatus?: PlanStatus;
   isPlanLoading?: boolean;
   isPlanError?: boolean;
+  onEditProfile: () => void;
 };
 
-const PlanIcon = ({ color = colors.primary }: IconProps) => (
+const SettingsIcon = ({ color = colors.text }: IconProps) => (
   <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"
+      d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"
+      stroke={color}
+      strokeWidth={1.6}
+    />
+    <Path
+      d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9c.1.7.6 1.2 1.5 1.3H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"
+      stroke={color}
+      strokeWidth={1.6}
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const NotesGridIcon = ({ color = colors.text }: IconProps) => (
+  <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"
       stroke={color}
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round"
     />
     <Path
-      d="M8.5 8h7M8.5 12h7M8.5 16h4"
+      d="M14 3v5h5M8.5 13h7M8.5 17h4"
       stroke={color}
       strokeWidth={1.5}
       strokeLinecap="round"
+      strokeLinejoin="round"
     />
   </Svg>
 );
 
-const FeedbackIcon = ({ color = colors.primary }: IconProps) => (
+const TaskGridIcon = ({ color = colors.text }: IconProps) => (
+  <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M9 6h10M9 12h10M9 18h10"
+      stroke={color}
+      strokeWidth={1.5}
+      strokeLinecap="round"
+    />
+    <Path
+      d="m4 6 1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"
+      stroke={color}
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const SpacesGridIcon = ({ color = colors.text }: IconProps) => (
+  <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M4 7.5V6.2A2.2 2.2 0 0 1 6.2 4h1.3M4 16.5v1.3A2.2 2.2 0 0 0 6.2 20h1.3M15.5 4h1.3A2.2 2.2 0 0 1 19 6.2v1.3M15.5 20h1.3A2.2 2.2 0 0 0 19 17.8v-1.3M8.5 12h7M12 8.5v7"
+      stroke={color}
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const FeedbackIcon = ({ color = colors.text }: IconProps) => (
   <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M5 5.5h14a2.5 2.5 0 0 1 2.5 2.5v6.5A2.5 2.5 0 0 1 19 17H10l-5.5 3v-3.6A2.5 2.5 0 0 1 2.5 14V8A2.5 2.5 0 0 1 5 5.5Z"
@@ -75,16 +128,10 @@ const FeedbackIcon = ({ color = colors.primary }: IconProps) => (
       strokeWidth={1.5}
       strokeLinejoin="round"
     />
-    <Path
-      d="M7.5 11h.1m4.4 0h.1m4.4 0h.1"
-      stroke={color}
-      strokeWidth={2.2}
-      strokeLinecap="round"
-    />
   </Svg>
 );
 
-const HelpSupportIcon = ({ color = colors.primary }: IconProps) => (
+const HelpSupportIcon = ({ color = colors.text }: IconProps) => (
   <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M12 21a9 9 0 1 0-9-9 9 9 0 0 0 9 9Z"
@@ -106,7 +153,7 @@ const HelpSupportIcon = ({ color = colors.primary }: IconProps) => (
   </Svg>
 );
 
-const LogoutIcon = ({ color = colors.error }: IconProps) => (
+const LogoutIcon = ({ color = colors.text }: IconProps) => (
   <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M10 7V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2v-2"
@@ -125,7 +172,7 @@ const LogoutIcon = ({ color = colors.error }: IconProps) => (
   </Svg>
 );
 
-const DeleteAccountIcon = ({ color = colors.error }: IconProps) => (
+const DeleteAccountIcon = ({ color = colors.text }: IconProps) => (
   <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M9 3h6M5 7h14M18 7l-.7 12.1A2 2 0 0 1 15.31 21H8.69a2 2 0 0 1-1.99-1.9L6 7M10 11v6M14 11v6"
@@ -141,67 +188,6 @@ const WarningIcon = ({ color = colors.error }: IconProps) => (
   <Svg width={ms(22)} height={ms(22)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"
-      stroke={color}
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const TaskGridIcon = ({ color = colors.primary }: IconProps) => (
-  <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M9 6h10M9 12h10M9 18h10"
-      stroke={color}
-      strokeWidth={1.5}
-      strokeLinecap="round"
-    />
-    <Path
-      d="m4 6 1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"
-      stroke={color}
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const NotesGridIcon = ({ color = colors.primary }: IconProps) => (
-  <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"
-      stroke={color}
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M14 3v5h5M8.5 13h7M8.5 17h4"
-      stroke={color}
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const SpacesGridIcon = ({ color = colors.primary }: IconProps) => (
-  <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M4 7.5V6.2A2.2 2.2 0 0 1 6.2 4h1.3M4 16.5v1.3A2.2 2.2 0 0 0 6.2 20h1.3M15.5 4h1.3A2.2 2.2 0 0 1 19 6.2v1.3M15.5 20h1.3A2.2 2.2 0 0 0 19 17.8v-1.3M8.5 12h7M12 8.5v7"
-      stroke={color}
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const ChevronIcon = ({ color = colors.muted }: { color?: string }) => (
-  <Svg width={ms(16)} height={ms(16)} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="m9 6 6 6-6 6"
       stroke={color}
       strokeWidth={2}
       strokeLinecap="round"
@@ -226,13 +212,16 @@ const formatMetric = (
   return String(value ?? 0);
 };
 
-// keep export helper for ProfileScreen
 export { formatMetric };
 
+const msToMinutes = (valueMs: number) =>
+  Math.max(0, Math.round(valueMs / 60000));
+
 const ProfileActionGrid = ({
-  planName,
+  planStatus,
   isPlanLoading,
   isPlanError,
+  onEditProfile,
 }: ProfileActionGridProps) => {
   const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
@@ -246,11 +235,34 @@ const ProfileActionGrid = ({
   const [deleteAccount, { isLoading: isDeletingAccount }] =
     useDeleteAccountMutation();
   const [logoutUser, { isLoading: isLoggingOut }] = useLogoutUserMutation();
-  const planValue = isPlanLoading
+
+  const planName = isPlanLoading
     ? '...'
     : isPlanError
-      ? '-'
-      : planName?.trim() || 'Free';
+      ? 'Unavailable'
+      : planStatus?.plan?.name?.trim() || 'Free';
+
+  const usedMs = getRecordingUsedMs(planStatus);
+  const limitHours = planStatus?.plan?.limits?.recordingHours;
+  const usedMinutes = msToMinutes(usedMs);
+  const limitMinutes =
+    typeof limitHours === 'number' && !isUnlimitedLimit(limitHours)
+      ? Math.max(0, Math.round(limitHours * 60))
+      : null;
+  const usageProgress =
+    limitMinutes && limitMinutes > 0
+      ? Math.min(1, usedMinutes / limitMinutes)
+      : 0;
+  const usageLabel =
+    isPlanLoading
+      ? 'Loading usage...'
+      : isPlanError
+        ? 'Usage unavailable'
+        : limitMinutes == null
+          ? isUnlimitedLimit(limitHours)
+            ? 'Unlimited monthly minutes'
+            : 'Recording usage unavailable'
+          : `${usedMinutes} of ${limitMinutes} monthly minutes used`;
 
   const getApiErrorMessage = (error: any, fallback: string) =>
     error?.data?.message || error?.message || fallback;
@@ -367,33 +379,54 @@ const ProfileActionGrid = ({
     }
   };
 
-  const workspaceItems = [
+  const menuItems = [
+    {
+      id: 'settings',
+      title: 'Account Settings',
+      icon: SettingsIcon,
+      onPress: onEditProfile,
+    },
     {
       id: 'notes',
       title: 'Notes',
-      subtitle: 'Open and manage your notes',
-      surface: colors.primaryLight,
-      accent: colors.primary,
       icon: NotesGridIcon,
       onPress: () => navigation.navigate('Notes'),
     },
     {
       id: 'tasks',
       title: 'Tasks',
-      subtitle: 'Track what needs to get done',
-      surface: '#EFF6FF',
-      accent: '#2563EB',
       icon: TaskGridIcon,
       onPress: () => navigation.navigate('Tasks'),
     },
     {
       id: 'spaces',
       title: 'Spaces',
-      subtitle: 'Jump back to your workspaces',
-      surface: colors.primarySoft,
-      accent: colors.primaryPurpleDark,
       icon: SpacesGridIcon,
       onPress: () => navigation.navigate('Home'),
+    },
+    {
+      id: 'feedback',
+      title: 'Feedback',
+      icon: FeedbackIcon,
+      onPress: () => navigation.navigate('Feedback'),
+    },
+    {
+      id: 'help',
+      title: 'Help Center',
+      icon: HelpSupportIcon,
+      onPress: () => navigation.navigate('HelpSupport'),
+    },
+    {
+      id: 'logout',
+      title: 'Logout',
+      icon: LogoutIcon,
+      onPress: () => setIsLogoutConfirmVisible(true),
+    },
+    {
+      id: 'delete',
+      title: 'Delete Account',
+      icon: DeleteAccountIcon,
+      onPress: openDeleteSheet,
     },
   ];
 
@@ -406,147 +439,51 @@ const ProfileActionGrid = ({
 
   return (
     <View style={styles.wrapper}>
-      <View style={styles.sectionCard}>
-        <Text style={styles.sectionLabel}>Workspace</Text>
-        {workspaceItems.map((item, index) => (
+      <View style={styles.menuList}>
+        {menuItems.map((item, index) => (
           <View key={item.id}>
             {index > 0 ? <View style={styles.listDivider} /> : null}
             <TouchableOpacity
-              activeOpacity={0.82}
+              activeOpacity={0.75}
               style={styles.listRow}
               onPress={item.onPress}
               accessibilityRole="button"
               accessibilityLabel={item.title}
             >
-              <View style={[styles.listIcon, { backgroundColor: item.surface }]}>
-                {item.icon({ color: item.accent })}
+              <View style={styles.listIcon}>
+                {item.icon({ color: colors.text })}
               </View>
-              <View style={styles.listContent}>
-                <Text style={styles.listTitle}>{item.title}</Text>
-                <Text style={styles.listSubtitle}>{item.subtitle}</Text>
-              </View>
-              <ChevronIcon />
+              <Text style={styles.listTitle}>{item.title}</Text>
             </TouchableOpacity>
           </View>
         ))}
       </View>
 
-      <View style={[styles.sectionCard, styles.sectionCardSpacer]}>
-        <Text style={styles.sectionLabel}>Account</Text>
-
-        <TouchableOpacity
-          activeOpacity={0.82}
-          style={styles.listRow}
-          onPress={() => navigation.navigate('Plans')}
-          accessibilityRole="button"
-          accessibilityLabel={`Plan, ${planValue}`}
-        >
-          <View
-            style={[styles.listIcon, { backgroundColor: colors.primaryLight }]}
+      <View style={styles.planCard}>
+        <View style={styles.planTopRow}>
+          <View style={styles.planCopy}>
+            <Text style={styles.planName}>{planName}</Text>
+            <Text style={styles.planUsage}>{usageLabel}</Text>
+          </View>
+          <TouchableOpacity
+            activeOpacity={0.88}
+            style={styles.upgradeButton}
+            onPress={() => navigation.navigate('Plans')}
+            accessibilityRole="button"
+            accessibilityLabel="Upgrade plan"
           >
-            <PlanIcon color={colors.primary} />
-          </View>
-          <View style={styles.listContent}>
-            <Text style={styles.listTitle}>Plan</Text>
-            <Text style={styles.listSubtitle}>
-              View and manage subscription
-            </Text>
-          </View>
-          <View style={styles.listTrailing}>
-            <Text style={styles.listValue}>{planValue}</Text>
-            <ChevronIcon />
-          </View>
-        </TouchableOpacity>
+            <Text style={styles.upgradeButtonText}>Upgrade</Text>
+          </TouchableOpacity>
+        </View>
 
-        <View style={styles.listDivider} />
-
-        <TouchableOpacity
-          activeOpacity={0.82}
-          style={styles.listRow}
-          onPress={() => navigation.navigate('Feedback')}
-          accessibilityRole="button"
-          accessibilityLabel="Send feedback"
-        >
+        <View style={styles.progressTrack}>
           <View
-            style={[styles.listIcon, { backgroundColor: colors.primarySoft }]}
-          >
-            <FeedbackIcon color={colors.primaryPurpleDark} />
-          </View>
-          <View style={styles.listContent}>
-            <Text style={styles.listTitle}>Feedback</Text>
-            <Text style={styles.listSubtitle}>
-              Tell us how we can improve Buddy
-            </Text>
-          </View>
-          <ChevronIcon />
-        </TouchableOpacity>
-
-        <View style={styles.listDivider} />
-
-        <TouchableOpacity
-          activeOpacity={0.82}
-          style={styles.listRow}
-          onPress={() => navigation.navigate('HelpSupport')}
-          accessibilityRole="button"
-          accessibilityLabel="Help and support"
-        >
-          <View
-            style={[styles.listIcon, { backgroundColor: colors.primaryLight }]}
-          >
-            <HelpSupportIcon color={colors.primary} />
-          </View>
-          <View style={styles.listContent}>
-            <Text style={styles.listTitle}>Help & Support</Text>
-            <Text style={styles.listSubtitle}>
-              Email us or raise a support ticket
-            </Text>
-          </View>
-          <ChevronIcon />
-        </TouchableOpacity>
-      </View>
-
-      <View style={[styles.sectionCard, styles.sectionCardSpacer]}>
-        <Text style={styles.sectionLabel}>Session</Text>
-
-        <TouchableOpacity
-          activeOpacity={0.82}
-          style={styles.listRow}
-          onPress={() => setIsLogoutConfirmVisible(true)}
-          accessibilityRole="button"
-          accessibilityLabel="Logout"
-        >
-          <View style={[styles.listIcon, { backgroundColor: colors.errorSoft }]}>
-            <LogoutIcon color={colors.error} />
-          </View>
-          <View style={styles.listContent}>
-            <Text style={[styles.listTitle, styles.logoutTitle]}>Logout</Text>
-            <Text style={styles.listSubtitle}>Sign out of your account</Text>
-          </View>
-          <ChevronIcon color={colors.error} />
-        </TouchableOpacity>
-
-        <View style={styles.listDivider} />
-
-        <TouchableOpacity
-          activeOpacity={0.82}
-          style={styles.listRow}
-          onPress={openDeleteSheet}
-          accessibilityRole="button"
-          accessibilityLabel="Delete account"
-        >
-          <View style={[styles.listIcon, { backgroundColor: colors.errorSoft }]}>
-            <DeleteAccountIcon color={colors.error} />
-          </View>
-          <View style={styles.listContent}>
-            <Text style={[styles.listTitle, styles.deleteTitle]}>
-              Delete Account
-            </Text>
-            <Text style={styles.listSubtitle}>
-              Permanently erase your account and data
-            </Text>
-          </View>
-          <ChevronIcon color={colors.error} />
-        </TouchableOpacity>
+            style={[
+              styles.progressFill,
+              { width: `${Math.round(usageProgress * 100)}%` },
+            ]}
+          />
+        </View>
       </View>
 
       <LogoutConfirmationModal
@@ -643,88 +580,105 @@ export default ProfileActionGrid;
 
 const styles = StyleSheet.create({
   wrapper: {
-    marginTop: 0,
+    marginTop: spacing.xs,
   },
 
-  sectionCard: {
-    backgroundColor: colors.white,
-    borderRadius: radii.xl,
-    paddingTop: spacing.lg,
-    overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-
-  sectionCardSpacer: {
-    marginTop: spacing.lg,
-  },
-
-  sectionLabel: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-    color: colors.subText,
-    marginBottom: spacing.xs,
-    paddingHorizontal: spacing.xl,
+  menuList: {
+    marginHorizontal: -spacing.xs,
   },
 
   listRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.lg,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
+    gap: spacing.xl,
+    paddingVertical: spacing['3xl'],
+    paddingHorizontal: spacing.xs,
   },
 
   listIcon: {
-    width: ms(36),
-    height: ms(36),
-    borderRadius: ms(18),
+    width: ms(24),
+    height: ms(24),
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  listContent: {
-    flex: 1,
-    minWidth: 0,
-    gap: spacing.xxs,
-  },
-
   listTitle: {
+    flex: 1,
     color: colors.text,
     fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
-  },
-
-  logoutTitle: {
-    color: colors.error,
-  },
-
-  deleteTitle: {
-    color: colors.error,
-  },
-
-  listSubtitle: {
-    color: colors.subText,
-    fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
-  },
-
-  listTrailing: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-
-  listValue: {
-    color: colors.primaryDark,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
   },
 
   listDivider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.border,
-    marginLeft: ms(68),
+  },
+
+  planCard: {
+    marginTop: spacing['2xl'],
+    borderRadius: radii.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+  },
+
+  planTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+
+  planCopy: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  planName: {
+    color: colors.text,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.bold,
+    letterSpacing: -0.2,
+  },
+
+  planUsage: {
+    marginTop: spacing.xs,
+    color: colors.subText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.medium,
+  },
+
+  upgradeButton: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.sm,
+    minHeight: ms(34),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  upgradeButtonText: {
+    color: colors.white,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+
+  progressTrack: {
+    marginTop: spacing.lg,
+    height: ms(6),
+    borderRadius: ms(3),
+    backgroundColor: colors.lightGray,
+    overflow: 'hidden',
+  },
+
+  progressFill: {
+    height: '100%',
+    borderRadius: ms(3),
+    backgroundColor: colors.primary,
   },
 
   sheetBackground: {

@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { CHAT } from '../styles';
 import {
-  colors,
   fontSize,
   fontWeight,
   ms,
@@ -327,41 +327,41 @@ const MarkdownContent = ({ content }: Props) => {
   );
 };
 
-export default MarkdownContent;
+export default memo(MarkdownContent);
 
 const styles = StyleSheet.create({
   container: {
-    gap: spacing.md,
+    gap: spacing.sm,
   },
 
   paragraph: {
-    color: colors.text,
+    color: CHAT.black,
     fontSize: fontSize.base,
     lineHeight: ms(22),
-    fontWeight: fontWeight.medium,
+    fontWeight: fontWeight.regular,
   },
 
   bold: {
     fontWeight: fontWeight.bold,
-    color: colors.text,
+    color: CHAT.black,
   },
 
   italic: {
     fontStyle: 'italic',
-    color: colors.textSecondary,
+    color: CHAT.textMuted,
   },
 
   inlineCode: {
     fontFamily: 'monospace',
-    fontSize: fontSize.sm,
-    color: colors.primaryDark,
-    backgroundColor: colors.primaryLight,
+    fontSize: fontSize.xs,
+    color: CHAT.primary,
+    backgroundColor: CHAT.primarySoft,
     overflow: 'hidden',
   },
 
   inlineTag: {
-    color: colors.primary,
-    backgroundColor: colors.primarySoft,
+    color: CHAT.primary,
+    backgroundColor: CHAT.primarySoft,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
     overflow: 'hidden',
@@ -377,87 +377,87 @@ const styles = StyleSheet.create({
   headingAccent: {
     width: ms(3),
     alignSelf: 'stretch',
-    minHeight: ms(16),
+    minHeight: ms(14),
     borderRadius: ms(2),
-    backgroundColor: colors.primary,
+    backgroundColor: CHAT.primary,
   },
 
   heading: {
     flex: 1,
-    color: colors.text,
+    color: CHAT.black,
     fontWeight: fontWeight.bold,
   },
 
   heading1: {
     fontSize: fontSize.xl,
-    lineHeight: ms(26),
-    letterSpacing: -0.3,
+    lineHeight: ms(24),
+    letterSpacing: -0.2,
   },
 
   heading2: {
     fontSize: fontSize.lg,
-    lineHeight: ms(24),
+    lineHeight: ms(22),
   },
 
   heading3: {
     fontSize: fontSize.base,
-    lineHeight: ms(22),
-    color: colors.primaryDark,
+    lineHeight: ms(20),
+    color: CHAT.text,
   },
 
   list: {
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
 
   listItem: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
 
   bulletDot: {
-    width: ms(6),
-    height: ms(6),
-    borderRadius: ms(3),
-    backgroundColor: colors.primary,
-    marginTop: ms(8),
+    width: ms(5),
+    height: ms(5),
+    borderRadius: ms(2.5),
+    backgroundColor: CHAT.primary,
+    marginTop: ms(7),
   },
 
   numberBadge: {
-    minWidth: ms(20),
-    height: ms(20),
-    borderRadius: ms(10),
-    backgroundColor: colors.primaryLight,
+    minWidth: ms(18),
+    height: ms(18),
+    borderRadius: ms(9),
+    backgroundColor: CHAT.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: ms(1),
   },
 
   numberText: {
-    color: colors.primaryDark,
+    color: CHAT.primary,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
   },
 
   listText: {
     flex: 1,
-    color: colors.text,
+    color: CHAT.black,
     fontSize: fontSize.base,
     lineHeight: ms(22),
-    fontWeight: fontWeight.medium,
+    fontWeight: fontWeight.regular,
   },
 
   quote: {
     borderLeftWidth: 3,
-    borderLeftColor: colors.primaryPurple,
-    backgroundColor: colors.primarySoft,
+    borderLeftColor: CHAT.primary,
+    backgroundColor: CHAT.primarySoft,
     borderRadius: radii.md,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
   },
 
   quoteText: {
-    color: colors.textSecondary,
+    color: CHAT.textMuted,
     fontSize: fontSize.base,
     lineHeight: ms(21),
     fontStyle: 'italic',
@@ -467,8 +467,8 @@ const styles = StyleSheet.create({
   codeBlock: {
     backgroundColor: '#0F172A',
     borderRadius: radii.lg,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
     overflow: 'hidden',
   },
 
@@ -476,8 +476,8 @@ const styles = StyleSheet.create({
     color: '#94A3B8',
     fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
-    letterSpacing: 0.8,
-    marginBottom: spacing.sm,
+    letterSpacing: 0.6,
+    marginBottom: spacing.xs,
   },
 
   codeText: {
@@ -489,7 +489,7 @@ const styles = StyleSheet.create({
 
   hr: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
+    backgroundColor: CHAT.border,
     marginVertical: spacing.xs,
   },
 
@@ -500,16 +500,16 @@ const styles = StyleSheet.create({
   },
 
   tagChip: {
-    backgroundColor: colors.primaryLight,
+    backgroundColor: CHAT.primarySoft,
     borderRadius: radii.sm,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xxs,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#C7D2FE',
+    borderColor: CHAT.border,
   },
 
   tagChipText: {
-    color: colors.primaryDark,
+    color: CHAT.primary,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
     letterSpacing: 0.2,

@@ -1,11 +1,12 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useEffect, useRef, useState } from 'react';
 import {
-  Platform,
+  ActivityIndicator,
+  Animated,
   Pressable,
   StyleSheet,
-  Switch,
   Text,
   TextInputProps,
+  TouchableOpacity,
   View,
   ViewStyle,
 } from 'react-native';
@@ -15,11 +16,23 @@ import {
   colors,
   fontSize,
   fontWeight,
-  layout,
   ms,
   radii,
   spacing,
 } from '../../theme';
+
+/** Reference accent (poll settings purple) */
+const ACCENT = '#6E62E5';
+const BORDER = '#E8E8EC';
+const BORDER_ACTIVE = ACCENT;
+const TRACK_OFF = '#E5E7EB';
+const LABEL = '#6B7280';
+const PLACEHOLDER = '#A1A1AA';
+
+const SWITCH_WIDTH = ms(51);
+const SWITCH_HEIGHT = ms(31);
+const SWITCH_THUMB = ms(27);
+const SWITCH_PAD = ms(2);
 
 type FieldProps = {
   label: string;
@@ -29,9 +42,7 @@ type FieldProps = {
 } & Omit<TextInputProps, 'style' | 'multiline'>;
 
 /**
- * Floating-label style text field used in Reminder / Calendar sheets.
- * Soft fill, clear focus ring, generous tap height — tuned for low-end devices
- * (no shadows, hairline borders only).
+ * Poll-style text field: white surface, soft gray border, rounded corners.
  */
 export const SheetTextField = memo(
   ({
@@ -47,7 +58,7 @@ export const SheetTextField = memo(
 
     return (
       <View style={[styles.fieldWrap, containerStyle]}>
-        <Text style={styles.eyebrow}>{label}</Text>
+        <Text style={styles.fieldLabel}>{label}</Text>
         <View
           style={[
             styles.fieldSurface,
@@ -60,7 +71,7 @@ export const SheetTextField = memo(
             {...inputProps}
             multiline={multiline}
             textAlignVertical={multiline ? 'top' : 'center'}
-            placeholderTextColor={colors.muted}
+            placeholderTextColor={PLACEHOLDER}
             style={[styles.fieldInput, multiline && styles.fieldInputMultiline]}
             onFocus={event => {
               setFocused(true);
@@ -80,18 +91,80 @@ export const SheetTextField = memo(
 
 SheetTextField.displayName = 'SheetTextField';
 
-type ToggleRowProps = {
-  title: string;
-  subtitle: string;
+type SheetSwitchProps = {
   value: boolean;
-  onValueChange: (next: boolean) => void;
-  icon: React.ReactNode;
-  iconTone?: 'brand' | 'success';
-  showDivider?: boolean;
+  onValueChange?: (next: boolean) => void;
+  interactive?: boolean;
 };
 
 /**
- * Settings-style toggle row (iOS / Material pattern): icon badge + copy + switch.
+ * Custom switch: gray track off, solid purple on, white thumb.
+ */
+const SheetSwitch = memo(
+  ({ value, onValueChange, interactive = true }: SheetSwitchProps) => {
+    const progress = useRef(new Animated.Value(value ? 1 : 0)).current;
+
+    useEffect(() => {
+      Animated.timing(progress, {
+        toValue: value ? 1 : 0,
+        duration: 180,
+        useNativeDriver: false,
+      }).start();
+    }, [progress, value]);
+
+    const translateX = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, SWITCH_WIDTH - SWITCH_THUMB - SWITCH_PAD * 2],
+    });
+
+    const trackColor = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [TRACK_OFF, ACCENT],
+    });
+
+    const track = (
+      <Animated.View
+        style={[styles.switchTrack, { backgroundColor: trackColor }]}
+      >
+        <Animated.View
+          style={[styles.switchThumb, { transform: [{ translateX }] }]}
+        />
+      </Animated.View>
+    );
+
+    if (!interactive || !onValueChange) {
+      return track;
+    }
+
+    return (
+      <Pressable
+        onPress={() => onValueChange(!value)}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        accessibilityRole="switch"
+        accessibilityState={{ checked: value }}
+      >
+        {track}
+      </Pressable>
+    );
+  },
+);
+
+SheetSwitch.displayName = 'SheetSwitch';
+
+type ToggleRowProps = {
+  title: string;
+  subtitle?: string;
+  value: boolean;
+  onValueChange: (next: boolean) => void;
+  icon?: React.ReactNode;
+  iconTone?: 'brand' | 'success';
+  /** @deprecated Cards are spaced; divider is ignored. */
+  showDivider?: boolean;
+  containerStyle?: ViewStyle;
+};
+
+/**
+ * Settings switch card. Only the switch toggles — card border stays neutral.
  */
 export const SheetToggleRow = memo(
   ({
@@ -101,10 +174,10 @@ export const SheetToggleRow = memo(
     onValueChange,
     icon,
     iconTone = 'brand',
-    showDivider = false,
+    containerStyle,
   }: ToggleRowProps) => (
-    <View>
-      <View style={styles.toggleRow}>
+    <View style={[styles.toggleCard, containerStyle]}>
+      {icon ? (
         <View
           style={[
             styles.toggleIcon,
@@ -115,32 +188,16 @@ export const SheetToggleRow = memo(
         >
           {icon}
         </View>
-        <View style={styles.toggleCopy}>
-          <Text style={styles.toggleTitle}>{title}</Text>
-          <Text style={styles.toggleSubtitle} numberOfLines={2}>
+      ) : null}
+      <View style={styles.toggleCopy} pointerEvents="none">
+        <Text style={styles.toggleTitle}>{title}</Text>
+        {subtitle ? (
+          <Text style={styles.toggleSubtitle} numberOfLines={3}>
             {subtitle}
           </Text>
-        </View>
-        <Switch
-          value={value}
-          onValueChange={onValueChange}
-          trackColor={{
-            false: colors.border,
-            true:
-              iconTone === 'success' ? colors.successSoft : colors.brandBorder,
-          }}
-          thumbColor={
-            value
-              ? iconTone === 'success'
-                ? colors.success
-                : colors.primary
-              : colors.white
-          }
-          ios_backgroundColor={colors.border}
-          style={styles.switch}
-        />
+        ) : null}
       </View>
-      {showDivider ? <View style={styles.toggleDivider} /> : null}
+      <SheetSwitch value={value} onValueChange={onValueChange} />
     </View>
   ),
 );
@@ -160,7 +217,7 @@ type SegmentProps<T extends string> = {
 };
 
 /**
- * Compact segmented control — one track, selected pill. Avoids wrap-chip clutter.
+ * Compact segmented control — soft track, selected pill with accent border.
  */
 export function SheetSegmentedControl<T extends string>({
   label,
@@ -170,7 +227,7 @@ export function SheetSegmentedControl<T extends string>({
 }: SegmentProps<T>) {
   return (
     <View>
-      {label ? <Text style={styles.eyebrow}>{label}</Text> : null}
+      {label ? <Text style={styles.fieldLabel}>{label}</Text> : null}
       <View style={styles.segmentTrack}>
         {options.map(option => {
           const selected = option.id === value;
@@ -202,98 +259,131 @@ export function SheetSegmentedControl<T extends string>({
   );
 }
 
+type PrimaryButtonProps = {
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+  style?: ViewStyle;
+};
+
+export const SheetPrimaryButton = memo(
+  ({ label, onPress, disabled, loading, style }: PrimaryButtonProps) => (
+    <TouchableOpacity
+      activeOpacity={0.88}
+      style={[
+        styles.primaryButton,
+        (disabled || loading) && styles.primaryButtonDisabled,
+        style,
+      ]}
+      onPress={onPress}
+      disabled={disabled || loading}
+    >
+      {loading ? (
+        <ActivityIndicator color="#FFFFFF" />
+      ) : (
+        <Text style={styles.primaryButtonText}>{label}</Text>
+      )}
+    </TouchableOpacity>
+  ),
+);
+
+SheetPrimaryButton.displayName = 'SheetPrimaryButton';
+
 export const sheetFormStyles = StyleSheet.create({
   section: {
     marginBottom: spacing['2xl'],
   },
   sectionTitle: {
-    color: colors.text,
+    color: LABEL,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-    marginBottom: spacing.md,
+    fontWeight: fontWeight.semibold,
+    marginBottom: spacing.sm,
   },
   groupCard: {
-    backgroundColor: colors.white,
+    backgroundColor: '#FFFFFF',
     borderRadius: radii.xl,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: BORDER,
     overflow: 'hidden',
   },
   groupDivider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-    marginLeft: ms(58),
+    backgroundColor: BORDER,
+    marginLeft: ms(52),
+  },
+  toggleStack: {
+    gap: spacing.sm,
   },
 });
 
 const styles = StyleSheet.create({
   fieldWrap: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
-  eyebrow: {
-    color: colors.subText,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    marginBottom: spacing.sm,
+  fieldLabel: {
+    color: LABEL,
+    fontSize: fontSize.md,
+    fontWeight: fontWeight.semibold,
+    marginBottom: spacing.xs,
   },
   fieldSurface: {
-    backgroundColor: colors.white,
+    backgroundColor: '#FFFFFF',
     borderRadius: radii.lg,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: BORDER,
     paddingHorizontal: spacing.lg,
-    minHeight: layout.inputHeight,
+    minHeight: ms(48),
     justifyContent: 'center',
   },
   fieldSurfaceMultiline: {
-    minHeight: ms(96),
+    minHeight: ms(80),
     paddingVertical: spacing.md,
     justifyContent: 'flex-start',
   },
   fieldSurfaceFocused: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primarySoft,
+    borderColor: BORDER_ACTIVE,
   },
   fieldSurfaceError: {
     borderColor: colors.error,
     backgroundColor: colors.errorSoft,
   },
   fieldInput: {
-    color: colors.text,
+    color: colors.black,
     fontSize: fontSize.base,
-    fontWeight: fontWeight.semibold,
+    fontWeight: fontWeight.medium,
     padding: 0,
     margin: 0,
-    minHeight: ms(24),
+    minHeight: ms(22),
   },
   fieldInputMultiline: {
-    minHeight: ms(72),
+    minHeight: ms(56),
     lineHeight: ms(22),
     fontWeight: fontWeight.medium,
   },
   errorText: {
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
     marginLeft: spacing.xs,
     color: colors.error,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
   },
-  toggleRow: {
+  toggleCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md + 2,
-    minHeight: ms(72),
+    paddingVertical: spacing.md,
+    minHeight: ms(58),
+    backgroundColor: '#FFFFFF',
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
   toggleIcon: {
-    width: ms(40),
-    height: ms(40),
-    borderRadius: ms(12),
+    width: ms(34),
+    height: ms(34),
+    borderRadius: radii.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -309,28 +399,30 @@ const styles = StyleSheet.create({
     paddingRight: spacing.sm,
   },
   toggleTitle: {
-    color: colors.text,
-    fontSize: fontSize.base,
+    color: colors.black,
+    fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
-    marginBottom: 2,
   },
   toggleSubtitle: {
+    marginTop: 2,
     color: colors.subText,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
-    lineHeight: ms(18),
+    lineHeight: ms(16),
   },
-  toggleDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-    marginLeft: ms(68),
+  switchTrack: {
+    width: SWITCH_WIDTH,
+    height: SWITCH_HEIGHT,
+    borderRadius: SWITCH_HEIGHT / 2,
+    padding: SWITCH_PAD,
+    justifyContent: 'center',
   },
-  switch: Platform.select({
-    ios: {
-      transform: [{ scaleX: 0.92 }, { scaleY: 0.92 }],
-    },
-    default: {},
-  }),
+  switchThumb: {
+    width: SWITCH_THUMB,
+    height: SWITCH_THUMB,
+    borderRadius: SWITCH_THUMB / 2,
+    backgroundColor: '#FFFFFF',
+  },
   segmentTrack: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -338,21 +430,23 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     padding: spacing.xs,
     gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
   segmentItem: {
     flexGrow: 1,
     flexBasis: '30%',
-    minHeight: ms(40),
-    borderRadius: radii.md,
+    minHeight: ms(36),
+    borderRadius: radii.sm,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
   },
   segmentItemActive: {
-    backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.brandBorder,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: ACCENT,
   },
   segmentItemPressed: {
     opacity: 0.7,
@@ -364,7 +458,23 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semibold,
   },
   segmentTextActive: {
-    color: colors.primary,
+    color: ACCENT,
+    fontWeight: fontWeight.bold,
+  },
+  primaryButton: {
+    minHeight: ms(48),
+    borderRadius: radii.lg,
+    backgroundColor: ACCENT,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+  },
+  primaryButtonDisabled: {
+    opacity: 0.45,
+  },
+  primaryButtonText: {
+    color: '#FFFFFF',
+    fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
   },
 });

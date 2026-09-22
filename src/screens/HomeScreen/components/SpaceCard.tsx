@@ -479,14 +479,14 @@ const styles = StyleSheet.create({
   shadowWrap: {
     width: '100%',
     marginTop: spacing.md,
-    borderRadius: radii.xl,
+    borderRadius: radii['2xl'],
     backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
   },
 
   card: {
-    borderRadius: radii.xl,
+    borderRadius: radii['2xl'],
     backgroundColor: colors.white,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
   spaceIconWrap: {
     width: ms(36),
     height: ms(36),
-    borderRadius: ms(12),
+    borderRadius: radii.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },

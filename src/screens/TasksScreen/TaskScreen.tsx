@@ -64,6 +64,7 @@ import {
   ms,
   mvs,
   radii,
+  scrollThrottle,
   spacing,
 } from '../../theme';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
@@ -873,6 +874,7 @@ const TaskScreen = () => {
         ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        scrollEventThrottle={scrollThrottle}
         style={styles.tasksScroll}
         {...listPerf}
       />

@@ -1,7 +1,6 @@
 import { StyleSheet } from 'react-native';
 import {
   colors,
-  ms,
   spacing,
   radii,
   fontSize,
@@ -9,34 +8,52 @@ import {
   layout,
 } from '../../theme';
 
-/** @deprecated Prefer importing `colors` from `src/theme` directly. */
+/** Desktop Buddy chat tokens (BuddyDesktopApp) — tuned for mobile density. */
+export const CHAT = {
+  surface: '#FFFFFF',
+  surfaceMuted: '#F6F8FC',
+  primary: '#1355FF',
+  primaryHover: '#0C46E8',
+  primarySoft: '#EDF2FF',
+  text: '#101828',
+  textMuted: '#64748B',
+  textSoft: '#94A3B8',
+  border: '#E2E8F0',
+  borderStrong: '#E2E8F0',
+  black: '#0F172A',
+  typingDot: '#98A2B3',
+} as const;
+
+/** @deprecated Prefer importing `colors` / `CHAT` directly. */
 export const COLORS = {
-  background: colors.background,
-  gradientStart: colors.gradientStart,
-  gradientMid: colors.gradientMid,
-  gradientEnd: colors.gradientEnd,
-  white: colors.white,
-  primary: colors.primary,
+  background: CHAT.surface,
+  gradientStart: CHAT.surface,
+  gradientMid: CHAT.surface,
+  gradientEnd: CHAT.surface,
+  white: CHAT.surface,
+  primary: CHAT.primary,
   primaryPurple: colors.primaryPurple,
-  primaryLight: colors.primaryLight,
-  primarySoft: colors.primarySoft,
-  text: colors.text,
-  subText: colors.subText,
-  muted: colors.muted,
-  border: colors.border,
-  userBubble: colors.userBubble,
-  aiBubble: colors.aiBubble,
-  inputBg: colors.white,
-  chipBg: colors.chipBg,
+  primaryLight: CHAT.primarySoft,
+  primarySoft: CHAT.primarySoft,
+  text: CHAT.text,
+  subText: CHAT.textMuted,
+  muted: CHAT.textSoft,
+  border: CHAT.border,
+  userBubble: CHAT.surfaceMuted,
+  aiBubble: CHAT.surface,
+  inputBg: CHAT.surface,
+  chipBg: CHAT.surface,
 };
 
 export const styles = StyleSheet.create({
   gradient: {
     flex: 1,
+    backgroundColor: CHAT.surface,
   },
 
   container: {
     flex: 1,
+    backgroundColor: CHAT.surface,
   },
 
   chatArea: {
@@ -49,34 +66,34 @@ export const styles = StyleSheet.create({
   },
 
   inputBar: {
-    backgroundColor: 'transparent',
+    backgroundColor: CHAT.surface,
   },
 
   listContent: {
     paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
     flexGrow: 1,
+    gap: spacing.lg,
   },
 
   dateSeparator: {
     alignSelf: 'center',
     marginBottom: spacing.xs,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xxs,
     borderRadius: radii.pill,
-    backgroundColor: colors.chatSeparator,
+    backgroundColor: CHAT.surfaceMuted,
   },
 
   dateSeparatorText: {
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-    color: colors.subText,
-    letterSpacing: 0.2,
+    fontWeight: fontWeight.semibold,
+    color: CHAT.textMuted,
   },
 
   loadingFooter: {
-    paddingTop: spacing.xl,
+    paddingTop: spacing.md,
     alignItems: 'center',
   },
 

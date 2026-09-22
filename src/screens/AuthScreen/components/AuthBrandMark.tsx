@@ -44,11 +44,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.brandBorder,
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: ms(8) },
-    shadowOpacity: 0.18,
-    shadowRadius: ms(16),
-    elevation: 5,
     overflow: 'hidden',
   },
 

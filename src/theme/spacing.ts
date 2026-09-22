@@ -94,46 +94,55 @@ export const layout = {
   hairline: StyleSheet.hairlineWidth,
 } as const;
 
+/**
+ * Border radius scale (Olli reference).
+ * Cards / banners → xl–2xl (~20–24)
+ * Buttons / icon wells → sm–md (~12–14)
+ * Inputs → lg (~16)
+ */
 export const radii = {
-  xs: ms(6),
-  sm: ms(10),
-  md: ms(12),
+  xs: ms(8),
+  sm: ms(12),
+  md: ms(14),
   lg: ms(16),
   xl: ms(20),
-  '2xl': ms(22),
+  '2xl': ms(24),
   '3xl': ms(24),
   pill: 999,
-  tabBar: ms(30),
+  tabBar: ms(24),
 } as const;
 
-/** Keep elevation low — Android rasterizes shadows on the GPU. */
+/**
+ * Flat UI — no drop shadows (Olli). Depth comes from light borders instead.
+ * Tokens kept for call-site compatibility; all values are no-ops.
+ */
 export const shadows = {
   soft: {
-    shadowColor: '#64748B',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   card: {
-    shadowColor: '#64748B',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   elevated: {
-    shadowColor: '#162B75',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
   primary: {
-    shadowColor: '#4338CA',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.16,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: 'transparent',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
 } as const;

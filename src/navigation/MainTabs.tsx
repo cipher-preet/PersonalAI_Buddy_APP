@@ -1,9 +1,10 @@
-import React, { useRef } from 'react';
+import React, { memo, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
   TouchableOpacity,
   Animated,
+  Text,
 } from 'react-native';
 
 import {
@@ -31,18 +32,20 @@ import CalendarScreen from '../screens/CalendarScreen/CalendarScreen';
 import GoalMonitorScreen from '../screens/GoalMonitorScreen/GoalMonitorScreen';
 import FeedbackScreen from '../screens/FeedbackScreen/FeedbackScreen';
 import HelpSupportScreen from '../screens/HelpSupportScreen/HelpSupportScreen';
+import GlobalListeningBar from '../components/listening/GlobalListeningBar';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import {
   colors,
   fontSize,
   fontWeight,
   ms,
-  radii,
-  shadows,
   spacing,
 } from '../theme';
 
 const Tab = createBottomTabNavigator();
+
+const ACTIVE_COLOR = colors.text;
+const INACTIVE_COLOR = colors.muted;
 
 type TabItemProps = {
   isFocused: boolean;
@@ -51,116 +54,63 @@ type TabItemProps = {
   onPress: () => void;
   onLongPress: () => void;
   accessibilityState: { selected: boolean };
-  compact?: boolean;
 };
 
-const TabItem = ({
-  isFocused,
-  Icon,
-  label,
-  onPress,
-  onLongPress,
-  accessibilityState,
-  compact = false,
-}: TabItemProps) => {
-  const progress = useRef(new Animated.Value(isFocused ? 1 : 0)).current;
+const TabItem = memo(
+  ({
+    isFocused,
+    Icon,
+    label,
+    onPress,
+    onLongPress,
+    accessibilityState,
+  }: TabItemProps) => {
+    const progress = useRef(new Animated.Value(isFocused ? 1 : 0)).current;
 
-  const prevFocused = useRef(isFocused);
+    useEffect(() => {
+      Animated.spring(progress, {
+        toValue: isFocused ? 1 : 0,
+        useNativeDriver: true,
+        tension: 280,
+        friction: 18,
+      }).start();
+    }, [isFocused, progress]);
 
-  if (prevFocused.current !== isFocused) {
-    prevFocused.current = isFocused;
+    const scale = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [1, 1.04],
+    });
 
-    Animated.spring(progress, {
-      toValue: isFocused ? 1 : 0,
-      useNativeDriver: true,
-      tension: 260,
-      friction: 16,
-    }).start();
-  }
+    const color = isFocused ? ACTIVE_COLOR : INACTIVE_COLOR;
 
-  const animScale = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.88, 1],
-  });
-
-  const pillOpacity = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
-
-  const pillScale = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.75, 1],
-  });
-
-  const labelOpacity = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.75, 1],
-  });
-
-  const translateY = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [ms(4), 0],
-  });
-
-  const activeColor = colors.tabActive;
-  const inactiveColor = colors.tabInactive;
-  const iconSize = compact ? ms(22) : ms(26);
-
-  return (
-    <TouchableOpacity
-      accessibilityRole="button"
-      accessibilityState={accessibilityState}
-      onPress={onPress}
-      onLongPress={onLongPress}
-      activeOpacity={0.85}
-      style={styles.tabButton}
-    >
-      <Animated.View
-        style={[
-          styles.itemContainer,
-          compact && styles.itemContainerCompact,
-          {
-            transform: [{ scale: animScale }, { translateY }],
-          },
-        ]}
+    return (
+      <TouchableOpacity
+        accessibilityRole="button"
+        accessibilityState={accessibilityState}
+        onPress={onPress}
+        onLongPress={onLongPress}
+        activeOpacity={0.75}
+        style={styles.tabButton}
       >
-        <Animated.View
-          style={[
-            styles.pill,
-            compact && styles.pillCompact,
-            {
-              opacity: pillOpacity,
-              transform: [{ scaleX: pillScale }],
-            },
-          ]}
-        />
-
-        <View style={[styles.iconArea, compact && styles.iconAreaCompact]}>
-          <Icon
-            width={iconSize}
-            height={iconSize}
-            color={isFocused ? activeColor : inactiveColor}
-          />
-        </View>
-
-        <Animated.Text
-          style={[
-            styles.label,
-            compact && styles.labelCompact,
-            {
-              opacity: labelOpacity,
-              color: isFocused ? activeColor : inactiveColor,
-              fontWeight: isFocused ? fontWeight.bold : fontWeight.semibold,
-            },
-          ]}
-        >
-          {label}
-        </Animated.Text>
-      </Animated.View>
-    </TouchableOpacity>
-  );
-};
+        <Animated.View style={[styles.itemContainer, { transform: [{ scale }] }]}>
+          <Icon width={ms(24)} height={ms(24)} color={color} />
+          <Text
+            style={[
+              styles.label,
+              {
+                color,
+                fontWeight: isFocused ? fontWeight.semibold : fontWeight.medium,
+              },
+            ]}
+            numberOfLines={1}
+          >
+            {label}
+          </Text>
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  },
+);
 
 const TAB_CONFIG = [
   {
@@ -174,51 +124,40 @@ const TAB_CONFIG = [
     label: 'Notes',
   },
   {
-    name: 'Tasks',
-    Icon: TaskIcons,
-    label: 'Tasks',
-  },
-  {
     name: 'AI',
     Icon: AIChatIcons,
     label: 'Buddy',
   },
   {
+    name: 'Tasks',
+    Icon: TaskIcons,
+    label: 'Tasks',
+  },
+  {
     name: 'Profile',
     Icon: ProfileIcon,
-    label: 'Profile',
+    label: 'Account',
   },
-];
+] as const;
+
+const HIDDEN_TAB_ROUTES = new Set([
+  'Plans',
+  'Reminders',
+  'Briefing',
+  'Share',
+  'Calendar',
+  'GoalMonitor',
+  'Feedback',
+  'HelpSupport',
+]);
 
 const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
-  const {
-    width,
-    tabBarBottom,
-    tabBarHeight,
-    tabBarSideInset,
-    isSmallDevice,
-    isTablet,
-  } = useResponsiveLayout();
+  const { tabBarHeight, insets } = useResponsiveLayout();
   const currentRoute = state.routes[state.index];
 
-  if (
-    currentRoute.name === 'AI' ||
-    currentRoute.name === 'Plans' ||
-    currentRoute.name === 'Reminders' ||
-    currentRoute.name === 'Briefing' ||
-    currentRoute.name === 'Share' ||
-    currentRoute.name === 'Calendar' ||
-    currentRoute.name === 'GoalMonitor' ||
-    currentRoute.name === 'Feedback' ||
-    currentRoute.name === 'HelpSupport'
-  ) {
+  if (HIDDEN_TAB_ROUTES.has(currentRoute.name)) {
     return null;
   }
-
-  const barWidth = isTablet
-    ? Math.min(width - tabBarSideInset * 2, 560)
-    : width - tabBarSideInset * 2;
-  const barLeft = (width - barWidth) / 2;
 
   return (
     <View
@@ -226,159 +165,132 @@ const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
       style={[
         styles.tabBar,
         {
-          left: barLeft,
-          width: barWidth,
-          bottom: tabBarBottom,
-          height: tabBarHeight,
+          paddingBottom: Math.max(insets.bottom, spacing.sm),
+          minHeight: tabBarHeight + Math.max(insets.bottom, spacing.sm),
         },
       ]}
     >
-      {state.routes.map((route, index) => {
-        const config = TAB_CONFIG.find(tab => tab.name === route.name);
+      <View style={styles.tabRow}>
+        {state.routes.map((route, index) => {
+          const config = TAB_CONFIG.find(tab => tab.name === route.name);
 
-        if (!config) {
-          return null;
-        }
-
-        const isFocused = state.index === index;
-
-        const onPress = () => {
-          const event = navigation.emit({
-            type: 'tabPress',
-            target: route.key,
-            canPreventDefault: true,
-          });
-
-          if (!isFocused && !event.defaultPrevented) {
-            navigation.navigate(route.name);
+          if (!config) {
+            return null;
           }
-        };
 
-        const onLongPress = () => {
-          navigation.emit({
-            type: 'tabLongPress',
-            target: route.key,
-          });
-        };
+          const isFocused = state.index === index;
 
-        return (
-          <TabItem
-            key={route.key}
-            isFocused={isFocused}
-            Icon={config.Icon}
-            label={config.label}
-            onPress={onPress}
-            onLongPress={onLongPress}
-            compact={isSmallDevice}
-            accessibilityState={{
-              selected: isFocused,
-            }}
-          />
-        );
-      })}
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name);
+            }
+          };
+
+          const onLongPress = () => {
+            navigation.emit({
+              type: 'tabLongPress',
+              target: route.key,
+            });
+          };
+
+          return (
+            <TabItem
+              key={route.key}
+              isFocused={isFocused}
+              Icon={config.Icon}
+              label={config.label}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              accessibilityState={{ selected: isFocused }}
+            />
+          );
+        })}
+      </View>
     </View>
   );
 };
 
 const MainTabs = () => {
   return (
-    <Tab.Navigator
-      initialRouteName="Home"
-      tabBar={props => <CustomTabBar {...props} />}
-      detachInactiveScreens
-      screenOptions={{
-        headerShown: false,
-        lazy: true,
-        freezeOnBlur: true,
-      }}
-    >
-      <Tab.Screen name="Home" component={Home} />
-      <Tab.Screen name="Notes" component={Notes} />
-      <Tab.Screen name="AI" component={BuddyScreen} />
-      <Tab.Screen name="Tasks" component={TaskScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
-      <Tab.Screen name="Plans" component={PlansScreen} />
-      <Tab.Screen name="Reminders" component={RemindersScreen} />
-      <Tab.Screen name="Briefing" component={BriefingScreen} />
-      <Tab.Screen name="Share" component={ShareScreen} />
-      <Tab.Screen name="Calendar" component={CalendarScreen} />
-      <Tab.Screen name="GoalMonitor" component={GoalMonitorScreen} />
-      <Tab.Screen name="Feedback" component={FeedbackScreen} />
-      <Tab.Screen name="HelpSupport" component={HelpSupportScreen} />
-    </Tab.Navigator>
+    <View style={styles.shell}>
+      <Tab.Navigator
+        initialRouteName="Home"
+        tabBar={props => <CustomTabBar {...props} />}
+        detachInactiveScreens
+        screenOptions={{
+          headerShown: false,
+          lazy: true,
+          freezeOnBlur: true,
+        }}
+      >
+        <Tab.Screen name="Home" component={Home} />
+        <Tab.Screen name="Notes" component={Notes} />
+        <Tab.Screen name="AI" component={BuddyScreen} />
+        <Tab.Screen name="Tasks" component={TaskScreen} />
+        <Tab.Screen name="Profile" component={ProfileScreen} />
+        <Tab.Screen name="Plans" component={PlansScreen} />
+        <Tab.Screen name="Reminders" component={RemindersScreen} />
+        <Tab.Screen name="Briefing" component={BriefingScreen} />
+        <Tab.Screen name="Share" component={ShareScreen} />
+        <Tab.Screen name="Calendar" component={CalendarScreen} />
+        <Tab.Screen name="GoalMonitor" component={GoalMonitorScreen} />
+        <Tab.Screen name="Feedback" component={FeedbackScreen} />
+        <Tab.Screen name="HelpSupport" component={HelpSupportScreen} />
+      </Tab.Navigator>
+      <GlobalListeningBar />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  shell: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+
   tabBar: {
     position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: colors.white,
-    borderRadius: radii.tabBar,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+
+  tabRow: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    ...shadows.soft,
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.md,
+    minHeight: ms(64),
   },
 
   tabButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingBottom: spacing.xs,
   },
 
   itemContainer: {
-    width: ms(68),
-    height: ms(64),
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  itemContainerCompact: {
-    width: ms(58),
-    height: ms(56),
-  },
-
-  pill: {
-    position: 'absolute',
-    top: ms(2),
-    width: ms(58),
-    height: ms(42),
-    borderRadius: radii.lg,
-    backgroundColor: colors.tabPill,
-  },
-
-  pillCompact: {
-    width: ms(48),
-    height: ms(36),
-  },
-
-  iconArea: {
-    width: ms(58),
-    height: ms(40),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  iconAreaCompact: {
-    width: ms(48),
-    height: ms(34),
+    gap: spacing.xs,
   },
 
   label: {
-    fontSize: fontSize.sm,
-    letterSpacing: 0.2,
-    marginTop: ms(3),
+    fontSize: fontSize.xs,
+    letterSpacing: 0.1,
     textAlign: 'center',
     includeFontPadding: false,
-    color: colors.text,
-    fontWeight: fontWeight.semibold,
-  },
-
-  labelCompact: {
-    fontSize: fontSize.xs,
-    marginTop: ms(2),
   },
 });
 

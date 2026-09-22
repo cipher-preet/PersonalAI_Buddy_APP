@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.inputBg,
     borderRadius: radii.pill,
     padding: TRACK_PADDING,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
   },
 

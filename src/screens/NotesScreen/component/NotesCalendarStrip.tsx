@@ -40,6 +40,7 @@ const MONTH_NAMES = [
 const DAY_LABELS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 const VISIBLE_DAYS = 7;
 const SCREEN_INSET = spacing['2xl'];
+const STRIP_INNER_PAD = spacing.xl;
 const DAY_HEIGHT = ms(52);
 
 export const toDateKey = (date: Date) => {
@@ -164,7 +165,10 @@ const NotesCalendarStrip = ({
 }: Props) => {
   const { width: windowWidth } = useWindowDimensions();
   const dayWidth = useMemo(
-    () => Math.round((windowWidth - SCREEN_INSET * 2) / VISIBLE_DAYS),
+    () =>
+      Math.round(
+        (windowWidth - SCREEN_INSET * 2 - STRIP_INNER_PAD * 2) / VISIBLE_DAYS,
+      ),
     [windowWidth],
   );
   const listRef = useRef<FlatList<CalendarDay>>(null);
@@ -253,7 +257,7 @@ const NotesCalendarStrip = ({
   const getItemLayout = useCallback(
     (_: ArrayLike<CalendarDay> | null | undefined, index: number) => ({
       length: dayWidth,
-      offset: SCREEN_INSET + dayWidth * index,
+      offset: STRIP_INNER_PAD + dayWidth * index,
       index,
     }),
     [dayWidth],
@@ -392,18 +396,18 @@ export default memo(NotesCalendarStrip);
 const styles = StyleSheet.create({
   wrapper: {
     backgroundColor: colors.white,
-    paddingTop: spacing.xs,
-    paddingBottom: spacing.sm,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
     marginBottom: spacing.md,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    marginHorizontal: SCREEN_INSET,
+    borderRadius: radii['2xl'],
   },
 
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SCREEN_INSET,
+    paddingHorizontal: spacing.xl,
     marginBottom: spacing.sm,
   },
 
@@ -441,7 +445,7 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    paddingHorizontal: SCREEN_INSET,
+    paddingHorizontal: STRIP_INNER_PAD,
   },
 
   dateList: {
@@ -474,8 +478,8 @@ const styles = StyleSheet.create({
     height: ms(30),
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: ms(15),
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radii.sm,
+    borderWidth: 1,
     borderColor: 'transparent',
   },
 
@@ -528,10 +532,12 @@ const styles = StyleSheet.create({
   },
 
   pickerCard: {
-    borderRadius: radii.xl,
+    borderRadius: radii['2xl'],
     backgroundColor: colors.white,
     paddingHorizontal: spacing['2xl'],
     paddingVertical: spacing['2xl'],
+    borderWidth: 1,
+    borderColor: colors.border,
   },
 
   pickerYearRow: {
@@ -571,7 +577,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.inputBg,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
   },
 

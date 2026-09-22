@@ -6,10 +6,10 @@ import {
   Text,
   View,
 } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
+import { CHAT } from '../styles';
 import {
-  colors,
   fontSize,
   fontWeight,
   layout,
@@ -25,44 +25,23 @@ type Props = {
   onSuggestionPress: (suggestion: string) => void;
 };
 
-const BuddyAvatar = () => (
-  <View style={styles.avatarWrap}>
-    <View style={styles.avatarInner}>
-      <Svg width={ms(54)} height={ms(54)} viewBox="0 0 64 64" fill="none">
-        <Circle cx="32" cy="32" r="30" fill={colors.white} />
-        <Path
-          d="M22 28c1.8-2.4 4.4-3.6 7-3.2"
-          stroke={colors.primary}
-          strokeWidth={2.6}
-          strokeLinecap="round"
-        />
-        <Path
-          d="M42 28c-1.8-2.4-4.4-3.6-7-3.2"
-          stroke={colors.primary}
-          strokeWidth={2.6}
-          strokeLinecap="round"
-        />
-        <Path
-          d="M24 40c2.6 3.4 6 5 8 5s5.4-1.6 8-5"
-          stroke={colors.primary}
-          strokeWidth={2.6}
-          strokeLinecap="round"
-        />
-      </Svg>
-    </View>
+const BuddyIcon = () => (
+  <View style={styles.iconTile}>
+    <Svg width={ms(22)} height={ms(22)} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 2.75A9.25 9.25 0 0 0 2.75 12c0 1.48.35 2.88.97 4.12.25.5.34 1.09.19 1.68l-.6 2.22a.55.55 0 0 0 .67.68l2.23-.6c.5-.13 1.05-.05 1.5.2A9.2 9.2 0 0 0 12 21.25 9.25 9.25 0 0 0 12 2.75Z"
+        stroke={CHAT.primary}
+        strokeWidth={1.7}
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M8 10.5h.01M12 10.5h.01M16 10.5h.01"
+        stroke={CHAT.primary}
+        strokeWidth={2.4}
+        strokeLinecap="round"
+      />
+    </Svg>
   </View>
-);
-
-const ArrowUpIcon = ({ color = colors.primary }: { color?: string }) => (
-  <Svg width={ms(13)} height={ms(13)} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M7 17 17 7M10 7h7v7"
-      stroke={color}
-      strokeWidth={2.2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
 );
 
 const BuddyLanding = ({
@@ -83,49 +62,40 @@ const BuddyLanding = ({
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.hero}>
-          <BuddyAvatar />
+          <BuddyIcon />
           {scopedToSpace ? (
             <>
-              <Text style={styles.kicker}>Asking about this space</Text>
-              <Text style={styles.greeting} numberOfLines={2}>
+              <Text style={styles.title} numberOfLines={2}>
                 {spaceName}
               </Text>
-              <Text style={styles.greetingSub}>
-                I can summarize notes, review open tasks, and suggest next steps.
+              <Text style={styles.subtitle}>
+                I can summarize notes, review open tasks, and suggest next
+                steps.
               </Text>
             </>
           ) : (
             <>
-              <Text style={styles.greeting}>
-                How can I help,{'\n'}
-                {greetingName}?
-              </Text>
-              <Text style={styles.greetingSub}>
+              <Text style={styles.title}>Hi {greetingName}</Text>
+              <Text style={styles.subtitle}>
                 Ask about notes, tasks, reminders, or what to focus on next.
               </Text>
             </>
           )}
-        </View>
 
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>
-            {scopedToSpace ? 'Try a prompt' : 'Suggested prompts'}
-          </Text>
-        </View>
-
-        <View style={styles.chipsWrap}>
-          {suggestions.map(suggestion => (
-            <Pressable
-              key={suggestion}
-              style={styles.chip}
-              onPress={() => onSuggestionPress(suggestion)}
-            >
-              <Text style={styles.chipText}>{suggestion}</Text>
-              <View style={styles.chipIcon}>
-                <ArrowUpIcon />
-              </View>
-            </Pressable>
-          ))}
+          <View style={styles.suggestions}>
+            {suggestions.map(suggestion => (
+              <Pressable
+                key={suggestion}
+                style={({ pressed }) => [
+                  styles.chip,
+                  pressed && styles.chipPressed,
+                ]}
+                onPress={() => onSuggestionPress(suggestion)}
+              >
+                <Text style={styles.chipText}>{suggestion}</Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -137,111 +107,78 @@ export default BuddyLanding;
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    backgroundColor: CHAT.surface,
   },
 
   content: {
+    flexGrow: 1,
+    justifyContent: 'center',
     paddingHorizontal: layout.screenPadding,
-    paddingBottom: ms(160),
+    paddingBottom: ms(120),
+    paddingTop: spacing.xl,
   },
 
   hero: {
     alignItems: 'center',
-    paddingTop: spacing.xl,
-    paddingBottom: spacing['2xl'],
+    gap: spacing.sm,
   },
 
-  avatarWrap: {
-    width: ms(88),
-    height: ms(88),
-    borderRadius: ms(44),
-    backgroundColor: colors.white,
+  iconTile: {
+    width: ms(44),
+    height: ms(44),
+    borderRadius: radii.sm,
+    backgroundColor: CHAT.primarySoft,
+    borderWidth: 1,
+    borderColor: CHAT.border,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xs,
   },
 
-  avatarInner: {
-    width: ms(72),
-    height: ms(72),
-    borderRadius: ms(36),
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  kicker: {
-    marginBottom: spacing.sm,
+  title: {
     textAlign: 'center',
-    color: colors.primary,
-    fontSize: fontSize.xs,
+    color: CHAT.text,
+    fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
+    letterSpacing: -0.2,
   },
 
-  greeting: {
+  subtitle: {
+    maxWidth: ms(300),
     textAlign: 'center',
-    color: colors.text,
-    fontSize: fontSize['3xl'],
-    fontWeight: fontWeight.bold,
-    lineHeight: ms(34),
-    letterSpacing: -0.4,
-  },
-
-  greetingSub: {
-    marginTop: spacing.sm,
-    textAlign: 'center',
-    color: colors.subText,
-    fontSize: fontSize.base,
+    color: CHAT.textMuted,
+    fontSize: fontSize.md,
     fontWeight: fontWeight.medium,
+    lineHeight: ms(18),
   },
 
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.md,
-  },
-
-  sectionLabel: {
-    color: colors.subText,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-  },
-
-  chipsWrap: {
+  suggestions: {
+    marginTop: spacing.sm,
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: spacing.sm,
   },
 
   chip: {
-    maxWidth: '100%',
-    flexDirection: 'row',
+    minHeight: ms(32),
+    paddingHorizontal: spacing.lg,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: CHAT.border,
+    backgroundColor: CHAT.surface,
     alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primaryLight,
-    borderRadius: radii.xl,
-    paddingVertical: spacing.md,
-    paddingLeft: spacing.lg,
-    paddingRight: spacing.md,
+    justifyContent: 'center',
+  },
+
+  chipPressed: {
+    borderColor: CHAT.primary,
+    backgroundColor: CHAT.primarySoft,
   },
 
   chipText: {
-    flexShrink: 1,
-    color: colors.primaryDark,
+    color: CHAT.text,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
-    lineHeight: ms(18),
-  },
-
-  chipIcon: {
-    width: ms(22),
-    height: ms(22),
-    borderRadius: ms(11),
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

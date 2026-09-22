@@ -63,6 +63,7 @@ import {
   ms,
   mvs,
   radii,
+  scrollThrottle,
   spacing,
 } from '../../theme';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
@@ -647,14 +648,9 @@ const Notes = () => {
       workspace: workspaceName,
       readTime: 'Quick note',
       tags: ['#Note'],
-      summary: preview,
-      highlights: [preview],
-      sections: [
-        {
-          title: 'Captured note',
-          content: preview,
-        },
-      ],
+      summary: '',
+      highlights: [],
+      sections: [],
       actionItems: [],
       body: preview,
       relatedNotes: [],
@@ -844,6 +840,7 @@ const Notes = () => {
         ]}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        scrollEventThrottle={scrollThrottle}
         style={styles.notesScroll}
         {...listPerf}
       />

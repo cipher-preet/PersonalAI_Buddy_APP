@@ -1113,7 +1113,7 @@ const styles = StyleSheet.create({
   sectionIcon: {
     width: ms(36),
     height: ms(36),
-    borderRadius: ms(12),
+    borderRadius: radii.sm,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primaryLight,

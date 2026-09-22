@@ -1,83 +1,76 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import Svg, { Path } from 'react-native-svg';
 
 import { HistoryIcon } from '../../../../styles/icons';
-import { COLORS } from '../styles';
+import { CHAT } from '../styles';
 import {
-  colors,
   fontSize,
   fontWeight,
   layout,
   ms,
+  radii,
   spacing,
 } from '../../../theme';
 
 type Props = {
   onHistoryPress?: () => void;
+  onNewChatPress?: () => void;
   showTitle?: boolean;
+  title?: string | null;
   contextLabel?: string | null;
 };
 
-const CloseIcon = ({ color = colors.text }: { color?: string }) => (
-  <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
+const PlusIcon = ({ color = CHAT.text }: { color?: string }) => (
+  <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M18 6 6 18M6 6l12 12"
+      d="M12 5v14M5 12h14"
       stroke={color}
       strokeWidth={2.1}
       strokeLinecap="round"
-      strokeLinejoin="round"
     />
   </Svg>
 );
 
 const Header = ({
   onHistoryPress,
+  onNewChatPress,
   showTitle = false,
+  title,
   contextLabel,
 }: Props) => {
-  const navigation = useNavigation();
-
-  const handleClose = () => {
-    navigation.navigate('Home' as never);
-  };
-
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        style={styles.iconButton}
+        style={styles.titleButton}
         activeOpacity={0.75}
         onPress={onHistoryPress}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         accessibilityRole="button"
         accessibilityLabel="Chat history"
       >
-        <HistoryIcon width={ms(20)} height={ms(20)} color={colors.primary} />
+        <HistoryIcon width={ms(18)} height={ms(18)} color={CHAT.primary} />
+        <Text style={styles.title} numberOfLines={1}>
+          {showTitle ? title?.trim() || 'Buddy' : 'Buddy'}
+        </Text>
       </TouchableOpacity>
 
-      {showTitle ? (
-        <View style={styles.center}>
-          <Text style={styles.title}>Buddy</Text>
-          {contextLabel ? (
-            <Text style={styles.subtitle} numberOfLines={1}>
-              {contextLabel}
-            </Text>
-          ) : null}
-        </View>
+      {contextLabel ? (
+        <Text style={styles.subtitle} numberOfLines={1}>
+          {contextLabel}
+        </Text>
       ) : (
-        <View style={styles.center} />
+        <View style={styles.subtitleSpacer} />
       )}
 
       <TouchableOpacity
-        style={styles.iconButton}
-        onPress={handleClose}
+        style={styles.newButton}
+        onPress={onNewChatPress}
         activeOpacity={0.75}
-        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         accessibilityRole="button"
-        accessibilityLabel="Close"
+        accessibilityLabel="New chat"
       >
-        <CloseIcon color={colors.text} />
+        <PlusIcon />
+        <Text style={styles.newButtonText}>New</Text>
       </TouchableOpacity>
     </View>
   );
@@ -88,43 +81,59 @@ export default Header;
 const styles = StyleSheet.create({
   container: {
     width: '100%',
+    minHeight: ms(48),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-    backgroundColor: 'transparent',
+    paddingVertical: spacing.sm,
+    backgroundColor: CHAT.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: CHAT.border,
+    gap: spacing.md,
   },
 
-  center: {
+  titleButton: {
     flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
   },
 
   title: {
-    fontSize: fontSize.lg,
+    flexShrink: 1,
+    fontSize: fontSize.md,
     fontWeight: fontWeight.bold,
-    color: COLORS.text,
+    color: CHAT.text,
   },
 
   subtitle: {
-    marginTop: spacing.xxs,
+    maxWidth: '28%',
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    color: colors.subText,
+    fontWeight: fontWeight.medium,
+    color: CHAT.textMuted,
   },
 
-  iconButton: {
-    width: layout.iconButtonSm,
-    height: layout.iconButtonSm,
-    borderRadius: layout.iconButtonSm / 2,
-    backgroundColor: COLORS.white,
-    justifyContent: 'center',
+  subtitleSpacer: {
+    width: spacing.xs,
+  },
+
+  newButton: {
+    minHeight: ms(32),
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.sm,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: CHAT.border,
+    backgroundColor: CHAT.surface,
+  },
+
+  newButtonText: {
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    color: CHAT.text,
   },
 });

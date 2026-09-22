@@ -9,7 +9,6 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import LinearGradient from 'react-native-linear-gradient';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import ReminderHeader from './components/ReminderHeader';
@@ -436,12 +435,6 @@ const RemindersScreen = () => {
         style={styles.listTarget}
         pointerEvents={reminderVoice.visible ? 'none' : 'auto'}
       >
-        <LinearGradient
-          colors={['#FFF5EE', '#F3EEFF', '#F7F7FB', colors.white]}
-          locations={[0, 0.35, 0.7, 1]}
-          style={StyleSheet.absoluteFill}
-        />
-
         <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
           <FlatList
             data={

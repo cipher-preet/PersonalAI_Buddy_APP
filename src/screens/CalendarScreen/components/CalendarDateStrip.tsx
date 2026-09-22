@@ -28,6 +28,7 @@ import {
   layout,
   ms,
   radii,
+  scrollThrottle,
   spacing,
 } from '../../../theme';
 
@@ -351,7 +352,7 @@ const CalendarDateStrip = ({
           }
         }}
         onScroll={handleScroll}
-        scrollEventThrottle={16}
+        scrollEventThrottle={scrollThrottle}
         onScrollToIndexFailed={info => {
           // Rare with full month rendered; soft retry once layout catches up.
           setTimeout(() => {

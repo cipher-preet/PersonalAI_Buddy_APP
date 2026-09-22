@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import SpaceFolderTile from './SpaceFolderTile';
@@ -18,6 +18,41 @@ type Props = {
   onDeleteSpace: (space: Space) => void;
 };
 
+const SpaceCell = memo(
+  ({
+    space,
+    statusLabel,
+    isDeleting,
+    onPress,
+    onDelete,
+  }: {
+    space: Space;
+    statusLabel: string;
+    isDeleting: boolean;
+    onPress: (space: Space) => void;
+    onDelete: (space: Space) => void;
+  }) => {
+    const handlePress = useCallback(() => onPress(space), [onPress, space]);
+    const handleDelete = useCallback(() => onDelete(space), [onDelete, space]);
+
+    return (
+      <View style={styles.cell}>
+        <SpaceFolderTile
+          spaceId={space._id}
+          title={space.spacename}
+          statusLabel={statusLabel}
+          notesCount={space.notesCount}
+          tasksCount={space.tasksCount}
+          isListening={space.isListning}
+          isDeleting={isDeleting}
+          onPress={handlePress}
+          onDelete={handleDelete}
+        />
+      </View>
+    );
+  },
+);
+
 const SpacesGrid = ({
   spaces,
   deletingSpaceId,
@@ -33,19 +68,14 @@ const SpacesGrid = ({
 
       <View style={styles.grid}>
         {spaces.map(space => (
-          <View key={space._id} style={styles.cell}>
-            <SpaceFolderTile
-              spaceId={space._id}
-              title={space.spacename}
-              statusLabel={getSubtitle(space)}
-              notesCount={space.notesCount}
-              tasksCount={space.tasksCount}
-              isListening={space.isListning}
-              isDeleting={deletingSpaceId === space._id}
-              onPress={() => onSpacePress(space)}
-              onDelete={() => onDeleteSpace(space)}
-            />
-          </View>
+          <SpaceCell
+            key={space._id}
+            space={space}
+            statusLabel={getSubtitle(space)}
+            isDeleting={deletingSpaceId === space._id}
+            onPress={onSpacePress}
+            onDelete={onDeleteSpace}
+          />
         ))}
       </View>
     </View>

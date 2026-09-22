@@ -9,22 +9,17 @@ import {
 } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import type { RouteProp } from '@react-navigation/native';
-import LinearGradient from 'react-native-linear-gradient';
-import {
-  SafeAreaView,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import Header from './components/Header';
 import UserMessage from './components/UserMessage';
 import AIMessage from './components/AIMessage';
-import BottomInput, { INPUT_BAR_HEIGHT } from './components/BottomInput';
+import BottomInput from './components/BottomInput';
 import ChatHistoryDrawer from './components/ChatHistoryDrawer';
 import TypingIndicator from './components/TypingIndicator';
 import ScrollToBottomButton from './components/ScrollToBottomButton';
 import BuddyLanding from './components/BuddyLanding';
-import NewChatFab from './components/NewChatFab';
-import { COLORS, styles } from './styles';
+import { styles } from './styles';
 import type { ChatMessage, ChatSession } from './types';
 import {
   useAskBuddyMutation,
@@ -38,7 +33,9 @@ import type {
   ChatMessageDto,
   ChatSessionDto,
 } from '../../store/api/chat';
-import { chatListPerf, ms, spacing } from '../../theme';
+import { useGetUserSpacesQuery } from '../../store/api/home';
+import { chatListPerf, ms, scrollThrottle, spacing } from '../../theme';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import type { MainTabParamList } from '../../navigation/types';
 
 const SUGGESTIONS = [
@@ -149,7 +146,7 @@ const mergeSessions = (
 };
 
 const BuddyScreen = () => {
-  const insets = useSafeAreaInsets();
+  const { tabBarClearance } = useResponsiveLayout();
   const route = useRoute<RouteProp<MainTabParamList, 'AI'>>();
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const inputRef = useRef<TextInput>(null);
@@ -161,7 +158,9 @@ const BuddyScreen = () => {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [input, setInput] = useState('');
-  const [inputBarHeight, setInputBarHeight] = useState(INPUT_BAR_HEIGHT);
+  const [selectedSpaceIds, setSelectedSpaceIds] = useState<string[]>(
+    spaceId ? [spaceId] : [],
+  );
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const [historyVisible, setHistoryVisible] = useState(false);
   const [sessionsCursor, setSessionsCursor] = useState<string | null>(null);
@@ -182,9 +181,49 @@ const BuddyScreen = () => {
     lastOpenedSpaceIdRef.current = spaceId;
     setActiveSessionId(null);
     setInput('');
+    setSelectedSpaceIds([spaceId]);
     setActiveChatLoading(false);
     setShowScrollToBottom(false);
   }, [spaceId]);
+
+  const {
+    data: spacesData,
+    isFetching: spacesLoading,
+    isError: spacesError,
+    refetch: refetchSpaces,
+  } = useGetUserSpacesQuery(
+    { userId: userId || '', limit: 50 },
+    { skip: !userId },
+  );
+
+  const spaces = spacesData?.data?.data?.spaces ?? [];
+  const selectedSpaces = useMemo(
+    () =>
+      selectedSpaceIds
+        .map(id => {
+          const space = spaces.find(item => item._id === id);
+          if (space) {
+            return { id: space._id, name: space.spacename };
+          }
+          if (id === spaceId && spaceName) {
+            return { id, name: spaceName };
+          }
+          return null;
+        })
+        .filter(Boolean) as Array<{ id: string; name: string }>,
+    [selectedSpaceIds, spaces, spaceId, spaceName],
+  );
+  const primarySpaceId = selectedSpaceIds[0];
+
+  const toggleSpaceContext = useCallback((id: string) => {
+    setSelectedSpaceIds(current =>
+      current.includes(id) ? current.filter(item => item !== id) : [...current, id],
+    );
+  }, []);
+
+  const removeSpaceContext = useCallback((id: string) => {
+    setSelectedSpaceIds(current => current.filter(item => item !== id));
+  }, []);
 
   const {
     data: sessionsResponse,
@@ -385,7 +424,7 @@ const BuddyScreen = () => {
     try {
       const response = await createChatSession({
         userId,
-        ...(spaceId ? { spaceId } : {}),
+        ...(primarySpaceId ? { spaceId: primarySpaceId } : {}),
       }).unwrap();
       const session = mapSessionDto(response.data);
       setSessions(prev =>
@@ -407,7 +446,7 @@ const BuddyScreen = () => {
       }
       throw error;
     }
-  }, [activeSessionId, createChatSession, recoverLatestSession, spaceId, userId]);
+  }, [activeSessionId, createChatSession, recoverLatestSession, primarySpaceId, userId]);
 
   const handleSend = useCallback(async () => {
     const trimmed = input.trim();
@@ -450,7 +489,7 @@ const BuddyScreen = () => {
         userId: userId || '',
         chatId: sessionId,
         question: trimmed,
-        ...(spaceId ? { spaceId } : {}),
+        ...(primarySpaceId ? { spaceId: primarySpaceId } : {}),
       }).unwrap();
       const assistantMessage: ChatMessage = {
         id: `${Date.now()}-assistant`,
@@ -489,6 +528,7 @@ const BuddyScreen = () => {
     updateSessionById,
     userId,
     spaceId,
+    primarySpaceId,
   ]);
 
   const handleSuggestionPress = (suggestion: string) => {
@@ -593,7 +633,9 @@ const BuddyScreen = () => {
     }
   }, [messages.length, activeSessionId]);
 
-  const renderMessage = ({ item }: { item: ChatMessage }) => {
+  const keyExtractor = useCallback((item: ChatMessage) => item.id, []);
+
+  const renderMessage = useCallback(({ item }: { item: ChatMessage }) => {
     if (item.role === 'user') {
       return <UserMessage text={item.text || ''} time={item.time} />;
     }
@@ -601,7 +643,12 @@ const BuddyScreen = () => {
     return (
       <AIMessage text={item.text} bullets={item.bullets} time={item.time} />
     );
-  };
+  }, []);
+
+  const listContentStyle = useMemo(
+    () => [styles.listContent, { paddingBottom: spacing['2xl'] + ms(56) }],
+    [],
+  );
 
   const sessionsLoadingInitial =
     !!userId &&
@@ -611,40 +658,30 @@ const BuddyScreen = () => {
 
   const showLanding = messages.length === 0;
 
-  const keyboardOpen = keyboardHeight > 0;
-  const inputSafeBottom = keyboardOpen
+  const inputSafeBottom = keyboardHeight > 0
     ? keyboardHeight + KEYBOARD_INPUT_GAP
-    : Math.max(insets.bottom, spacing.xl);
-
-  // Keep the FAB clear of the real input bar height (including padding / expansion).
-  const fabBottom = inputBarHeight + spacing.md;
+    : tabBarClearance;
 
   return (
-    <LinearGradient
-      colors={[
-        COLORS.gradientStart,
-        COLORS.gradientMid,
-        COLORS.gradientEnd,
-        COLORS.gradientEnd,
-      ]}
-      locations={[0, 0.25, 0.7, 1]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.gradient}
-    >
+    <View style={styles.gradient}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <Header
           onHistoryPress={handleOpenHistory}
+          onNewChatPress={handleNewChat}
           showTitle={!showLanding}
-          contextLabel={spaceName}
+          contextLabel={selectedSpaces[0]?.name || spaceName}
         />
 
         <View style={styles.chatArea}>
           {showLanding ? (
             <BuddyLanding
               userName={userName}
-              spaceName={spaceName}
-              suggestions={spaceId ? SPACE_SUGGESTIONS : SUGGESTIONS}
+              spaceName={selectedSpaces[0]?.name || spaceName}
+              suggestions={
+                selectedSpaces.length > 0 || spaceId
+                  ? SPACE_SUGGESTIONS
+                  : SUGGESTIONS
+              }
               onSuggestionPress={handleSuggestionPress}
             />
           ) : (
@@ -652,12 +689,9 @@ const BuddyScreen = () => {
               <FlatList
                 ref={listRef}
                 data={messages}
-                keyExtractor={item => item.id}
+                keyExtractor={keyExtractor}
                 renderItem={renderMessage}
-                contentContainerStyle={[
-                  styles.listContent,
-                  { paddingBottom: spacing['2xl'] + ms(56) },
-                ]}
+                contentContainerStyle={listContentStyle}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
                 keyboardDismissMode="interactive"
@@ -677,7 +711,7 @@ const BuddyScreen = () => {
                 }
                 onContentSizeChange={handleContentSizeChange}
                 onScroll={handleListScroll}
-                scrollEventThrottle={16}
+                scrollEventThrottle={scrollThrottle}
                 {...chatListPerf}
               />
 
@@ -689,15 +723,7 @@ const BuddyScreen = () => {
             </View>
           )}
 
-          <View
-            style={[styles.inputBar, { paddingBottom: inputSafeBottom }]}
-            onLayout={event => {
-              const nextHeight = event.nativeEvent.layout.height;
-              if (nextHeight > 0 && nextHeight !== inputBarHeight) {
-                setInputBarHeight(nextHeight);
-              }
-            }}
-          >
+          <View style={[styles.inputBar, { paddingBottom: inputSafeBottom }]}>
             <BottomInput
               ref={inputRef}
               value={input}
@@ -705,13 +731,16 @@ const BuddyScreen = () => {
               onSend={handleSend}
               onFocus={handleInputFocus}
               disabled={!userId || creatingChat || sendingMessage}
+              selectedSpaces={selectedSpaces}
+              spaces={spaces}
+              spacesLoading={spacesLoading && spaces.length === 0}
+              spacesError={spacesError}
+              onToggleSpace={toggleSpaceContext}
+              onRemoveSpace={removeSpaceContext}
+              onRetrySpaces={refetchSpaces}
             />
           </View>
         </View>
-
-        {!keyboardOpen ? (
-          <NewChatFab onPress={handleNewChat} bottom={fabBottom} />
-        ) : null}
       </SafeAreaView>
 
       <ChatHistoryDrawer
@@ -729,7 +758,7 @@ const BuddyScreen = () => {
         onRetry={refetchSessions}
         onLoadMore={handleLoadMoreSessions}
       />
-    </LinearGradient>
+    </View>
   );
 };
 

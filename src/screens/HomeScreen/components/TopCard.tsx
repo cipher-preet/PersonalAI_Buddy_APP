@@ -43,8 +43,6 @@ const TopCard = ({
         active && {
           backgroundColor: colors.inputBg,
           borderColor: activeColor,
-          shadowColor: activeColor,
-          shadowOpacity: 0.14,
         },
       ]}
       onPress={onPress}
@@ -106,11 +104,11 @@ const styles = StyleSheet.create({
   card: {
     width: '48%',
     backgroundColor: colors.white,
-    borderRadius: ms(26),
+    borderRadius: radii['2xl'],
     paddingHorizontal: ms(16),
     paddingTop: ms(14),
     paddingBottom: mvs(14),
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
   },
 

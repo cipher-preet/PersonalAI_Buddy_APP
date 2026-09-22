@@ -1,3 +1,4 @@
+import { devLog } from '../utils/logger';
 import {
   NativeModules,
   PermissionsAndroid,
@@ -268,7 +269,7 @@ export const requestVoiceListeningPermissions = async () => {
   }
 
   await requestListeningNotificationPermission().catch(error => {
-    console.log('Notification permission request failed:', error);
+    devLog('Notification permission request failed:', error);
   });
 };
 
@@ -282,7 +283,7 @@ export const startBackgroundListeningNotification = async ({
   }
 
   await requestListeningNotificationPermission().catch(error => {
-    console.log('Notification permission request failed:', error);
+    devLog('Notification permission request failed:', error);
   });
 
   if (!BuddyListeningService) {
@@ -369,7 +370,7 @@ export const startVoiceRecordingWithSilenceDetection = async ({
 
     try {
       const completedRecording = await finalizeCurrentRecording(false);
-      console.log('Max voice segment duration reached. Uploading chunk:', {
+      devLog('Max voice segment duration reached. Uploading chunk:', {
         path: completedRecording.path,
         durationMs: durationMs ?? completedRecording.durationMs,
         reason,
@@ -382,7 +383,7 @@ export const startVoiceRecordingWithSilenceDetection = async ({
 
       await onSegmentReady?.(completedRecording);
     } catch (error) {
-      console.log('Voice recording max duration rotation failed:', error);
+      devLog('Voice recording max duration rotation failed:', error);
     } finally {
       isRotatingSegment = false;
     }
@@ -451,7 +452,7 @@ export const startVoiceRecordingWithSilenceDetection = async ({
       try {
         isContinuousRecordingActive = !stopOnSilence;
         const completedRecording = await finalizeCurrentRecording(stopOnSilence);
-        console.log('Silence detected. Finalized voice recording:', {
+        devLog('Silence detected. Finalized voice recording:', {
           path: completedRecording.path,
           stopOnSilence,
         });
@@ -466,7 +467,7 @@ export const startVoiceRecordingWithSilenceDetection = async ({
 
         await onSilenceDetected?.(completedRecording);
       } catch (error) {
-        console.log('Voice recording rotation failed:', error);
+        devLog('Voice recording rotation failed:', error);
       } finally {
         isRotatingSegment = false;
       }
@@ -494,7 +495,7 @@ export const startListeningSession = async ({
     },
   );
 
-  console.log('Listening session start response:', response.data);
+  devLog('Listening session start response:', response.data);
 
   return response.data;
 };
@@ -517,7 +518,7 @@ export const endListeningSession = async ({
     },
   );
 
-  console.log('Listening session end response:', response.data);
+  devLog('Listening session end response:', response.data);
 
   return response.data;
 };
@@ -567,7 +568,7 @@ export const uploadVoiceMessage = async ({
       }
 
       const stat = await RNFS.stat(path);
-      console.log('Uploading voice file:', {
+      devLog('Uploading voice file:', {
         url: VOICE_MESSAGE_URL,
         path,
         size: stat.size,
@@ -605,7 +606,7 @@ export const uploadVoiceMessage = async ({
       const canRetry =
         attempt < VOICE_UPLOAD_MAX_ATTEMPTS && shouldRetryVoiceUpload(error);
 
-      console.log('Voice upload failed details:', {
+      devLog('Voice upload failed details:', {
         message: axiosError.message,
         code: axiosError.code,
         status: axiosError.response?.status,
@@ -631,7 +632,7 @@ export const uploadVoiceMessage = async ({
       await RNFS.unlink(path);
     }
   }
-  console.log('Voice upload response:', response.data);
+  devLog('Voice upload response:', response.data);
 
   return response.data;
 };

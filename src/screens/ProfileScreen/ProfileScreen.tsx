@@ -22,14 +22,10 @@ import {
   launchImageLibrary,
 } from 'react-native-image-picker';
 
-import ProfileHeader from './components/ProfileHeader';
 import ProfileCard from './components/ProfileCard';
-import ProfileActionGrid, {
-  formatMetric,
-} from './components/ProfileActionGrid';
+import ProfileActionGrid from './components/ProfileActionGrid';
 
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { useGetProfileSummaryQuery } from '../../store/api/home';
 import { useGetPlanStatusQuery } from '../../store/api/payments';
 import {
   useUpdateProfileAvatarMutation,
@@ -83,16 +79,10 @@ const ProfileScreen = () => {
   const hasEmail = Boolean(email?.trim());
   const hasPhone = Boolean(phone);
   const {
-    data: profileSummaryData,
-    isFetching: isFetchingSummary,
-    isError: isSummaryError,
-  } = useGetProfileSummaryQuery({ userId }, { skip: !userId });
-  const {
     data: planStatusData,
     isFetching: isFetchingPlanStatus,
     isError: isPlanStatusError,
   } = useGetPlanStatusQuery({ userId }, { skip: !userId });
-  const currentPlanName = planStatusData?.plan?.name;
 
   useEffect(() => {
     if (!isEditOpen) {
@@ -276,12 +266,6 @@ const ProfileScreen = () => {
 
   return (
     <View style={styles.root}>
-      <LinearGradient
-        colors={[colors.gradientStart, colors.gradientMid, colors.white]}
-        locations={[0, 0.55, 1]}
-        style={StyleSheet.absoluteFill}
-      />
-
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -296,36 +280,17 @@ const ProfileScreen = () => {
             },
           ]}
         >
-          <ProfileHeader />
           <ProfileCard
             name={name}
             email={email}
-            phone={phone}
             avatar={avatar}
-            planName={currentPlanName}
-            isPlanLoading={isFetchingPlanStatus}
-            isPlanError={isPlanStatusError}
-            notesCount={formatMetric(
-              profileSummaryData?.data?.notesCount,
-              isFetchingSummary,
-              isSummaryError,
-            )}
-            tasksCount={formatMetric(
-              profileSummaryData?.data?.tasksCount,
-              isFetchingSummary,
-              isSummaryError,
-            )}
-            spacesCount={formatMetric(
-              profileSummaryData?.data?.spacesCount,
-              isFetchingSummary,
-              isSummaryError,
-            )}
             onEditPress={() => setIsEditOpen(true)}
           />
           <ProfileActionGrid
-            planName={currentPlanName}
+            planStatus={planStatusData}
             isPlanLoading={isFetchingPlanStatus}
             isPlanError={isPlanStatusError}
+            onEditProfile={() => setIsEditOpen(true)}
           />
         </ScrollView>
 
@@ -469,7 +434,7 @@ export default ProfileScreen;
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
   },
 
   container: {

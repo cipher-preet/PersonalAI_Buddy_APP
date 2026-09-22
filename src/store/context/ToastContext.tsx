@@ -1,4 +1,10 @@
-import React, { createContext, useState, useCallback } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from 'react';
 import { ToastType } from '../../components/CustomToast';
 
 export interface ShowToastParams {
@@ -8,19 +14,21 @@ export interface ShowToastParams {
   duration?: number;
 }
 
-interface ToastContextType {
+type ToastActions = {
   showToast: (params: ShowToastParams) => void;
   hideToast: () => void;
+};
+
+type ToastState = {
   toastVisible: boolean;
   toastMessage: string;
   toastDescription?: string;
   toastType: ToastType;
   toastDuration: number;
-}
+};
 
-export const ToastContext = createContext<ToastContextType | undefined>(
-  undefined,
-);
+const ToastActionsContext = createContext<ToastActions | undefined>(undefined);
+const ToastStateContext = createContext<ToastState | undefined>(undefined);
 
 interface ToastProviderProps {
   children: React.ReactNode;
@@ -29,7 +37,9 @@ interface ToastProviderProps {
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [toastDescription, setToastDescription] = useState<string | undefined>();
+  const [toastDescription, setToastDescription] = useState<
+    string | undefined
+  >();
   const [toastType, setToastType] = useState<ToastType>('success');
   const [toastDuration, setToastDuration] = useState(3000);
 
@@ -53,27 +63,48 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     setToastVisible(false);
   }, []);
 
+  const actions = useMemo(
+    () => ({
+      showToast,
+      hideToast,
+    }),
+    [hideToast, showToast],
+  );
+
+  const state = useMemo(
+    () => ({
+      toastVisible,
+      toastMessage,
+      toastDescription,
+      toastType,
+      toastDuration,
+    }),
+    [toastDescription, toastDuration, toastMessage, toastType, toastVisible],
+  );
+
   return (
-    <ToastContext.Provider
-      value={{
-        showToast,
-        hideToast,
-        toastVisible,
-        toastMessage,
-        toastDescription,
-        toastType,
-        toastDuration,
-      }}
-    >
-      {children}
-    </ToastContext.Provider>
+    <ToastActionsContext.Provider value={actions}>
+      <ToastStateContext.Provider value={state}>
+        {children}
+      </ToastStateContext.Provider>
+    </ToastActionsContext.Provider>
   );
 };
 
+/** Stable actions — safe for screens; does not re-render on toast show/hide. */
 export const useToast = () => {
-  const context = React.useContext(ToastContext);
+  const context = useContext(ToastActionsContext);
   if (!context) {
     throw new Error('useToast must be used within ToastProvider');
+  }
+  return context;
+};
+
+/** Toast UI state — only App/CustomToast should subscribe. */
+export const useToastState = () => {
+  const context = useContext(ToastStateContext);
+  if (!context) {
+    throw new Error('useToastState must be used within ToastProvider');
   }
   return context;
 };

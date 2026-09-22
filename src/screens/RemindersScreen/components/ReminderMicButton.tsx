@@ -124,11 +124,6 @@ const styles = StyleSheet.create({
     borderRadius: ACTION_RADIUS,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.primaryMid,
-    shadowOffset: { width: 0, height: ms(4) },
-    shadowOpacity: 0.28,
-    shadowRadius: ms(8),
-    elevation: 4,
   },
 
   micPressable: {
@@ -141,10 +136,5 @@ const styles = StyleSheet.create({
     borderRadius: ACTION_RADIUS,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.primaryMid,
-    shadowOffset: { width: 0, height: ms(4) },
-    shadowOpacity: 0.22,
-    shadowRadius: ms(8),
-    elevation: 4,
   },
 });

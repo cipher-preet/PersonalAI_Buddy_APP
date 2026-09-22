@@ -20,10 +20,9 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
-import { HistoryIcon } from '../../../../styles/icons';
 import type { ChatSession } from '../types';
+import { CHAT } from '../styles';
 import {
-  colors,
   fontSize,
   fontWeight,
   ms,
@@ -32,7 +31,7 @@ import {
   spacing,
 } from '../../../theme';
 
-const DRAWER_WIDTH = Math.min(screenWidth * 0.86, ms(340));
+const DRAWER_WIDTH = Math.min(screenWidth * 0.86, ms(320));
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 type Props = {
@@ -51,7 +50,7 @@ type Props = {
   onLoadMore?: () => void;
 };
 
-const CloseIcon = ({ color = colors.text }: { color?: string }) => (
+const CloseIcon = ({ color = CHAT.text }: { color?: string }) => (
   <Svg width={ms(16)} height={ms(16)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M18 6 6 18M6 6l12 12"
@@ -63,70 +62,102 @@ const CloseIcon = ({ color = colors.text }: { color?: string }) => (
   </Svg>
 );
 
-const PlusIcon = () => (
+const PlusIcon = ({ color = CHAT.text }: { color?: string }) => (
   <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
     <Path
       d="M12 5v14M5 12h14"
-      stroke={colors.white}
-      strokeWidth={2.2}
+      stroke={color}
+      strokeWidth={2.1}
       strokeLinecap="round"
     />
   </Svg>
 );
 
-const formatSessionDate = (date: Date): string => {
+const formatHistoryMeta = (date: Date) => {
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const sessionDay = new Date(
+  const diffMs = Math.max(0, now.getTime() - date.getTime());
+  const diffMinutes = Math.floor(diffMs / 60000);
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
+  const startOfDate = new Date(
     date.getFullYear(),
     date.getMonth(),
     date.getDate(),
   );
   const diffDays = Math.round(
-    (today.getTime() - sessionDay.getTime()) / (1000 * 60 * 60 * 24),
+    (startOfToday.getTime() - startOfDate.getTime()) / 86400000,
   );
 
+  if (diffMinutes < 1) {
+    return 'Just now';
+  }
+  if (diffDays === 0 && diffMinutes < 60) {
+    return `${diffMinutes}m ago`;
+  }
   if (diffDays === 0) {
-    return 'Today';
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+    });
   }
   if (diffDays === 1) {
     return 'Yesterday';
   }
   if (diffDays < 7) {
-    return date.toLocaleDateString('en-US', { weekday: 'long' });
+    return `${diffDays}d ago`;
   }
-
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
   });
 };
 
-const formatSessionTime = (date: Date): string =>
-  date.toLocaleTimeString('en-US', {
-    hour: 'numeric',
-    minute: '2-digit',
-  });
+const groupChatSessions = (sessions: ChatSession[]) => {
+  const groups: Record<'today' | 'yesterday' | 'week' | 'older', ChatSession[]> =
+    {
+      today: [],
+      yesterday: [],
+      week: [],
+      older: [],
+    };
 
-const groupSessions = (sessions: ChatSession[]) => {
-  const groups: { label: string; data: ChatSession[] }[] = [];
-  const map = new Map<string, ChatSession[]>();
+  const now = new Date();
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+  );
 
   sessions.forEach(session => {
-    const label = formatSessionDate(session.updatedAt);
-    const existing = map.get(label);
-    if (existing) {
-      existing.push(session);
+    const startOfDate = new Date(
+      session.updatedAt.getFullYear(),
+      session.updatedAt.getMonth(),
+      session.updatedAt.getDate(),
+    );
+    const diffDays = Math.round(
+      (startOfToday.getTime() - startOfDate.getTime()) / 86400000,
+    );
+
+    if (diffDays <= 0) {
+      groups.today.push(session);
+    } else if (diffDays === 1) {
+      groups.yesterday.push(session);
+    } else if (diffDays < 7) {
+      groups.week.push(session);
     } else {
-      map.set(label, [session]);
+      groups.older.push(session);
     }
   });
 
-  map.forEach((data, label) => {
-    groups.push({ label, data });
-  });
-
-  return groups;
+  return [
+    { label: 'Today', sessions: groups.today },
+    { label: 'Yesterday', sessions: groups.yesterday },
+    { label: 'Past week', sessions: groups.week },
+    { label: 'Older', sessions: groups.older },
+  ].filter(group => group.sessions.length > 0);
 };
 
 const ChatHistoryDrawer = ({
@@ -178,7 +209,7 @@ const ChatHistoryDrawer = ({
   }, [visible, progress, finishClose]);
 
   const backdropStyle = useAnimatedStyle(() => ({
-    opacity: progress.value * 0.4,
+    opacity: progress.value * 0.28,
   }));
 
   const drawerStyle = useAnimatedStyle(() => ({
@@ -196,7 +227,7 @@ const ChatHistoryDrawer = ({
   const visibleSessions = sessions.filter(
     session => !session.id.startsWith('pending-'),
   );
-  const groupedSessions = groupSessions(visibleSessions);
+  const groupedSessions = groupChatSessions(visibleSessions);
 
   return (
     <Modal
@@ -217,69 +248,59 @@ const ChatHistoryDrawer = ({
             styles.drawer,
             drawerStyle,
             {
-              paddingTop: insets.top + spacing.md,
+              paddingTop: insets.top + spacing.lg,
               paddingBottom: Math.max(insets.bottom, spacing.lg),
             },
           ]}
         >
           <View style={styles.header}>
-            <View>
-              <Text style={styles.headerEyebrow}>Buddy</Text>
-              <Text style={styles.headerTitle}>History</Text>
+            <Text style={styles.headerTitle}>Chat history</Text>
+            <View style={styles.headerActions}>
+              <TouchableOpacity
+                style={styles.newButton}
+                onPress={onNewChat}
+                activeOpacity={0.8}
+                disabled={creating}
+                accessibilityRole="button"
+                accessibilityLabel="New chat"
+              >
+                {creating ? (
+                  <ActivityIndicator size="small" color={CHAT.primary} />
+                ) : (
+                  <>
+                    <PlusIcon color={CHAT.text} />
+                    <Text style={styles.newButtonText}>New</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={onClose}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel="Close history"
+              >
+                <CloseIcon />
+              </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={onClose}
-              activeOpacity={0.75}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <CloseIcon />
-            </TouchableOpacity>
           </View>
-
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryText}>
-              {visibleSessions.length} conversation
-              {visibleSessions.length === 1 ? '' : 's'}
-            </Text>
-          </View>
-
-          <TouchableOpacity
-            activeOpacity={0.88}
-            onPress={onNewChat}
-            style={[styles.newChatButton, creating && styles.newChatDisabled]}
-            disabled={creating}
-          >
-            {creating ? (
-              <ActivityIndicator size="small" color={colors.white} />
-            ) : (
-              <PlusIcon />
-            )}
-            <Text style={styles.newChatText}>
-              {creating ? 'Starting...' : 'New Chat'}
-            </Text>
-          </TouchableOpacity>
 
           <ScrollView
             style={styles.list}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
-            bounces
+            keyboardShouldPersistTaps="handled"
           >
             {loading ? (
-              <View style={styles.loadingState}>
-                <ActivityIndicator size="small" color={colors.primary} />
-                <Text style={styles.loadingText}>Loading conversations...</Text>
+              <View style={styles.stateBlock}>
+                <ActivityIndicator size="small" color={CHAT.primary} />
+                <Text style={styles.stateText}>Loading conversations…</Text>
               </View>
             ) : null}
 
             {!loading && error ? (
-              <View style={styles.errorState}>
-                <Text style={styles.errorTitle}>Couldn't load history</Text>
-                <Text style={styles.errorText} numberOfLines={3}>
-                  {error}
-                </Text>
+              <View style={styles.stateBlock}>
+                <Text style={styles.errorText}>{error}</Text>
                 {onRetry ? (
                   <TouchableOpacity
                     style={styles.retryButton}
@@ -295,87 +316,49 @@ const ChatHistoryDrawer = ({
             {groupedSessions.map(group => (
               <View key={group.label} style={styles.section}>
                 <Text style={styles.sectionLabel}>{group.label}</Text>
-
-                <View style={styles.sectionCards}>
-                  {group.data.map(session => {
-                    const isActive = session.id === activeSessionId;
-
-                    return (
-                      <TouchableOpacity
-                        key={session.id}
-                        activeOpacity={0.86}
-                        onPress={() => onSelectSession(session.id)}
-                        style={[
-                          styles.sessionCard,
-                          isActive && styles.sessionCardActive,
-                        ]}
-                      >
-                        <View style={styles.sessionTop}>
-                          <Text
-                            style={[
-                              styles.sessionTitle,
-                              isActive && styles.sessionTitleActive,
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {session.title}
-                          </Text>
-                          {isActive ? (
-                            <View style={styles.activePill}>
-                              <Text style={styles.activePillText}>Active</Text>
-                            </View>
-                          ) : null}
-                        </View>
-
-                        <Text style={styles.sessionPreview} numberOfLines={2}>
-                          {session.preview}
-                        </Text>
-
-                        <View style={styles.sessionMeta}>
-                          <Text style={styles.sessionMetaText}>
-                            {formatSessionTime(session.updatedAt)}
-                          </Text>
-                          <View style={styles.metaDot} />
-                          <Text style={styles.sessionMetaText}>
-                            {session.messageCount} msg
-                            {session.messageCount === 1 ? '' : 's'}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
+                {group.sessions.map(session => {
+                  const isActive = session.id === activeSessionId;
+                  return (
+                    <TouchableOpacity
+                      key={session.id}
+                      activeOpacity={0.82}
+                      onPress={() => onSelectSession(session.id)}
+                      style={[
+                        styles.historyItem,
+                        isActive && styles.historyItemActive,
+                      ]}
+                    >
+                      <Text style={styles.historyTitle} numberOfLines={1}>
+                        {session.title}
+                      </Text>
+                      <Text style={styles.historyMeta}>
+                        {formatHistoryMeta(session.updatedAt)}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             ))}
 
             {!loading && hasMore && onLoadMore ? (
-              <View style={styles.loadMoreWrap}>
-                <TouchableOpacity
-                  style={styles.loadMoreButton}
-                  activeOpacity={0.82}
-                  onPress={onLoadMore}
-                  disabled={loadingMore}
-                >
-                  {loadingMore ? (
-                    <ActivityIndicator size="small" color={colors.primary} />
-                  ) : (
-                    <Text style={styles.loadMoreText}>Load more</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
+              <TouchableOpacity
+                style={styles.loadMoreButton}
+                activeOpacity={0.82}
+                onPress={onLoadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? (
+                  <ActivityIndicator size="small" color={CHAT.primary} />
+                ) : (
+                  <Text style={styles.loadMoreText}>Load more</Text>
+                )}
+              </TouchableOpacity>
             ) : null}
 
             {!loading && !error && visibleSessions.length === 0 ? (
-              <View style={styles.emptyState}>
-                <View style={styles.emptyIconWrap}>
-                  <HistoryIcon
-                    width={ms(22)}
-                    height={ms(22)}
-                    color={colors.primary}
-                  />
-                </View>
-                <Text style={styles.emptyTitle}>No conversations yet</Text>
-                <Text style={styles.emptySubtitle}>
+              <View style={styles.stateBlock}>
+                <Text style={styles.stateText}>No conversations yet</Text>
+                <Text style={styles.stateHint}>
                   Start a new chat and it will show up here.
                 </Text>
               </View>
@@ -395,7 +378,7 @@ const styles = StyleSheet.create({
   },
 
   backdrop: {
-    ...StyleSheet.absoluteFill,
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: '#0F172A',
   },
 
@@ -405,81 +388,59 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     width: DRAWER_WIDTH,
-    backgroundColor: colors.background,
+    backgroundColor: CHAT.surface,
     borderTopRightRadius: radii['2xl'],
     borderBottomRightRadius: radii['2xl'],
+    borderRightWidth: 1,
+    borderColor: CHAT.border,
     overflow: 'hidden',
-    borderRightWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
   },
 
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.xl,
-    marginBottom: spacing.sm,
-  },
-
-  headerEyebrow: {
-    color: colors.primary,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-    marginBottom: spacing.xxs,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+    gap: spacing.md,
   },
 
   headerTitle: {
-    fontSize: fontSize['3xl'],
+    flex: 1,
+    color: CHAT.textMuted,
+    fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
-    color: colors.text,
-    letterSpacing: -0.4,
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
+  },
+
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+
+  newButton: {
+    minHeight: ms(34),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: radii.md,
+  },
+
+  newButtonText: {
+    color: CHAT.text,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
   },
 
   closeButton: {
-    width: ms(34),
-    height: ms(34),
-    borderRadius: ms(17),
-    backgroundColor: colors.white,
+    width: ms(32),
+    height: ms(32),
+    borderRadius: ms(8),
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-
-  summaryRow: {
-    paddingHorizontal: spacing.xl,
-    marginBottom: spacing.md,
-  },
-
-  summaryText: {
-    color: colors.subText,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.medium,
-  },
-
-  newChatButton: {
-    marginHorizontal: spacing.xl,
-    marginBottom: spacing.lg,
-    minHeight: ms(44),
-    borderRadius: radii.pill,
-    backgroundColor: colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.xl,
-  },
-
-  newChatDisabled: {
-    opacity: 0.75,
-  },
-
-  newChatText: {
-    color: colors.white,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
   },
 
   list: {
@@ -487,199 +448,101 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    paddingHorizontal: spacing.xl,
-    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.sm,
+    paddingBottom: spacing['2xl'],
+    gap: spacing.lg,
   },
 
   section: {
-    marginBottom: spacing.lg,
+    gap: spacing.xs,
   },
 
   sectionLabel: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-    color: colors.subText,
-    marginBottom: spacing.sm,
-  },
-
-  sectionCards: {
-    gap: spacing.sm,
-  },
-
-  sessionCard: {
-    backgroundColor: colors.white,
-    borderRadius: radii.xl,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
+    paddingBottom: spacing.xs,
+    color: CHAT.textMuted,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
   },
 
-  sessionCardActive: {
-    backgroundColor: colors.primarySoft,
-    borderColor: '#C4B5FD',
+  historyItem: {
+    minHeight: ms(54),
+    gap: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: radii.md,
   },
 
-  sessionTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.xs,
+  historyItemActive: {
+    backgroundColor: '#E8ECF2',
   },
 
-  sessionTitle: {
-    flex: 1,
+  historyTitle: {
+    color: CHAT.text,
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
-    color: colors.text,
   },
 
-  sessionTitleActive: {
-    color: colors.primaryDark,
-  },
-
-  activePill: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: radii.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-  },
-
-  activePillText: {
-    color: colors.primaryDark,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-  },
-
-  sessionPreview: {
+  historyMeta: {
+    color: CHAT.textMuted,
     fontSize: fontSize.sm,
-    lineHeight: ms(18),
-    fontWeight: fontWeight.medium,
-    color: colors.subText,
-    marginBottom: spacing.sm,
-  },
-
-  sessionMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  sessionMetaText: {
-    fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
-    color: colors.muted,
   },
 
-  metaDot: {
-    width: ms(3),
-    height: ms(3),
-    borderRadius: ms(2),
-    backgroundColor: colors.muted,
-    marginHorizontal: spacing.sm,
-  },
-
-  emptyState: {
+  stateBlock: {
     alignItems: 'center',
-    paddingTop: spacing['4xl'],
+    gap: spacing.sm,
     paddingHorizontal: spacing.xl,
+    paddingVertical: spacing['4xl'],
   },
 
-  emptyIconWrap: {
-    width: ms(56),
-    height: ms(56),
-    borderRadius: ms(28),
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-
-  emptyTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-
-  emptySubtitle: {
+  stateText: {
+    color: CHAT.textMuted,
     fontSize: fontSize.sm,
-    lineHeight: ms(20),
-    fontWeight: fontWeight.medium,
-    color: colors.subText,
+    fontWeight: fontWeight.semibold,
     textAlign: 'center',
   },
 
-  loadingState: {
-    alignItems: 'center',
-    paddingVertical: spacing['2xl'],
-    gap: spacing.md,
-  },
-
-  loadingText: {
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-    color: colors.subText,
-  },
-
-  errorState: {
-    backgroundColor: '#FEF2F2',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#FECACA',
-    borderRadius: radii.xl,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-
-  errorTitle: {
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
-    color: '#991B1B',
-    marginBottom: spacing.xs,
+  stateHint: {
+    color: CHAT.textSoft,
+    fontSize: fontSize.xs,
+    textAlign: 'center',
   },
 
   errorText: {
+    color: '#B42318',
     fontSize: fontSize.sm,
-    lineHeight: ms(18),
-    fontWeight: fontWeight.medium,
-    color: colors.errorDark,
+    fontWeight: fontWeight.semibold,
+    textAlign: 'center',
   },
 
   retryButton: {
-    alignSelf: 'flex-start',
-    marginTop: spacing.md,
-    borderRadius: radii.pill,
-    backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#FECACA',
+    marginTop: spacing.xs,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
+    borderRadius: radii.md,
+    backgroundColor: CHAT.surfaceMuted,
   },
 
   retryButtonText: {
-    fontSize: fontSize.sm,
+    color: CHAT.text,
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
-    color: '#991B1B',
-  },
-
-  loadMoreWrap: {
-    alignItems: 'center',
-    marginBottom: spacing.lg,
   },
 
   loadMoreButton: {
+    alignSelf: 'center',
     minHeight: ms(36),
-    paddingHorizontal: spacing['2xl'],
-    borderRadius: radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-    backgroundColor: colors.white,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: CHAT.surfaceMuted,
   },
 
   loadMoreText: {
+    color: CHAT.primary,
     fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-    color: colors.primary,
+    fontWeight: fontWeight.bold,
   },
 });
