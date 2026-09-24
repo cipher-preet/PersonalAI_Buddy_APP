@@ -205,15 +205,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.border,
+    overflow: 'hidden',
   },
 
   card: {
-    borderRadius: radii['2xl'],
     backgroundColor: colors.white,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.xl,
     paddingBottom: spacing.md,
-    overflow: 'hidden',
   },
 
   topRow: {

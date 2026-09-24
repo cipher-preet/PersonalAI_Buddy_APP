@@ -2,21 +2,20 @@ import React, {
   forwardRef,
   useCallback,
   useEffect,
-  useMemo,
   useState,
 } from 'react';
 import { BackHandler, StyleSheet } from 'react-native';
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
-  BottomSheetScrollView,
+  BottomSheetView,
 } from '@gorhom/bottom-sheet';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Space, SpaceStats } from '../../../../store/api/home';
 import { NotesIcon, TaskIcons } from '../../../../../styles/icons';
 import SpaceSheetHeader from './SpaceSheetHeader';
-import SpaceOverviewCard from './SpaceOverviewCard';
 import SpaceActionList from './SpaceActionList';
+import SpaceListeningCard from './SpaceListeningCard';
 import {
   colors,
   ms,
@@ -29,8 +28,11 @@ type Props = {
   space: Space | null;
   stats?: SpaceStats;
   isStatsLoading?: boolean;
-  isStatsError?: boolean;
-  onRetryStats?: () => void;
+  isListeningHere?: boolean;
+  isListeningElsewhere?: boolean;
+  elsewhereSpaceName?: string;
+  isListeningBusy?: boolean;
+  onToggleListening: () => void;
   onNavigateNotes: () => void;
   onNavigateTasks: () => void;
 };
@@ -58,15 +60,17 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
       space,
       stats,
       isStatsLoading = false,
-      isStatsError = false,
-      onRetryStats,
+      isListeningHere = false,
+      isListeningElsewhere = false,
+      elsewhereSpaceName,
+      isListeningBusy = false,
+      onToggleListening,
       onNavigateNotes,
       onNavigateTasks,
     },
     ref,
   ) => {
     const insets = useSafeAreaInsets();
-    const snapPoints = useMemo(() => ['72%'], []);
     const [isSheetOpen, setIsSheetOpen] = useState(false);
 
     const handleClose = useCallback(() => {
@@ -82,7 +86,7 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
           appearsOnIndex={0}
           disappearsOnIndex={-1}
           pressBehavior="close"
-          opacity={0.4}
+          opacity={0.45}
         />
       ),
       [],
@@ -114,6 +118,10 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
       onNavigateTasks();
     };
 
+    const handleListening = () => {
+      onToggleListening();
+    };
+
     const notesCount = stats?.notesCount ?? 0;
     const tasksCount = stats?.tasksCount ?? 0;
 
@@ -122,10 +130,10 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
         id: 'notes',
         label: 'Notes',
         subtitle: isStatsLoading
-          ? 'Open captured notes'
-          : countLabel(notesCount, 'note saved', 'notes saved'),
+          ? 'Open notes'
+          : countLabel(notesCount, 'note', 'notes'),
         icon: (
-          <NotesIcon width={ms(16)} height={ms(16)} color={colors.primary} />
+          <NotesIcon width={ms(18)} height={ms(18)} color={colors.primary} />
         ),
         onPress: handleNotes,
       },
@@ -133,10 +141,10 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
         id: 'tasks',
         label: 'Tasks',
         subtitle: isStatsLoading
-          ? 'Open follow-up tasks'
-          : countLabel(tasksCount, 'task tracked', 'tasks tracked'),
+          ? 'Open tasks'
+          : countLabel(tasksCount, 'task', 'tasks'),
         icon: (
-          <TaskIcons width={ms(16)} height={ms(16)} color={colors.primary} />
+          <TaskIcons width={ms(18)} height={ms(18)} color={colors.primary} />
         ),
         onPress: handleTasks,
       },
@@ -145,8 +153,7 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
     return (
       <BottomSheetModal
         ref={ref}
-        index={0}
-        snapPoints={snapPoints}
+        enableDynamicSizing
         enablePanDownToClose
         backdropComponent={renderBackdrop}
         backgroundStyle={styles.sheetBackground}
@@ -154,13 +161,12 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
         onChange={index => setIsSheetOpen(index >= 0)}
       >
         {space ? (
-          <BottomSheetScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={[
-              styles.scrollContent,
+          <BottomSheetView
+            style={[
+              styles.content,
               {
                 paddingBottom:
-                  vSpacing['2xl'] + Math.max(insets.bottom, spacing.md),
+                  vSpacing.xl + Math.max(insets.bottom, spacing.md),
               },
             ]}
           >
@@ -168,22 +174,20 @@ const SpaceDetailBottomSheet = forwardRef<BottomSheetModal, Props>(
               title={space.spacename}
               description={space.description}
               createdAt={formatDate(space.createdAt)}
-              isListening={space.isListning}
+              isListening={isListeningHere || space.isListning}
               onClose={handleClose}
             />
 
-            <SpaceOverviewCard
-              notesCount={notesCount}
-              tasksCount={tasksCount}
-              tasksCompleted={stats?.doneTasksCount ?? 0}
-              completionRate={stats?.completionPercentage ?? 0}
-              isLoading={isStatsLoading}
-              isError={isStatsError}
-              onRetry={onRetryStats}
+            <SpaceListeningCard
+              isListeningHere={isListeningHere}
+              isListeningElsewhere={isListeningElsewhere}
+              elsewhereSpaceName={elsewhereSpaceName}
+              isBusy={isListeningBusy}
+              onPress={handleListening}
             />
 
             <SpaceActionList actions={actions} />
-          </BottomSheetScrollView>
+          </BottomSheetView>
         ) : null}
       </BottomSheetModal>
     );
@@ -195,20 +199,20 @@ export default SpaceDetailBottomSheet;
 const styles = StyleSheet.create({
   sheetBackground: {
     backgroundColor: colors.white,
-    borderTopLeftRadius: ms(28),
-    borderTopRightRadius: ms(28),
+    borderTopLeftRadius: ms(24),
+    borderTopRightRadius: ms(24),
   },
 
   indicator: {
     backgroundColor: colors.border,
-    width: ms(44),
-    height: ms(5),
+    width: ms(36),
+    height: ms(4),
     borderRadius: radii.pill,
   },
 
-  scrollContent: {
-    paddingHorizontal: ms(20),
-    paddingTop: spacing.xs,
+  content: {
+    paddingHorizontal: spacing['3xl'],
+    paddingTop: spacing.sm,
     gap: spacing['2xl'],
   },
 });

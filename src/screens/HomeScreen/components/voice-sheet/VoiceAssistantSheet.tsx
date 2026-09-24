@@ -388,20 +388,20 @@ export default VoiceAssistantSheet;
 const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: layout.screenPadding,
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.xl,
   },
 
   sheetBackground: {
     backgroundColor: colors.white,
-    borderTopLeftRadius: ms(28),
-    borderTopRightRadius: ms(28),
+    borderTopLeftRadius: ms(24),
+    borderTopRightRadius: ms(24),
   },
 
   indicator: {
-    backgroundColor: colors.muted,
-    width: ms(56),
-    height: ms(5),
+    backgroundColor: colors.border,
+    width: ms(36),
+    height: ms(4),
     borderRadius: radii.pill,
   },
 
@@ -416,12 +416,14 @@ const styles = StyleSheet.create({
   },
 
   closeButton: {
-    width: ms(34),
-    height: ms(34),
-    borderRadius: ms(17),
+    width: ms(32),
+    height: ms(32),
+    borderRadius: radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.lightGray,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
 
   closeIcon: {
@@ -456,10 +458,10 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: mvs(50),
-    backgroundColor: colors.inputBg,
-    borderWidth: StyleSheet.hairlineWidth,
+    backgroundColor: colors.white,
+    borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: ms(16),
+    borderRadius: radii.lg,
     paddingHorizontal: ms(16),
     color: colors.black,
     fontSize: fontSize.base,
@@ -469,7 +471,7 @@ const styles = StyleSheet.create({
     height: mvs(50),
     marginLeft: spacing.md,
     paddingHorizontal: ms(16),
-    borderRadius: ms(16),
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
@@ -512,13 +514,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.screenPadding,
     paddingTop: spacing.md,
     backgroundColor: colors.white,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.borderLight,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
 
   startButton: {
     height: mvs(52),
-    borderRadius: ms(16),
+    borderRadius: radii.lg,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary,
@@ -534,13 +536,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
     height: mvs(52),
-    borderRadius: ms(16),
-    backgroundColor: colors.lightGray,
+    borderRadius: radii.lg,
+    backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.borderLight,
-    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
 
   loadMoreButtonLoading: {

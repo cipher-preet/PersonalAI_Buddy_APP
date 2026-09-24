@@ -188,6 +188,7 @@ const Home = () => {
   const [cursor, setCursor] = useState('');
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
+  const [isSpaceListeningBusy, setIsSpaceListeningBusy] = useState(false);
   const userId = useAppSelector(state => state.auth.userId) ?? '';
   const authToken = useAppSelector(state => state.auth.token);
   const { showToast } = useToast();
@@ -221,8 +222,6 @@ const Home = () => {
   const {
     data: selectedSpaceStatsData,
     isFetching: isFetchingSelectedSpaceStats,
-    isError: isSelectedSpaceStatsError,
-    refetch: refetchSelectedSpaceStats,
   } = useGetSpaceStatsQuery(
     { userId, spaceId: selectedSpace?._id ?? '' },
     { skip: !userId || !selectedSpace?._id },
@@ -744,6 +743,108 @@ const Home = () => {
     openVoiceSheet();
   }, [isVoiceActive, openVoiceSheet]);
 
+  const activeListeningSpace =
+    spaces.find(space => space.isListning) ?? activeSpace ?? null;
+
+  const isListeningHere = Boolean(
+    selectedSpace &&
+      isVoiceActive &&
+      (selectedSpace.isListning ||
+        selectedSpace._id === activeListeningSpace?._id),
+  );
+
+  const isListeningElsewhere = Boolean(
+    selectedSpace && isVoiceActive && !isListeningHere,
+  );
+
+  const handleSpaceDetailListening = useCallback(async () => {
+    if (!selectedSpace || isSpaceListeningBusy) {
+      return;
+    }
+
+    if (isListeningHere) {
+      setIsSpaceListeningBusy(true);
+      try {
+        await stopListeningRef.current();
+        setSelectedSpace(prev =>
+          prev ? { ...prev, isListning: false } : prev,
+        );
+        spaceDetailRef.current?.dismiss();
+      } finally {
+        setIsSpaceListeningBusy(false);
+      }
+      return;
+    }
+
+    if (isVoiceActive) {
+      showToast({
+        message: `Stop listening in ${
+          activeListeningSpace?.spacename || 'the other space'
+        } first.`,
+        type: 'error',
+      });
+      return;
+    }
+
+    if (remainingMs !== UNLIMITED_LIMIT && remainingMs <= 0) {
+      setUpgradeResource('recordingHours');
+      setShowUpgradePrompt(true);
+      return;
+    }
+
+    setIsSpaceListeningBusy(true);
+
+    try {
+      await requestVoiceListeningPermissions();
+
+      const res = await startListning({
+        spaceId: selectedSpace._id,
+        isListning: true,
+      }).unwrap();
+
+      if (!res?.success) {
+        showToast({
+          message: res?.data?.message || 'Unable to start.',
+          type: 'error',
+        });
+        return;
+      }
+
+      setSelectedSpace(prev =>
+        prev ? { ...prev, isListning: true } : prev,
+      );
+      spaceDetailRef.current?.dismiss();
+      await handleStartListening({ space: selectedSpace, mode: 'voice' });
+    } catch (err: any) {
+      if (isPlanLimitError(err)) {
+        setUpgradeResource(getPlanLimitResource(err) || 'recordingHours');
+        setShowUpgradePrompt(true);
+        return;
+      }
+
+      showToast({
+        message:
+          err?.message === 'Microphone permission denied.' ||
+          err?.message === 'Notification permission denied.'
+            ? err.message
+            : 'Start failed. Try again.',
+        type: 'error',
+      });
+    } finally {
+      setIsSpaceListeningBusy(false);
+    }
+  }, [
+    activeListeningSpace?.spacename,
+    handleStartListening,
+    isListeningHere,
+    isSpaceListeningBusy,
+    isVoiceActive,
+    remainingMs,
+    selectedSpace,
+    showToast,
+    startListning,
+  ]);
+
   const keyExtractor = useCallback((item: Space) => item._id, []);
 
   const listHeader = useMemo(
@@ -871,8 +972,11 @@ const Home = () => {
           space={selectedSpace}
           stats={selectedSpaceStatsData?.data}
           isStatsLoading={isFetchingSelectedSpaceStats}
-          isStatsError={isSelectedSpaceStatsError}
-          onRetryStats={refetchSelectedSpaceStats}
+          isListeningHere={isListeningHere}
+          isListeningElsewhere={isListeningElsewhere}
+          elsewhereSpaceName={activeListeningSpace?.spacename}
+          isListeningBusy={isSpaceListeningBusy}
+          onToggleListening={handleSpaceDetailListening}
           onNavigateNotes={() => {
             if (selectedSpace) {
               navigation.navigate('Notes', { spaceId: selectedSpace._id });

@@ -40,11 +40,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.white,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.xl,
     paddingHorizontal: spacing.xl,
     marginBottom: spacing.md,
     borderRadius: ms(16),
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
   },
 

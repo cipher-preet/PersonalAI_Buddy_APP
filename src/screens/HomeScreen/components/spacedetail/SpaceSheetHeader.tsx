@@ -39,6 +39,9 @@ const SpaceSheetHeader = ({
   onClose,
 }: Props) => {
   const trimmedDescription = description?.trim();
+  const showDescription =
+    Boolean(trimmedDescription) &&
+    trimmedDescription!.toLowerCase() !== 'new';
 
   return (
     <View style={styles.container}>
@@ -49,10 +52,9 @@ const SpaceSheetHeader = ({
             isListening && styles.folderWrapListening,
           ]}
         >
-          <SpaceFolderIcon size={ms(34)} listening={isListening} />
+          <SpaceFolderIcon size={ms(32)} listening={isListening} />
         </View>
         <View style={styles.copy}>
-          <Text style={styles.kicker}>Workspace</Text>
           <Text style={styles.title} numberOfLines={1}>
             {title}
           </Text>
@@ -72,17 +74,16 @@ const SpaceSheetHeader = ({
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.description} numberOfLines={2}>
-        {trimmedDescription ||
-          'Use this workspace to capture notes, track tasks, and chat with Buddy.'}
-      </Text>
+      {showDescription ? (
+        <Text style={styles.description} numberOfLines={2}>
+          {trimmedDescription}
+        </Text>
+      ) : null}
 
       {isListening ? (
         <View style={styles.listeningPill}>
           <View style={styles.liveDot} />
-          <Text style={styles.listeningText}>
-            Buddy is listening in this space
-          </Text>
+          <Text style={styles.listeningText}>Listening</Text>
         </View>
       ) : null}
     </View>
@@ -93,19 +94,19 @@ export default SpaceSheetHeader;
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: spacing.xs,
+    gap: spacing.xl,
   },
 
   topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.xl,
   },
 
   folderWrap: {
-    width: ms(52),
-    height: ms(52),
-    borderRadius: ms(16),
+    width: ms(48),
+    height: ms(48),
+    borderRadius: radii.lg,
     backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
@@ -118,72 +119,61 @@ const styles = StyleSheet.create({
   copy: {
     flex: 1,
     minWidth: 0,
-  },
-
-  kicker: {
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
-    color: colors.primary,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
+    gap: spacing.xxs,
   },
 
   title: {
-    marginTop: spacing.xxs,
     fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.extrabold,
+    fontWeight: fontWeight.bold,
     color: colors.text,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
 
   created: {
-    marginTop: spacing.xxs,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
     color: colors.muted,
   },
 
   description: {
-    marginTop: spacing.lg,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.medium,
     color: colors.subText,
-    lineHeight: ms(18),
+    lineHeight: ms(20),
   },
 
   listeningPill: {
-    marginTop: spacing.md,
     alignSelf: 'flex-start',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     backgroundColor: colors.successSoft,
     borderRadius: radii.pill,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.xl,
     paddingVertical: spacing.sm,
   },
 
   liveDot: {
-    width: ms(7),
-    height: ms(7),
-    borderRadius: ms(4),
+    width: ms(6),
+    height: ms(6),
+    borderRadius: ms(3),
     backgroundColor: colors.success,
   },
 
   listeningText: {
     color: colors.successText,
     fontSize: fontSize.xs,
-    fontWeight: fontWeight.bold,
+    fontWeight: fontWeight.semibold,
   },
 
   closeButton: {
     width: ms(32),
     height: ms(32),
-    borderRadius: ms(16),
+    borderRadius: radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderWidth: 1,
     borderColor: colors.border,
   },
 });
