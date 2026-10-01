@@ -22,3 +22,28 @@
 -keepclassmembers class * {
     @com.facebook.react.bridge.ReactMethod <methods>;
 }
+
+# React Native core / Hermes / JNI entry points.
+-keep class com.facebook.hermes.unicode.** { *; }
+-keep class com.facebook.jni.** { *; }
+-keep class com.facebook.react.turbomodule.** { *; }
+
+# Reanimated + Worklets (resolved from native C++).
+-keep class com.swmansion.reanimated.** { *; }
+-keep class com.swmansion.worklets.** { *; }
+
+# Razorpay checkout (required by Razorpay docs; payment screen crashes without it).
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+-keepattributes JavascriptInterface
+-keepattributes *Annotation*
+-dontwarn com.razorpay.**
+-keep class com.razorpay.** { *; }
+-optimizations !method/inlining/*
+-keepclasseswithmembers class * {
+    public void onPayment*(...);
+}
+
+# Keep readable stack traces in crash reports.
+-keepattributes SourceFile,LineNumberTable

@@ -3,6 +3,10 @@
  */
 import 'react-native-gesture-handler';
 import { AppRegistry } from 'react-native';
+import { installGlobalErrorHandler } from './src/utils/crashHandler';
+
+installGlobalErrorHandler();
+
 import {
   getMessaging,
   setBackgroundMessageHandler,

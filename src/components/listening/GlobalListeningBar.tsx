@@ -445,13 +445,15 @@ const styles = StyleSheet.create({
   },
 
   bar: {
-    width: '100%',
+    alignSelf: 'center',
+    width: '82%',
+    maxWidth: ms(340),
     backgroundColor: colors.white,
     borderRadius: radii['3xl'],
     borderWidth: 1,
     borderColor: colors.border,
     overflow: 'hidden',
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
     paddingTop: spacing.xs,
   },

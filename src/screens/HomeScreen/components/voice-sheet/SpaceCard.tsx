@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { memo } from 'react';
 
 import { Text, TouchableOpacity, View, StyleSheet } from 'react-native';
+import type { Space } from '../../../../store/api/home';
 import {
   colors,
   fontSize,
@@ -10,11 +11,17 @@ import {
   spacing,
 } from '../../../../theme';
 
-const SpaceCard = ({ item, selected, onPress }: any) => {
+type Props = {
+  item: Space;
+  selected: boolean;
+  onSelect: (item: Space) => void;
+};
+
+const SpaceCard = ({ item, selected, onSelect }: Props) => {
   return (
     <TouchableOpacity
       activeOpacity={0.9}
-      onPress={onPress}
+      onPress={() => onSelect(item)}
       style={[styles.card, selected && styles.selectedCard]}
     >
       <View style={[styles.circle, selected && styles.selectedCircle]} />
@@ -32,7 +39,7 @@ const SpaceCard = ({ item, selected, onPress }: any) => {
   );
 };
 
-export default SpaceCard;
+export default memo(SpaceCard);
 
 const styles = StyleSheet.create({
   card: {

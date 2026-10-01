@@ -6,10 +6,10 @@ import {
   Text,
   View,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
-
+import BrandLogo from '../../../components/BrandLogo';
 import { CHAT } from '../styles';
 import {
+  colors,
   fontSize,
   fontWeight,
   layout,
@@ -27,20 +27,7 @@ type Props = {
 
 const BuddyIcon = () => (
   <View style={styles.iconTile}>
-    <Svg width={ms(22)} height={ms(22)} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M12 2.75A9.25 9.25 0 0 0 2.75 12c0 1.48.35 2.88.97 4.12.25.5.34 1.09.19 1.68l-.6 2.22a.55.55 0 0 0 .67.68l2.23-.6c.5-.13 1.05-.05 1.5.2A9.2 9.2 0 0 0 12 21.25 9.25 9.25 0 0 0 12 2.75Z"
-        stroke={CHAT.primary}
-        strokeWidth={1.7}
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M8 10.5h.01M12 10.5h.01M16 10.5h.01"
-        stroke={CHAT.primary}
-        strokeWidth={2.4}
-        strokeLinecap="round"
-      />
-    </Svg>
+    <BrandLogo size={ms(56)} />
   </View>
 );
 
@@ -124,15 +111,14 @@ const styles = StyleSheet.create({
   },
 
   iconTile: {
-    width: ms(44),
-    height: ms(44),
-    borderRadius: radii.sm,
-    backgroundColor: CHAT.primarySoft,
-    borderWidth: 1,
-    borderColor: CHAT.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xs,
+    borderRadius: ms(16),
+    backgroundColor: colors.brandNavy,
+    shadowColor: CHAT.primary,
+    shadowOffset: { width: 0, height: ms(6) },
+    shadowOpacity: 0.22,
+    shadowRadius: ms(12),
+    elevation: 6,
+    marginBottom: spacing.sm,
   },
 
   title: {

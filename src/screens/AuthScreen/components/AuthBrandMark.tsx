@@ -1,14 +1,15 @@
 import React from 'react';
-import { Image, StyleSheet, View } from 'react-native';
-import { colors, ms, radii, spacing } from '../../../theme';
+import { Image, StyleSheet, Text, View } from 'react-native';
+import { colors, fontSize, fontWeight, ms, radii, spacing } from '../../../theme';
 
 type Props = {
   size?: 'md' | 'lg';
+  showWordmark?: boolean;
 };
 
 const APP_ICON = require('../../../assets/images/app-icon.png');
 
-const AuthBrandMark = ({ size = 'lg' }: Props) => {
+const AuthBrandMark = ({ size = 'lg', showWordmark = false }: Props) => {
   const isLarge = size === 'lg';
 
   return (
@@ -16,11 +17,16 @@ const AuthBrandMark = ({ size = 'lg' }: Props) => {
       <View style={[styles.frame, isLarge ? styles.frameLg : styles.frameMd]}>
         <Image
           source={APP_ICON}
-          style={[styles.icon, isLarge ? styles.iconLg : styles.iconMd]}
+          style={styles.icon}
           resizeMode="cover"
-          accessibilityLabel="Buddy app icon"
+          accessibilityLabel="KukuNotes app icon"
         />
       </View>
+      {showWordmark ? (
+        <Text style={styles.wordmark} accessibilityRole="header">
+          Kuku<Text style={styles.wordmarkAccent}>Notes</Text>
+        </Text>
+      ) : null}
     </View>
   );
 };
@@ -30,6 +36,7 @@ export default AuthBrandMark;
 const styles = StyleSheet.create({
   wrapper: {
     alignSelf: 'center',
+    alignItems: 'center',
   },
 
   wrapperLg: {
@@ -41,24 +48,25 @@ const styles = StyleSheet.create({
   },
 
   frame: {
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.brandBorder,
+    backgroundColor: '#0B1546',
     overflow: 'hidden',
+    shadowColor: colors.primaryPurpleDark,
+    shadowOffset: { width: 0, height: ms(6) },
+    shadowOpacity: 0.25,
+    shadowRadius: ms(12),
+    elevation: 6,
   },
 
   frameLg: {
     width: ms(84),
     height: ms(84),
     borderRadius: radii['2xl'],
-    padding: ms(4),
   },
 
   frameMd: {
     width: ms(72),
     height: ms(72),
     borderRadius: radii.xl,
-    padding: ms(3),
   },
 
   icon: {
@@ -66,11 +74,15 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 
-  iconLg: {
-    borderRadius: ms(18),
+  wordmark: {
+    marginTop: spacing.md,
+    fontSize: fontSize['3xl'],
+    fontWeight: fontWeight.extrabold,
+    color: colors.text,
+    letterSpacing: -0.4,
   },
 
-  iconMd: {
-    borderRadius: ms(14),
+  wordmarkAccent: {
+    color: colors.primaryPurple,
   },
 });

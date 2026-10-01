@@ -72,7 +72,7 @@ const OnboardingUsageScreen = ({ navigation }: Props) => {
 
       <ProgressDots step={2} />
 
-      <Text style={styles.title}>How will you use Buddy?</Text>
+      <Text style={styles.title}>How will you use KukuNotes?</Text>
       <Text style={styles.subtitle}>
         Choose what you want to get done so we can tailor your home experience.
       </Text>

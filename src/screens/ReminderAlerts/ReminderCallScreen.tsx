@@ -172,10 +172,10 @@ const ReminderCallScreen = ({ navigation, route }: Props) => {
 
   return (
     <LinearGradient
-      colors={['#1E1B4B', '#312E81', '#4338CA']}
+      colors={[colors.brandNavy, colors.planProMid, colors.primary]}
       style={styles.root}
     >
-      <StatusBar barStyle="light-content" backgroundColor="#1E1B4B" />
+      <StatusBar barStyle="light-content" backgroundColor={colors.brandNavy} />
       <SafeAreaView style={styles.safe}>
         <Text style={styles.kicker}>{statusLabel}</Text>
 
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     width: ms(220),
     height: ms(220),
     borderRadius: ms(110),
-    backgroundColor: '#A5B4FC',
+    backgroundColor: colors.brandViolet,
   },
   avatarWrap: {
     width: ms(108),

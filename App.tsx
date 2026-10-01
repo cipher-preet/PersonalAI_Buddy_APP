@@ -11,7 +11,9 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 import { colors } from './src/theme';
+import AppErrorBoundary from './src/components/AppErrorBoundary';
 import CustomToast from './src/components/CustomToast';
+import { onErrorReported, reportError } from './src/utils/crashHandler';
 import RootNavigator from './src/navigation/RootNavigator';
 import { ListeningProvider } from './src/store/context/ListeningContext';
 import { ToastProvider, useToast, useToastState } from './src/store/context/ToastContext';
@@ -38,7 +40,26 @@ const AppContent = () => {
     toastType,
     toastDuration,
   } = useToastState();
-  const { hideToast } = useToast();
+  const { hideToast, showToast } = useToast();
+
+  useEffect(() => {
+    let lastShownAt = 0;
+    return onErrorReported((_error, context) => {
+      if (context.source !== 'global' || __DEV__) {
+        return;
+      }
+      const now = Date.now();
+      if (now - lastShownAt < 4000) {
+        return;
+      }
+      lastShownAt = now;
+      showToast({
+        message: 'Something went wrong',
+        description: 'Please try that again.',
+        type: 'error',
+      });
+    });
+  }, [showToast]);
 
   return (
     <>
@@ -66,20 +87,32 @@ const AppContent = () => {
 
 const App = () => {
   useEffect(() => {
-    configureGoogleSignIn();
-    return setupReminderNotifications();
+    try {
+      configureGoogleSignIn();
+    } catch (error) {
+      reportError(error, { source: 'global' });
+    }
+
+    try {
+      return setupReminderNotifications();
+    } catch (error) {
+      reportError(error, { source: 'global' });
+      return undefined;
+    }
   }, []);
 
   return (
-    <Provider store={store}>
-      <SafeAreaProvider>
-        <ToastProvider>
-          <ListeningProvider>
-            <AppContent />
-          </ListeningProvider>
-        </ToastProvider>
-      </SafeAreaProvider>
-    </Provider>
+    <AppErrorBoundary variant="app">
+      <Provider store={store}>
+        <SafeAreaProvider>
+          <ToastProvider>
+            <ListeningProvider>
+              <AppContent />
+            </ListeningProvider>
+          </ToastProvider>
+        </SafeAreaProvider>
+      </Provider>
+    </AppErrorBoundary>
   );
 };
 

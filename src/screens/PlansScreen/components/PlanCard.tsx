@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   },
 
   cardFeaturedSelected: {
-    backgroundColor: '#EEF2FF',
+    backgroundColor: colors.primaryLight,
     borderColor: colors.primaryMid,
   },
 

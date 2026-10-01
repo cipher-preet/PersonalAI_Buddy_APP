@@ -26,6 +26,7 @@ import { useToast } from '../../../../store/context/ToastContext';
 import { useAppSelector } from '../../../../store/hooks';
 import { useCreateSpaceMutation } from '../../../../store/api/home';
 import UpgradePlanPromptModal from '../../../../components/UpgradePlanPromptModal';
+import { devWarn } from '../../../../utils/logger';
 import {
   getPlanLimitPrompt,
   getPlanLimitResource,
@@ -187,7 +188,7 @@ const CreateSpaceBottomSheet = forwardRef((_props: any, ref: any) => {
         message: 'Create space failed. Please try again.',
         type: 'error',
       });
-      console.log('Create space failed:', error);
+      devWarn('Create space failed:', error);
     }
   };
 

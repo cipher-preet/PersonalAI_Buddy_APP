@@ -134,3 +134,107 @@ export const isBriefingReady = (briefing?: DailyBriefingPayload) =>
 
 export const sectionItems = (items?: BriefingListItem[]) =>
   listOrEmpty(items).filter(item => item.title.trim().length > 0);
+
+export const toLocalDateKey = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+/** Minutes since midnight for labels like "9:30 AM"; null when unparseable. */
+export const parseTimeLabelToMinutes = (label?: string | null) => {
+  const match = label?.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
+  if (!match) {
+    return null;
+  }
+  let hour = Number(match[1]);
+  const minute = Number(match[2]);
+  const period = match[3]?.toUpperCase();
+  if (period === 'PM' && hour < 12) {
+    hour += 12;
+  }
+  if (period === 'AM' && hour === 12) {
+    hour = 0;
+  }
+  return hour * 60 + minute;
+};
+
+export const greetingForHour = (hour: number) => {
+  if (hour < 12) {
+    return 'Good morning';
+  }
+  if (hour < 17) {
+    return 'Good afternoon';
+  }
+  return 'Good evening';
+};
+
+export type ScheduleEntryKind = 'meeting' | 'reminder';
+
+export type ScheduleEntry = {
+  id: string;
+  kind: ScheduleEntryKind;
+  title: string;
+  timeLabel: string;
+  endTimeLabel?: string;
+  detail?: string;
+  minutes: number | null;
+  done: boolean;
+};
+
+type ScheduleEvent = {
+  id: string;
+  title: string;
+  location?: string;
+  description?: string;
+  startTimeLabel: string;
+  endTimeLabel: string;
+};
+
+type ScheduleReminder = {
+  id: string;
+  title: string;
+  description?: string;
+  timeLabel: string;
+  expired?: boolean;
+};
+
+export const buildTodaySchedule = (
+  events: ScheduleEvent[],
+  reminders: ScheduleReminder[],
+  nowMinutes: number,
+): ScheduleEntry[] => {
+  const entries: ScheduleEntry[] = [
+    ...events.map(event => {
+      const minutes = parseTimeLabelToMinutes(event.startTimeLabel);
+      const endMinutes = parseTimeLabelToMinutes(event.endTimeLabel);
+      return {
+        id: `event-${event.id}`,
+        kind: 'meeting' as const,
+        title: event.title,
+        timeLabel: event.startTimeLabel,
+        endTimeLabel: event.endTimeLabel,
+        detail: event.location || event.description || undefined,
+        minutes,
+        done: (endMinutes ?? minutes ?? Infinity) < nowMinutes,
+      };
+    }),
+    ...reminders.map(reminder => {
+      const minutes = parseTimeLabelToMinutes(reminder.timeLabel);
+      return {
+        id: `reminder-${reminder.id}`,
+        kind: 'reminder' as const,
+        title: reminder.title,
+        timeLabel: reminder.timeLabel,
+        detail: reminder.description || undefined,
+        minutes,
+        done: Boolean(reminder.expired) || (minutes ?? Infinity) < nowMinutes,
+      };
+    }),
+  ];
+
+  return entries.sort(
+    (left, right) => (left.minutes ?? 24 * 60) - (right.minutes ?? 24 * 60),
+  );
+};

@@ -175,11 +175,11 @@ const LoginScreen = ({ navigation }: Props) => {
       contentStyle={styles.layoutContent}
     >
       <View style={styles.hero}>
-        <AuthBrandMark size="md" />
+        <AuthBrandMark size="md" showWordmark />
         <Text style={styles.title}>Sign In</Text>
         <Text style={styles.subtitle}>
-          Enter your mobile number to sign in to Buddy and continue where you
-          left off.
+          Enter your mobile number to sign in to KukuNotes and continue where
+          you left off.
         </Text>
       </View>
 

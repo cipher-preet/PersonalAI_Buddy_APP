@@ -196,6 +196,8 @@ const ReminderListeningOverlay = ({
     });
   }, [content, glow, mounted, overlay, visible]);
 
+  useEffect(() => () => glow.stopAnimation(), [glow]);
+
   useEffect(() => {
     if (!visible) {
       return;

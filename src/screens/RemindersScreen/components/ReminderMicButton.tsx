@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 
-import { MicIcon } from '../../../../styles/icons';
+// import { MicIcon } from '../../../../styles/icons';
 import {
   colors,
   fontSize,
@@ -33,10 +33,10 @@ const PlusIcon = () => (
   </Svg>
 );
 
-const ReminderMicButton = ({ bottomInset, onPress, onAddPress }: Props) => {
+const ReminderMicButton = ({ bottomInset, onAddPress }: Props) => {
   return (
     <View style={[styles.wrapper, { paddingBottom: bottomInset + spacing['2xl'] }]}>
-      <Text style={styles.hint}>Tap + to add, or speak a reminder</Text>
+      <Text style={styles.hint}>Tap + to add a reminder</Text>
 
       <View style={styles.actions}>
         <Pressable
@@ -62,7 +62,7 @@ const ReminderMicButton = ({ bottomInset, onPress, onAddPress }: Props) => {
           </LinearGradient>
         </Pressable>
 
-        <Pressable
+        {/* <Pressable
           onPress={onPress}
           accessibilityRole="button"
           accessibilityLabel="Start voice reminder"
@@ -83,7 +83,7 @@ const ReminderMicButton = ({ bottomInset, onPress, onAddPress }: Props) => {
           >
             <MicIcon width={ICON_SIZE} height={ICON_SIZE} color={colors.white} />
           </LinearGradient>
-        </Pressable>
+        </Pressable> */}
       </View>
     </View>
   );

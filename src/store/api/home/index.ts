@@ -83,6 +83,41 @@ export type BriefingTaskCard = {
   id: string;
   title: string;
   meta: string;
+  priority?: string;
+  due?: string;
+  dueStatus?: string;
+  space?: string;
+  reason?: string;
+};
+
+export type BriefingFocusItem = {
+  id: string;
+  title: string;
+  why: string;
+  timeHint: string;
+  taskId: string;
+};
+
+export type BriefingAgendaCard = {
+  id: string;
+  kind: string;
+  time: string;
+  endTime: string;
+  title: string;
+  location: string;
+  prep: string;
+};
+
+export type BriefingStats = {
+  completedTasks: number;
+  openTasks: number;
+  overdueTasks: number;
+  dueToday: number;
+  meetings: number;
+  reminders: number;
+  conversations: number;
+  chatMessages: number;
+  notes: number;
 };
 
 export type BriefingMeetingCard = {
@@ -118,6 +153,8 @@ export type BriefingSourceStats = {
   eventCount: number;
   reminderCount: number;
   pendingTranscriptCount: number;
+  chatMessageCount?: number;
+  openTaskCount?: number;
 };
 
 export type BriefingStatus =
@@ -148,6 +185,11 @@ export type DailyBriefingPayload = {
   topics: string[];
   tasks: BriefingTaskCard[];
   meetings: BriefingMeetingCard[];
+  focus?: BriefingFocusItem[];
+  agenda?: BriefingAgendaCard[];
+  risks?: BriefingListItem[];
+  stats?: BriefingStats;
+  planDateKey?: string;
   sourceStats: BriefingSourceStats;
   pipelineVersion?: string;
   generatedAt?: string | null;
@@ -281,6 +323,19 @@ interface CreateStagedTaskResponse {
   data: {
     message?: string;
     task: StagedTaskCard;
+  };
+}
+
+interface SetStagedTaskStatusPayload {
+  taskId: string;
+  done: boolean;
+}
+
+interface SetStagedTaskStatusResponse {
+  success: boolean;
+  data: {
+    message?: string;
+    task?: StagedTaskCard;
   };
 }
 
@@ -555,6 +610,18 @@ export const homeApi = baseApi.injectEndpoints({
       invalidatesTags: ['Spaces', 'Plans'],
     }),
 
+    setStagedTaskStatus: builder.mutation<
+      SetStagedTaskStatusResponse,
+      SetStagedTaskStatusPayload
+    >({
+      query: data => ({
+        url: 'home/set-staged-task-status',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Spaces'],
+    }),
+
     registerDeviceToken: builder.mutation<
       { success: boolean },
       { token: string; platform?: 'android' | 'ios' | 'web' }
@@ -665,4 +732,5 @@ export const {
   useForceGenerateDailyBriefingMutation,
   useSubmitFeedbackMutation,
   useRaiseSupportTicketMutation,
+  useSetStagedTaskStatusMutation,
 } = homeApi;

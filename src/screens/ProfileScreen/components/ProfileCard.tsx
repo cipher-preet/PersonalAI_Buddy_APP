@@ -7,6 +7,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import LinearGradient from 'react-native-linear-gradient';
 import {
   colors,
   fontSize,
@@ -19,8 +20,28 @@ import {
 type ProfileCardProps = {
   name?: string | null;
   email?: string | null;
+  phone?: string | number | null;
   avatar?: string | null;
+  planName?: string | null;
   onEditPress: () => void;
+};
+
+const formatPhone = (phone?: string | number | null) => {
+  const digits = phone == null ? '' : String(phone).replace(/\D/g, '');
+
+  if (!digits) {
+    return '';
+  }
+
+  if (digits.length === 12 && digits.startsWith('91')) {
+    return `+91 ${digits.slice(2, 7)} ${digits.slice(7)}`;
+  }
+
+  if (digits.length === 10) {
+    return `+91 ${digits.slice(0, 5)} ${digits.slice(5)}`;
+  }
+
+  return String(phone);
 };
 
 const PencilIcon = ({ color = colors.primary }: { color?: string }) => (
@@ -38,15 +59,19 @@ const PencilIcon = ({ color = colors.primary }: { color?: string }) => (
 const ProfileCard = ({
   name,
   email,
+  phone,
   avatar,
+  planName,
   onEditPress,
 }: ProfileCardProps) => {
   const displayName = name?.trim() || 'Buddy User';
-  const shortName = displayName.split(/\s+/)[0];
-  const displayEmail = email?.trim() || 'No email added';
   const avatarUri = avatar?.trim();
   const avatarInitial = displayName.charAt(0).toUpperCase();
-  const metaLine = `${shortName} • ${displayEmail}`;
+  const contactParts = [email?.trim(), formatPhone(phone)].filter(Boolean);
+  const metaLine = contactParts.length
+    ? contactParts.join(' • ')
+    : 'Add your email or phone';
+  const planLabel = planName?.trim();
 
   return (
     <View style={styles.card}>
@@ -75,6 +100,11 @@ const ProfileCard = ({
       <Text style={styles.meta} numberOfLines={1}>
         {metaLine}
       </Text>
+      {planLabel ? (
+        <View style={styles.planBadge}>
+          <Text style={styles.planBadgeText}>{planLabel} plan</Text>
+        </View>
+      ) : null}
 
       <TouchableOpacity
         activeOpacity={0.85}
@@ -83,7 +113,18 @@ const ProfileCard = ({
         accessibilityRole="button"
         accessibilityLabel="Edit profile"
       >
-        <Text style={styles.inviteButtonText}>Edit Profile</Text>
+        <LinearGradient
+          colors={[
+            colors.upgradeGradientStart,
+            colors.upgradeGradientMid,
+            colors.upgradeGradientEnd,
+          ]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.inviteButtonGradient}
+        >
+          <Text style={styles.inviteButtonText}>Edit Profile</Text>
+        </LinearGradient>
       </TouchableOpacity>
     </View>
   );
@@ -158,16 +199,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
   },
 
+  planBadge: {
+    marginTop: spacing.sm,
+    borderRadius: radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: ms(3),
+  },
+
+  planBadgeText: {
+    color: colors.subText,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+  },
+
   inviteButton: {
     marginTop: spacing.xl,
-    backgroundColor: colors.primaryLight,
     borderRadius: radii.pill,
+    overflow: 'hidden',
+  },
+
+  inviteButtonGradient: {
     paddingHorizontal: spacing['2xl'],
     paddingVertical: spacing.md,
+    borderRadius: radii.pill,
   },
 
   inviteButtonText: {
-    color: colors.primary,
+    color: colors.white,
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
   },

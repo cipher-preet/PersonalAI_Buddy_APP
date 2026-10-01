@@ -1,21 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Image,
-  Modal,
   PermissionsAndroid,
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import LinearGradient from 'react-native-linear-gradient';
-import Svg, { Path } from 'react-native-svg';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   Asset,
   launchCamera,
@@ -24,36 +16,20 @@ import {
 
 import ProfileCard from './components/ProfileCard';
 import ProfileActionGrid from './components/ProfileActionGrid';
+import EditProfileSheet from './components/EditProfileSheet';
 
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { useGetPlanStatusQuery } from '../../store/api/payments';
 import {
+  useLazyCheckAuthQuery,
   useUpdateProfileAvatarMutation,
   useUpdateProfileMutation,
 } from '../../store/api/auth';
 import { updateProfileSuccess } from '../../store/slices/authSlice';
 import { useToast } from '../../store/context/ToastContext';
-import {
-  colors,
-  fontSize,
-  fontWeight,
-  layout,
-  ms,
-  radii,
-  spacing,
-} from '../../theme';
+import { colors, ms, spacing } from '../../theme';
+import BrandLogo from '../../components/BrandLogo';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
-
-const CloseIcon = () => (
-  <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M6 6l12 12M18 6 6 18"
-      stroke={colors.textSecondary}
-      strokeWidth={2.2}
-      strokeLinecap="round"
-    />
-  </Svg>
-);
 
 const ProfileScreen = () => {
   const dispatch = useAppDispatch();
@@ -80,9 +56,36 @@ const ProfileScreen = () => {
   const hasPhone = Boolean(phone);
   const {
     data: planStatusData,
-    isFetching: isFetchingPlanStatus,
+    isLoading: isLoadingPlanStatus,
     isError: isPlanStatusError,
+    refetch: refetchPlanStatus,
   } = useGetPlanStatusQuery({ userId }, { skip: !userId });
+
+  const [fetchProfile] = useLazyCheckAuthQuery();
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId) {
+        return;
+      }
+
+      refetchPlanStatus();
+
+      fetchProfile()
+        .unwrap()
+        .then(profile => {
+          dispatch(
+            updateProfileSuccess({
+              name: profile.name,
+              email: profile.email,
+              phone: profile.phone,
+              avatar: profile.avatar,
+            }),
+          );
+        })
+        .catch(() => undefined);
+    }, [dispatch, fetchProfile, refetchPlanStatus, userId]),
+  );
 
   useEffect(() => {
     if (!isEditOpen) {
@@ -95,6 +98,12 @@ const ProfileScreen = () => {
     setFormPhone(phone ? String(phone) : '');
     setSelectedAvatarAsset(null);
   }, [avatar, email, isEditOpen, name, phone]);
+
+  const hasProfileChanges =
+    formName.trim() !== (name?.trim() || '') ||
+    Boolean(selectedAvatarAsset) ||
+    (!hasEmail && formEmail.trim() !== '') ||
+    (!hasPhone && formPhone.trim() !== '');
 
   const getApiErrorMessage = (error: any, fallback: string) =>
     error?.data?.message || error?.message || fallback;
@@ -283,147 +292,43 @@ const ProfileScreen = () => {
           <ProfileCard
             name={name}
             email={email}
+            phone={phone}
             avatar={avatar}
+            planName={planStatusData?.plan?.name}
             onEditPress={() => setIsEditOpen(true)}
           />
           <ProfileActionGrid
             planStatus={planStatusData}
-            isPlanLoading={isFetchingPlanStatus}
+            isPlanLoading={isLoadingPlanStatus}
             isPlanError={isPlanStatusError}
             onEditProfile={() => setIsEditOpen(true)}
           />
+          <BrandLogo
+            size={ms(36)}
+            showWordmark
+            showTagline
+            style={styles.brandFooter}
+          />
         </ScrollView>
 
-        <Modal
+        <EditProfileSheet
           visible={isEditOpen}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setIsEditOpen(false)}
-        >
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            style={styles.modalOverlay}
-          >
-            <View style={styles.modalCard}>
-              <View style={styles.modalHeader}>
-                <View style={styles.modalHeaderText}>
-                  <Text style={styles.modalTitle}>Edit Profile</Text>
-                  <Text style={styles.modalSubtitle}>
-                    Keep your Buddy profile up to date.
-                  </Text>
-                </View>
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  style={styles.closeButton}
-                  onPress={() => setIsEditOpen(false)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Close"
-                >
-                  <CloseIcon />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                contentContainerStyle={styles.modalScroll}
-              >
-                <Text style={styles.inputLabel}>Name</Text>
-                <TextInput
-                  value={formName}
-                  onChangeText={setFormName}
-                  placeholder="Your name"
-                  placeholderTextColor={colors.muted}
-                  autoCapitalize="words"
-                  style={styles.input}
-                />
-
-                <Text style={styles.inputLabel}>Profile image</Text>
-                <View style={styles.photoEditor}>
-                  {formAvatar ? (
-                    <Image
-                      source={{ uri: formAvatar }}
-                      style={styles.photoPreview}
-                    />
-                  ) : (
-                    <View style={styles.photoFallback}>
-                      <Text style={styles.photoFallbackText}>
-                        {(formName.trim() || 'B').charAt(0).toUpperCase()}
-                      </Text>
-                    </View>
-                  )}
-
-                  <View style={styles.photoActions}>
-                    <TouchableOpacity
-                      activeOpacity={0.85}
-                      style={styles.photoButton}
-                      onPress={handleChoosePhoto}
-                    >
-                      <Text style={styles.photoButtonText}>Upload Image</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      activeOpacity={0.85}
-                      style={styles.photoButton}
-                      onPress={handleTakePhoto}
-                    >
-                      <Text style={styles.photoButtonText}>Take Photo</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-
-                <Text style={styles.inputLabel}>Email</Text>
-                <TextInput
-                  value={formEmail}
-                  onChangeText={setFormEmail}
-                  placeholder="Add email address"
-                  placeholderTextColor={colors.muted}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  editable={!hasEmail}
-                  keyboardType="email-address"
-                  style={[styles.input, hasEmail && styles.inputDisabled]}
-                />
-
-                <Text style={styles.inputLabel}>Mobile number</Text>
-                <TextInput
-                  value={formPhone}
-                  onChangeText={setFormPhone}
-                  placeholder="Add mobile number"
-                  placeholderTextColor={colors.muted}
-                  editable={!hasPhone}
-                  keyboardType="phone-pad"
-                  maxLength={10}
-                  style={[styles.input, hasPhone && styles.inputDisabled]}
-                />
-
-                <TouchableOpacity
-                  activeOpacity={0.9}
-                  disabled={isUpdatingProfile || isUpdatingAvatar}
-                  style={[
-                    styles.saveButton,
-                    (isUpdatingProfile || isUpdatingAvatar) &&
-                      styles.saveButtonDisabled,
-                  ]}
-                  onPress={handleSaveProfile}
-                >
-                  <LinearGradient
-                    colors={[colors.primary, colors.primaryMid]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={styles.saveGradient}
-                  >
-                    {isUpdatingProfile || isUpdatingAvatar ? (
-                      <ActivityIndicator color={colors.white} />
-                    ) : (
-                      <Text style={styles.saveButtonText}>Save Changes</Text>
-                    )}
-                  </LinearGradient>
-                </TouchableOpacity>
-              </ScrollView>
-            </View>
-          </KeyboardAvoidingView>
-        </Modal>
+          onClose={() => setIsEditOpen(false)}
+          name={formName}
+          onChangeName={setFormName}
+          email={formEmail}
+          onChangeEmail={setFormEmail}
+          phone={formPhone}
+          onChangePhone={setFormPhone}
+          avatarUri={formAvatar}
+          isEmailLocked={hasEmail}
+          isPhoneLocked={hasPhone}
+          hasChanges={hasProfileChanges}
+          isSaving={isUpdatingProfile || isUpdatingAvatar}
+          onChoosePhoto={handleChoosePhoto}
+          onTakePhoto={handleTakePhoto}
+          onSave={handleSaveProfile}
+        />
       </SafeAreaView>
     </View>
   );
@@ -445,170 +350,9 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
 
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: layout.screenPadding,
-    backgroundColor: colors.backdrop,
-  },
-
-  modalCard: {
-    maxHeight: '92%',
-    maxWidth: ms(480),
-    width: '100%',
+  brandFooter: {
     alignSelf: 'center',
-    borderRadius: radii['3xl'],
-    paddingTop: spacing['2xl'],
-    paddingHorizontal: layout.screenPadding,
-    paddingBottom: spacing['2xl'],
-    backgroundColor: colors.white,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border,
-  },
-
-  modalScroll: {
-    paddingBottom: spacing.md,
-  },
-
-  modalHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    marginBottom: spacing['2xl'],
-    gap: spacing.xl,
-  },
-
-  modalHeaderText: {
-    flex: 1,
-  },
-
-  modalTitle: {
-    fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.bold,
-    color: colors.text,
-  },
-
-  modalSubtitle: {
-    marginTop: spacing.xs,
-    color: colors.subText,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.regular,
-    lineHeight: ms(18),
-  },
-
-  closeButton: {
-    width: ms(34),
-    height: ms(34),
-    borderRadius: ms(17),
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.lightGray,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-
-  inputLabel: {
-    marginBottom: spacing.md,
-    fontSize: fontSize.sm,
-    fontWeight: fontWeight.semibold,
-    color: colors.subText,
-    letterSpacing: 0.2,
-    textTransform: 'uppercase',
-  },
-
-  input: {
-    minHeight: ms(48),
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.inputBg,
-    paddingHorizontal: spacing.xl,
-    marginBottom: spacing.xl,
-    color: colors.text,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.medium,
-  },
-
-  inputDisabled: {
-    color: colors.subText,
-    backgroundColor: colors.lightGray,
-  },
-
-  photoEditor: {
-    minHeight: ms(96),
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xl,
-    marginBottom: spacing.xl,
-  },
-
-  photoPreview: {
-    width: ms(78),
-    height: ms(78),
-    borderRadius: ms(24),
-    borderWidth: 2,
-    borderColor: colors.primaryLight,
-    backgroundColor: colors.inputBg,
-  },
-
-  photoFallback: {
-    width: ms(78),
-    height: ms(78),
-    borderRadius: ms(24),
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.primaryLight,
-    backgroundColor: colors.primary,
-  },
-
-  photoFallbackText: {
-    color: colors.white,
-    fontSize: fontSize['4xl'],
-    fontWeight: fontWeight.bold,
-  },
-
-  photoActions: {
-    flex: 1,
-    gap: spacing.md,
-  },
-
-  photoButton: {
-    minHeight: ms(42),
-    borderRadius: radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primaryLight,
-    borderWidth: 1,
-    borderColor: colors.borderFocus,
-  },
-
-  photoButtonText: {
-    color: colors.primary,
-    fontSize: fontSize.md,
-    fontWeight: fontWeight.semibold,
-  },
-
-  saveButton: {
-    marginTop: spacing.sm,
-    borderRadius: radii.lg,
-    overflow: 'hidden',
-  },
-
-  saveButtonDisabled: {
-    opacity: 0.75,
-  },
-
-  saveGradient: {
-    minHeight: ms(50),
-    borderRadius: radii.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  saveButtonText: {
-    color: colors.white,
-    fontSize: fontSize.base,
-    fontWeight: fontWeight.bold,
+    marginTop: spacing['4xl'],
+    opacity: 0.9,
   },
 });

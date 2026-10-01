@@ -80,7 +80,7 @@ const OnboardingSourceScreen = ({ navigation }: Props) => {
     }
 
     dispatch(completeOnboarding());
-    showToast({ message: 'Welcome to Buddy!', type: 'success' });
+    showToast({ message: 'Welcome to KukuNotes!', type: 'success' });
   };
 
   return (
@@ -100,7 +100,7 @@ const OnboardingSourceScreen = ({ navigation }: Props) => {
 
       <ProgressDots step={3} />
 
-      <Text style={styles.title}>Where did you hear about Buddy?</Text>
+      <Text style={styles.title}>Where did you hear about KukuNotes?</Text>
       <Text style={styles.subtitle}>
         This helps us understand how people discover the app.
       </Text>

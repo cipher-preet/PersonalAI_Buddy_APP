@@ -10,9 +10,9 @@ type Props = {
 };
 
 const SpaceFolderIcon = ({ size = ms(80), listening = false }: Props) => {
-  const tab = listening ? '#5EEAD4' : '#818CF8';
-  const body = listening ? '#2DD4BF' : '#6366F1';
-  const face = listening ? '#99F6E4' : '#A5B4FC';
+  const tab = listening ? '#5EEAD4' : '#B79BFF';
+  const body = listening ? '#2DD4BF' : '#7C5CFA';
+  const face = listening ? '#99F6E4' : '#C9B8FF';
 
   return (
     <View style={[styles.wrap, { width: size, height: size * 0.86 }]}>

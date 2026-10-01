@@ -8,6 +8,7 @@ import OnboardingProfessionScreen from '../screens/AuthScreen/OnboardingProfessi
 import OnboardingUsageScreen from '../screens/AuthScreen/OnboardingUsageScreen';
 import OnboardingSourceScreen from '../screens/AuthScreen/OnboardingSourceScreen';
 import { useAppSelector } from '../store/hooks';
+import { renderScreenWithBoundary } from '../components/AppErrorBoundary';
 
 export type AuthStackParamList = {
   Login: undefined;
@@ -34,6 +35,7 @@ const AuthStack = () => {
   return (
     <Stack.Navigator
       initialRouteName={initialRouteName}
+      screenLayout={renderScreenWithBoundary}
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',

@@ -30,6 +30,10 @@ import {
 import type { PlanStatus } from '../../../store/api/payments';
 import LogoutConfirmationModal from '../../../components/LogoutConfirmationModal';
 import {
+  UNLIMITED_LIMIT,
+  formatHoursShort,
+  formatRecordingQuota,
+  getRecordingLimitMs,
   getRecordingUsedMs,
   isUnlimitedLimit,
 } from '../../../utils/planUsage';
@@ -214,9 +218,6 @@ const formatMetric = (
 
 export { formatMetric };
 
-const msToMinutes = (valueMs: number) =>
-  Math.max(0, Math.round(valueMs / 60000));
-
 const ProfileActionGrid = ({
   planStatus,
   isPlanLoading,
@@ -244,25 +245,84 @@ const ProfileActionGrid = ({
 
   const usedMs = getRecordingUsedMs(planStatus);
   const limitHours = planStatus?.plan?.limits?.recordingHours;
-  const usedMinutes = msToMinutes(usedMs);
-  const limitMinutes =
-    typeof limitHours === 'number' && !isUnlimitedLimit(limitHours)
-      ? Math.max(0, Math.round(limitHours * 60))
-      : null;
+  const limitMs = getRecordingLimitMs(planStatus);
+  const hasFiniteLimit = limitMs !== UNLIMITED_LIMIT;
+  const remainingMs = hasFiniteLimit ? Math.max(0, limitMs - usedMs) : null;
   const usageProgress =
-    limitMinutes && limitMinutes > 0
-      ? Math.min(1, usedMinutes / limitMinutes)
-      : 0;
+    hasFiniteLimit && limitMs > 0 ? Math.min(1, usedMs / limitMs) : 0;
+  const planInterval = planStatus?.plan?.interval;
+  const isRecurring = planInterval === 'monthly' || planInterval === 'quarterly';
   const usageLabel =
     isPlanLoading
       ? 'Loading usage...'
       : isPlanError
         ? 'Usage unavailable'
-        : limitMinutes == null
-          ? isUnlimitedLimit(limitHours)
-            ? 'Unlimited monthly minutes'
-            : 'Recording usage unavailable'
-          : `${usedMinutes} of ${limitMinutes} monthly minutes used`;
+        : isUnlimitedLimit(limitHours)
+          ? `Unlimited recording · ${formatHoursShort(usedMs)} used`
+          : typeof limitHours === 'number'
+            ? `${formatRecordingQuota(usedMs, limitHours)} recording used`
+            : 'Recording usage unavailable';
+  const remainingLabel =
+    isPlanLoading || isPlanError || remainingMs == null
+      ? null
+      : remainingMs <= 0
+        ? isRecurring
+          ? 'No recording time left this period'
+          : 'No recording time left'
+        : `${formatHoursShort(remainingMs)} left`;
+
+  const periodEnd = planStatus?.subscription?.currentPeriodEnd;
+  const periodEndDate = periodEnd ? new Date(periodEnd) : null;
+  const renewalLabel =
+    !isPlanLoading &&
+    !isPlanError &&
+    isRecurring &&
+    periodEndDate &&
+    !Number.isNaN(periodEndDate.getTime())
+      ? `Renews on ${periodEndDate.toLocaleDateString('en-IN', {
+          day: 'numeric',
+          month: 'short',
+          year: 'numeric',
+        })}`
+      : null;
+
+  const formatCountUsage = (used?: number, limit?: number) => {
+    const safeUsed = Math.max(0, used ?? 0);
+    if (limit == null) {
+      return String(safeUsed);
+    }
+    return isUnlimitedLimit(limit) ? `${safeUsed} / ∞` : `${safeUsed} / ${limit}`;
+  };
+  const resourceStats =
+    isPlanLoading || isPlanError || !planStatus
+      ? []
+      : [
+          {
+            id: 'spaces',
+            label: 'Spaces',
+            value: formatCountUsage(
+              planStatus.usage?.spaces,
+              planStatus.plan?.limits?.spaces,
+            ),
+          },
+          {
+            id: 'notes',
+            label: 'Notes',
+            value: formatCountUsage(
+              planStatus.usage?.notes,
+              planStatus.plan?.limits?.notes,
+            ),
+          },
+          {
+            id: 'tasks',
+            label: 'Tasks',
+            value: formatCountUsage(
+              planStatus.usage?.tasks,
+              planStatus.plan?.limits?.tasks,
+            ),
+          },
+        ];
+  const isTopPlan = planStatus?.plan?.code === 'business';
 
   const getApiErrorMessage = (error: any, fallback: string) =>
     error?.data?.message || error?.message || fallback;
@@ -464,26 +524,56 @@ const ProfileActionGrid = ({
           <View style={styles.planCopy}>
             <Text style={styles.planName}>{planName}</Text>
             <Text style={styles.planUsage}>{usageLabel}</Text>
+            {remainingLabel ? (
+              <Text
+                style={[
+                  styles.planRemaining,
+                  remainingMs === 0 && styles.planRemainingEmpty,
+                ]}
+              >
+                {remainingLabel}
+              </Text>
+            ) : null}
           </View>
           <TouchableOpacity
             activeOpacity={0.88}
             style={styles.upgradeButton}
             onPress={() => navigation.navigate('Plans')}
             accessibilityRole="button"
-            accessibilityLabel="Upgrade plan"
+            accessibilityLabel={isTopPlan ? 'Manage plan' : 'Upgrade plan'}
           >
-            <Text style={styles.upgradeButtonText}>Upgrade</Text>
+            <Text style={styles.upgradeButtonText}>
+              {isTopPlan ? 'Manage' : 'Upgrade'}
+            </Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.progressTrack}>
-          <View
-            style={[
-              styles.progressFill,
-              { width: `${Math.round(usageProgress * 100)}%` },
-            ]}
-          />
-        </View>
+        {hasFiniteLimit && !isPlanLoading && !isPlanError ? (
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                remainingMs === 0 && styles.progressFillFull,
+                { width: `${Math.round(usageProgress * 100)}%` },
+              ]}
+            />
+          </View>
+        ) : null}
+
+        {resourceStats.length ? (
+          <View style={styles.statsRow}>
+            {resourceStats.map(stat => (
+              <View key={stat.id} style={styles.statItem}>
+                <Text style={styles.statValue}>{stat.value}</Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {renewalLabel ? (
+          <Text style={styles.renewalText}>{renewalLabel}</Text>
+        ) : null}
       </View>
 
       <LogoutConfirmationModal
@@ -651,6 +741,17 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.medium,
   },
 
+  planRemaining: {
+    marginTop: spacing.xs,
+    color: colors.primary,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+  },
+
+  planRemainingEmpty: {
+    color: colors.error,
+  },
+
   upgradeButton: {
     backgroundColor: colors.primary,
     borderRadius: radii.pill,
@@ -679,6 +780,44 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: ms(3),
     backgroundColor: colors.primary,
+  },
+
+  progressFillFull: {
+    backgroundColor: colors.error,
+  },
+
+  statsRow: {
+    flexDirection: 'row',
+    marginTop: spacing.lg,
+    paddingTop: spacing.lg,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border,
+  },
+
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+
+  statValue: {
+    color: colors.text,
+    fontSize: fontSize.base,
+    fontWeight: fontWeight.bold,
+  },
+
+  statLabel: {
+    marginTop: ms(2),
+    color: colors.subText,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+  },
+
+  renewalText: {
+    marginTop: spacing.md,
+    color: colors.subText,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.medium,
+    textAlign: 'center',
   },
 
   sheetBackground: {

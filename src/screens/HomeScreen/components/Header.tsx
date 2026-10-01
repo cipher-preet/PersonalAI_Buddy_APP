@@ -4,6 +4,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useAppSelector } from '../../../store/hooks';
+import BrandLogo from '../../../components/BrandLogo';
 import {
   colors,
   fontSize,
@@ -23,6 +24,10 @@ type TabParamList = {
   Plans: undefined;
 };
 
+const GREETING_LINE = ms(16);
+const NAME_LINE = ms(20);
+const BLOCK_HEIGHT = ms(38);
+
 const Header = () => {
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
   const name = useAppSelector(state => state.auth.name);
@@ -33,18 +38,20 @@ const Header = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.leftContainer}>
-        <View style={styles.greetingWrapper}>
-          <Text style={styles.greetingText}>{greeting}</Text>
+      <View style={styles.identity}>
+        <BrandLogo size={BLOCK_HEIGHT} style={styles.logo} />
+        <View style={styles.textBlock}>
+          <View style={styles.greetingRow}>
+            <Text numberOfLines={1} style={styles.greetingText}>
+              {greeting}
+            </Text>
+            <View style={styles.onlineDot} />
+          </View>
 
-          <Text style={styles.wave}>👋</Text>
-
-          <View style={styles.onlineDot} />
+          <Text numberOfLines={1} style={styles.userName}>
+            {displayName}
+          </Text>
         </View>
-
-        <Text numberOfLines={1} style={styles.userName}>
-          {displayName}
-        </Text>
       </View>
 
       <TouchableOpacity
@@ -80,26 +87,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  leftContainer: {
+  identity: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: BLOCK_HEIGHT,
     paddingRight: spacing.xl,
   },
 
-  greetingWrapper: {
+  logo: {
+    marginRight: spacing.md,
+  },
+
+  textBlock: {
+    flex: 1,
+    height: BLOCK_HEIGHT,
+    justifyContent: 'space-between',
+  },
+
+  greetingRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    height: GREETING_LINE,
   },
 
   greetingText: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
+    lineHeight: GREETING_LINE,
     color: colors.subText,
     fontWeight: fontWeight.medium,
-    letterSpacing: 0.3,
-  },
-
-  wave: {
-    marginLeft: ms(5),
-    fontSize: fontSize.md,
+    letterSpacing: 0.2,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
 
   onlineDot: {
@@ -107,15 +126,18 @@ const styles = StyleSheet.create({
     height: ms(6),
     borderRadius: radii.pill,
     backgroundColor: colors.online,
-    marginLeft: spacing.md,
+    marginLeft: spacing.sm,
   },
 
   userName: {
-    marginTop: ms(7),
-    fontSize: fontSize['2xl'],
-    fontWeight: fontWeight.bold,
+    height: NAME_LINE,
+    lineHeight: NAME_LINE,
+    fontSize: fontSize.xl,
+    fontWeight: fontWeight.semibold,
     color: colors.text,
-    letterSpacing: -0.6,
+    letterSpacing: -0.2,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
 
   upgradeButton: {

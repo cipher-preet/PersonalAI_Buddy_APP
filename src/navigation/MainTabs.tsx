@@ -6,6 +6,7 @@ import {
   Animated,
   Text,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 
 import {
   createBottomTabNavigator,
@@ -33,6 +34,7 @@ import GoalMonitorScreen from '../screens/GoalMonitorScreen/GoalMonitorScreen';
 import FeedbackScreen from '../screens/FeedbackScreen/FeedbackScreen';
 import HelpSupportScreen from '../screens/HelpSupportScreen/HelpSupportScreen';
 import GlobalListeningBar from '../components/listening/GlobalListeningBar';
+import { renderScreenWithBoundary } from '../components/AppErrorBoundary';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import {
   colors,
@@ -44,7 +46,12 @@ import {
 
 const Tab = createBottomTabNavigator();
 
-const ACTIVE_COLOR = colors.text;
+const ACTIVE_COLOR = colors.primary;
+const INDICATOR_COLORS = [
+  colors.upgradeGradientStart,
+  colors.upgradeGradientMid,
+  colors.upgradeGradientEnd,
+];
 const INACTIVE_COLOR = colors.muted;
 
 type TabItemProps = {
@@ -92,6 +99,17 @@ const TabItem = memo(
         activeOpacity={0.75}
         style={styles.tabButton}
       >
+        <Animated.View
+          style={[styles.indicatorWrap, { opacity: progress }]}
+          pointerEvents="none"
+        >
+          <LinearGradient
+            colors={INDICATOR_COLORS}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.indicator}
+          />
+        </Animated.View>
         <Animated.View style={[styles.itemContainer, { transform: [{ scale }] }]}>
           <Icon width={ms(24)} height={ms(24)} color={color} />
           <Text
@@ -188,7 +206,11 @@ const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
             });
 
             if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name);
+              navigation.navigate({
+                name: route.name,
+                params: route.params,
+                merge: true,
+              });
             }
           };
 
@@ -216,17 +238,21 @@ const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
   );
 };
 
+const renderTabBar = (props: BottomTabBarProps) => <CustomTabBar {...props} />;
 const MainTabs = () => {
   return (
     <View style={styles.shell}>
       <Tab.Navigator
         initialRouteName="Home"
-        tabBar={props => <CustomTabBar {...props} />}
+        tabBar={renderTabBar}
+        screenLayout={renderScreenWithBoundary}
+        backBehavior="history"
         detachInactiveScreens
         screenOptions={{
           headerShown: false,
           lazy: true,
-          freezeOnBlur: true,
+          // react-native-screens can leave a frozen tab stuck on screen after switching.
+          freezeOnBlur: false,
         }}
       >
         <Tab.Screen name="Home" component={Home} />
@@ -278,6 +304,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingBottom: spacing.xs,
+  },
+
+  indicatorWrap: {
+    position: 'absolute',
+    top: -spacing.md,
+    alignSelf: 'center',
+  },
+
+  indicator: {
+    width: ms(28),
+    height: ms(3),
+    borderRadius: ms(2),
   },
 
   itemContainer: {

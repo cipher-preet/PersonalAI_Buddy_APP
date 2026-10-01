@@ -5,40 +5,47 @@
 export const colors = {
   // Surfaces
   background: '#FFFFFF',
-  gradientStart: '#FFFFFF',
-  gradientMid: '#FFFFFF',
-  gradientEnd: '#FFFFFF',
+  gradientStart: '#F4F0FF',
+  gradientMid: '#FBFAFF',
+  gradientEnd: '#FFF8F1',
   white: '#FFFFFF',
-  inputBg: '#F8FAFC',
+  inputBg: '#F8F7FD',
   cardBg: '#FFFFFF',
-  overlay: 'rgba(99, 102, 241, 0.08)',
-  backdrop: 'rgba(15, 23, 42, 0.45)',
+  overlay: 'rgba(91, 61, 245, 0.08)',
+  backdrop: 'rgba(11, 21, 70, 0.45)',
+
+  // KukuNotes logo palette
+  brandNavy: '#0B1546',
+  brandBlue: '#2F80FF',
+  brandViolet: '#9B5CF6',
+  brandPink: '#F472B6',
+  brandYellow: '#FBBF24',
 
   // Brand
-  primary: '#4338CA',
-  primaryDark: '#3730A3',
-  primaryPurple: '#8B5CF6',
-  primaryPurpleDark: '#6D28D9',
-  primaryLight: '#EEF2FF',
-  primarySoft: '#F5F3FF',
-  primaryMid: '#7C3AED',
-  accent: '#5B5FF8',
-  accentCyan: '#15C7E8',
-  accentIndigo: '#6366F1',
-  brandBorder: '#C7D2FE',
-  tabActive: '#4338CA',
+  primary: '#5B3DF5',
+  primaryDark: '#4527D9',
+  primaryPurple: '#9B5CF6',
+  primaryPurpleDark: '#7C3AED',
+  primaryLight: '#F0EDFF',
+  primarySoft: '#F7F4FF',
+  primaryMid: '#8B5CF6',
+  accent: '#2F80FF',
+  accentCyan: '#22C3F0',
+  accentIndigo: '#6A5CFF',
+  brandBorder: '#D9D0FF',
+  tabActive: '#5B3DF5',
   tabInactive: '#475569',
-  tabPill: '#EEF2FF',
+  tabPill: '#F0EDFF',
 
   // Gradients (upgrade CTA, etc.)
-  upgradeGradientStart: '#7C3AED',
-  upgradeGradientMid: '#6366F1',
-  upgradeGradientEnd: '#22D3EE',
+  upgradeGradientStart: '#2F80FF',
+  upgradeGradientMid: '#9B5CF6',
+  upgradeGradientEnd: '#F472B6',
 
   // Plans
-  planProStart: '#1E1B4B',
-  planProMid: '#312E81',
-  planProEnd: '#4338CA',
+  planProStart: '#0B1546',
+  planProMid: '#1E2380',
+  planProEnd: '#5B3DF5',
   planBusinessStart: '#0B1220',
   planBusinessMid: '#111827',
   planBusinessEnd: '#1E293B',
@@ -64,7 +71,7 @@ export const colors = {
   // Borders & dividers
   border: '#E2E8F0',
   borderLight: '#E5E7EB',
-  borderFocus: '#A5B4FC',
+  borderFocus: '#B9A8FF',
   googleBorder: '#E2E8F0',
 
   // Status
@@ -84,18 +91,18 @@ export const colors = {
 
   // Shadows
   shadow: '#64748B',
-  shadowDeep: '#162B75',
+  shadowDeep: '#1B1A6E',
   shadowInk: '#0F172A',
 
   // Feature aliases (Notes/Tasks legacy keys)
   gray: '#8B8B8B',
   lightGray: '#F3F4F6',
   purpleLight: '#F3E8FF',
-  lightPurple: '#EEF2FF',
+  lightPurple: '#F0EDFF',
   icon: '#111827',
 
   // Chat
-  userBubble: '#4338CA',
+  userBubble: '#5B3DF5',
   aiBubble: '#FFFFFF',
   chipBg: '#FFFFFF',
   chatSeparator: '#ECEFF5',

@@ -116,7 +116,7 @@ const UsernameScreen = ({ navigation, route }: Props) => {
         <AuthBrandMark size="md" />
         <Text style={styles.title}>Your name</Text>
         <Text style={styles.subtitle}>
-          Add your name so Buddy can personalize your experience.
+          Add your name so KukuNotes can personalize your experience.
         </Text>
       </View>
 

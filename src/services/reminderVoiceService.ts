@@ -4,6 +4,7 @@ import AudioRecorderPlayer, {
 import axios, { AxiosError } from 'axios';
 
 import { BUDDY_ENDPOINTS } from '../config/apiConfig';
+import { devWarn } from '../utils/logger';
 import {
   requestMicrophonePermission,
   startVoiceRecordingWithSilenceDetection,
@@ -150,7 +151,7 @@ export const prefetchReminderGreeting = async (): Promise<ReminderVoicePrompt | 
       return greetingCache.prompt;
     }
   } catch (error) {
-    console.log('Reminder greeting prefetch failed:', getErrorMessage(error, 'prefetch failed'));
+    devWarn('Reminder greeting prefetch failed:', getErrorMessage(error, 'prefetch failed'));
   }
 
   return greetingCache?.prompt ?? {

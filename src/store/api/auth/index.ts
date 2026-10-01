@@ -202,6 +202,7 @@ export const authApi = baseApi.injectEndpoints({
 
 export const {
   useCheckAuthQuery,
+  useLazyCheckAuthQuery,
   useSendOtpMutation,
   useCheckPhoneMutation,
   useVerifyOtpMutation,

@@ -34,6 +34,7 @@ import {
 } from '../../../../store/api/home';
 import { requestVoiceListeningPermissions } from '../../../../services/voiceRecorderService';
 import UpgradePlanPromptModal from '../../../../components/UpgradePlanPromptModal';
+import { devWarn } from '../../../../utils/logger';
 import {
   getPlanLimitPrompt,
   getPlanLimitResource,
@@ -181,7 +182,7 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
         message: 'Create space failed. Please try again.',
         type: 'error',
       });
-      console.log('Create space failed:', error);
+      devWarn('Create space failed:', error);
     }
   };
 
@@ -225,7 +226,7 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
                 : 'Start failed. Try again.',
             type: 'error',
           });
-          console.log('startListning error:', err);
+          devWarn('startListning error:', err);
         }
       };
 
@@ -335,7 +336,7 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
               key={item._id}
               item={item}
               selected={selectedSpace?._id === item._id}
-              onPress={() => setSelectedSpace(item)}
+              onSelect={setSelectedSpace}
             />
           ))}
         </View>

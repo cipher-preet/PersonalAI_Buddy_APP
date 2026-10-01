@@ -87,10 +87,10 @@ import { devLog } from '../../utils/logger';
 const SPACE_PAGE_LIMIT = 10;
 
 const HOME_GRADIENT_COLORS = [
-  colors.gradientStart,
-  colors.gradientMid,
   colors.background,
-  colors.gradientEnd,
+  colors.background,
+  colors.background,
+  colors.background,
 ];
 const HOME_GRADIENT_LOCATIONS = [0, 0.2, 0.65, 1];
 const HOME_GRADIENT_START = { x: 0, y: 0 };
@@ -226,7 +226,7 @@ const Home = () => {
     { userId, spaceId: selectedSpace?._id ?? '' },
     { skip: !userId || !selectedSpace?._id },
   );
-  const { data: planStatus } = useGetPlanStatusQuery(
+  const { data: planStatus, refetch: refetchPlanStatus } = useGetPlanStatusQuery(
     { userId },
     { skip: !userId },
   );
@@ -364,7 +364,9 @@ const Home = () => {
             fileDurationMs: recording.durationMs,
           });
 
-          showToast({ message: 'Voice message uploaded.', type: 'success' });
+          if (userId) {
+            refetchPlanStatus();
+          }
         } catch (error) {
           showToast({
             message: 'Voice upload failed. Try again.',
@@ -648,6 +650,10 @@ const Home = () => {
       });
       showToast({ message: 'Stop failed. Try again.', type: 'error' });
       devLog('stopListening error:', err);
+    } finally {
+      if (userId) {
+        refetchPlanStatus();
+      }
     }
   };
 
@@ -1031,7 +1037,7 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    backgroundColor: colors.gradientStart,
+    backgroundColor: colors.background,
     paddingTop: layout.screenTop,
   },
 

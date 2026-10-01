@@ -12,9 +12,9 @@ import {
 export const CHAT = {
   surface: '#FFFFFF',
   surfaceMuted: '#F6F8FC',
-  primary: '#1355FF',
-  primaryHover: '#0C46E8',
-  primarySoft: '#EDF2FF',
+  primary: colors.primary,
+  primaryHover: colors.primaryDark,
+  primarySoft: colors.primaryLight,
   text: '#101828',
   textMuted: '#64748B',
   textSoft: '#94A3B8',

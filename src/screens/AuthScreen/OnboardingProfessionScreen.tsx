@@ -89,7 +89,7 @@ const OnboardingProfessionScreen = ({ navigation }: Props) => {
 
       <Text style={styles.title}>What best describes you?</Text>
       <Text style={styles.subtitle}>
-        Tell us about your profession so Buddy can personalize your experience.
+        Tell us about your profession so KukuNotes can personalize your experience.
       </Text>
 
       <View style={styles.list}>

@@ -23,11 +23,15 @@ import {
 import ReminderCallScreen from '../screens/ReminderAlerts/ReminderCallScreen';
 import ReminderAlarmScreen from '../screens/ReminderAlerts/ReminderAlarmScreen';
 import { colors } from '../theme';
+import { renderScreenWithBoundary } from '../components/AppErrorBoundary';
 
 const AppStack = createNativeStackNavigator<AppStackParamList>();
 
 const AuthenticatedApp = () => (
-  <AppStack.Navigator screenOptions={{ headerShown: false }}>
+  <AppStack.Navigator
+    screenOptions={{ headerShown: false }}
+    screenLayout={renderScreenWithBoundary}
+  >
     <AppStack.Screen name="Main" component={MainTabs} />
     <AppStack.Screen
       name="ReminderCall"

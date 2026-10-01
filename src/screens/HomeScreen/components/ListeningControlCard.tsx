@@ -27,7 +27,6 @@ type Props = {
  */
 const ListeningControlCard = ({
   isVoiceActive,
-  isUploadingVoice,
   isFetchingActiveSpace,
   spaceName,
   startedAt,
@@ -55,9 +54,7 @@ const ListeningControlCard = ({
 
   const remainingMs = getRecordingRemainingMs(planStatus, elapsedMs);
 
-  const subtitle = isUploadingVoice
-    ? 'Uploading voice message...'
-    : isFetchingActiveSpace && !isVoiceActive
+  const subtitle = isFetchingActiveSpace && !isVoiceActive
       ? 'Checking active space...'
       : isVoiceActive
         ? formatClock(elapsedMs)

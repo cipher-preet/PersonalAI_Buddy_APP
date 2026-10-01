@@ -45,6 +45,7 @@ import {
   useGetStagedTasksBySpaceQuery,
   useGetTaskDateMarkersBySpaceQuery,
   useGetUserSpacesQuery,
+  useSetStagedTaskStatusMutation,
 } from '../../store/api/home';
 import { useGetPlanStatusQuery } from '../../store/api/payments';
 import UpgradePlanPromptModal from '../../components/UpgradePlanPromptModal';
@@ -160,6 +161,8 @@ const TaskScreen = () => {
   const [createStagedTask, { isLoading: isCreatingTask }] =
     useCreateStagedTaskMutation();
   const [deleteStagedTask] = useDeleteStagedTaskMutation();
+  const [setStagedTaskStatus] = useSetStagedTaskStatusMutation();
+  const pendingStatusTaskIds = useRef(new Set<string>());
 
   const {
     data: spacesData,
@@ -529,13 +532,54 @@ const TaskScreen = () => {
   );
 
   const handleToggleTaskComplete = useCallback(
-    (task: StagedTaskCard) => {
-      setTaskCompletionOverrides(prev => ({
-        ...prev,
-        [task.id]: !(prev[task.id] ?? isTaskDoneFromApi(task)),
-      }));
+    async (task: StagedTaskCard) => {
+      if (pendingStatusTaskIds.current.has(task.id)) {
+        return;
+      }
+
+      const nextDone = !isTaskDone(task);
+      setTaskCompletionOverrides(prev => ({ ...prev, [task.id]: nextDone }));
+
+      if (isLocalTaskId(task.id)) {
+        return;
+      }
+
+      pendingStatusTaskIds.current.add(task.id);
+
+      try {
+        const response = await setStagedTaskStatus({
+          taskId: task.id,
+          done: nextDone,
+        }).unwrap();
+
+        const operation =
+          response?.data?.task?.operation ?? (nextDone ? 'DONE' : 'CREATE');
+        setLoadedTasks(prev =>
+          prev.map(item => (item.id === task.id ? { ...item, operation } : item)),
+        );
+        setTaskCompletionOverrides(prev => {
+          const next = { ...prev };
+          delete next[task.id];
+          return next;
+        });
+
+        showToast({
+          message:
+            response?.data?.message ||
+            (nextDone ? 'Task marked as done.' : 'Task marked as open.'),
+          type: 'success',
+        });
+      } catch (error: any) {
+        setTaskCompletionOverrides(prev => ({ ...prev, [task.id]: !nextDone }));
+        showToast({
+          message: getApiErrorMessage(error, 'Unable to update task status.'),
+          type: 'error',
+        });
+      } finally {
+        pendingStatusTaskIds.current.delete(task.id);
+      }
     },
-    [],
+    [isTaskDone, setStagedTaskStatus, showToast],
   );
 
   const handleDeleteTask = useCallback(
