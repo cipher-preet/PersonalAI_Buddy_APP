@@ -1,7 +1,7 @@
 export const API_URLS = {
   appApiBase: 'https://buddy-node-backend-scz7pyp3ha-el.a.run.app/api/v1',              // preet cloud run server
   // appApiBase: 'https://buddy-node-backend-710178903619.asia-south1.run.app/api/v1',  //aditya cloud running
-  // appApiBase: 'https://f9a4-223-178-212-94.ngrok-free.app/api/v1',
+  // appApiBase: 'https://6284-223-178-209-79.ngrok-free.app/api/v1',
 
 
 

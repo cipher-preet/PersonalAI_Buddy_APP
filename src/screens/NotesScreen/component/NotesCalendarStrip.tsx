@@ -75,10 +75,13 @@ type DayCellProps = {
 };
 
 type Props = {
+  /** Anchor date: the filtered day when a filter is active, otherwise the browsed month. */
   selectedDate: Date;
   markedDateKeys?: Set<string>;
   onSelectDate: (date: Date) => void;
-  onAddPress: () => void;
+  isDateFilterActive?: boolean;
+  onClearDate?: () => void;
+  onBrowseDate?: (date: Date) => void;
 };
 
 const ChevronDownIcon = ({ color = colors.muted }: { color?: string }) => (
@@ -89,17 +92,6 @@ const ChevronDownIcon = ({ color = colors.muted }: { color?: string }) => (
       strokeWidth={2.2}
       strokeLinecap="round"
       strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-const PlusIcon = ({ color = colors.icon }: { color?: string }) => (
-  <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M12 5v14M5 12h14"
-      stroke={color}
-      strokeWidth={2.1}
-      strokeLinecap="round"
     />
   </Svg>
 );
@@ -161,8 +153,12 @@ const NotesCalendarStrip = ({
   selectedDate,
   markedDateKeys,
   onSelectDate,
-  onAddPress,
+  isDateFilterActive = true,
+  onClearDate,
+  onBrowseDate,
 }: Props) => {
+  const canClear = Boolean(onClearDate);
+  const selectedKey = isDateFilterActive ? toDateKey(selectedDate) : null;
   const { width: windowWidth } = useWindowDimensions();
   const dayWidth = useMemo(
     () =>
@@ -215,10 +211,22 @@ const NotesCalendarStrip = ({
 
   const handleSelectDate = useCallback(
     (date: Date) => {
+      if (canClear && selectedKey === toDateKey(date)) {
+        onClearDate?.();
+        return;
+      }
       onSelectDate(startOfDay(date));
     },
-    [onSelectDate],
+    [canClear, onClearDate, onSelectDate, selectedKey],
   );
+
+  const commitMonth = (date: Date) => {
+    if (!isDateFilterActive && onBrowseDate) {
+      onBrowseDate(date);
+    } else {
+      onSelectDate(date);
+    }
+  };
 
   const handleOpenPicker = () => {
     setPickerYear(selectedDate.getFullYear());
@@ -230,11 +238,11 @@ const NotesCalendarStrip = ({
       pickerYear === today.getFullYear() && monthIndex === today.getMonth();
 
     if (isCurrentMonth) {
-      onSelectDate(today);
+      commitMonth(today);
     } else {
       const daysInMonth = new Date(pickerYear, monthIndex + 1, 0).getDate();
       const nextDay = Math.min(selectedDate.getDate(), daysInMonth);
-      onSelectDate(new Date(pickerYear, monthIndex, nextDay));
+      commitMonth(new Date(pickerYear, monthIndex, nextDay));
     }
 
     setPickerVisible(false);
@@ -244,14 +252,14 @@ const NotesCalendarStrip = ({
     ({ item }: ListRenderItemInfo<CalendarDay>) => (
       <DayCell
         item={item}
-        selected={item.key === toDateKey(selectedDate)}
+        selected={item.key === selectedKey}
         isToday={item.key === todayKey}
         hasNotes={Boolean(markedDateKeys?.has(item.key))}
         dayWidth={dayWidth}
         onPress={handleSelectDate}
       />
     ),
-    [dayWidth, handleSelectDate, markedDateKeys, selectedDate, todayKey],
+    [dayWidth, handleSelectDate, markedDateKeys, selectedKey, todayKey],
   );
 
   const getItemLayout = useCallback(
@@ -280,19 +288,26 @@ const NotesCalendarStrip = ({
             <ChevronDownIcon />
           </View>
         </TouchableOpacity>
-
-        <View style={styles.actions}>
+        {canClear ? (
           <TouchableOpacity
-            activeOpacity={0.75}
-            onPress={onAddPress}
-            style={styles.iconButton}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            activeOpacity={0.8}
+            onPress={onClearDate}
+            disabled={!isDateFilterActive}
+            style={[styles.allPill, !isDateFilterActive && styles.allPillActive]}
             accessibilityRole="button"
-            accessibilityLabel="Add"
+            accessibilityLabel="Show all dates"
+            accessibilityState={{ selected: !isDateFilterActive }}
           >
-            <PlusIcon />
+            <Text
+              style={[
+                styles.allPillText,
+                !isDateFilterActive && styles.allPillTextActive,
+              ]}
+            >
+              All dates
+            </Text>
           </TouchableOpacity>
-        </View>
+        ) : null}
       </View>
 
       <FlatList
@@ -301,7 +316,7 @@ const NotesCalendarStrip = ({
         horizontal
         keyExtractor={item => item.key}
         renderItem={renderDay}
-        extraData={`${toDateKey(selectedDate)}-${markedDateKeys?.size ?? 0}`}
+        extraData={`${selectedKey ?? 'all'}-${markedDateKeys?.size ?? 0}`}
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         style={styles.dateList}
@@ -396,7 +411,7 @@ export default memo(NotesCalendarStrip);
 const styles = StyleSheet.create({
   wrapper: {
     backgroundColor: colors.white,
-    paddingTop: spacing.md,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.md,
     marginBottom: spacing.md,
     marginHorizontal: SCREEN_INSET,
@@ -430,18 +445,28 @@ const styles = StyleSheet.create({
     marginTop: spacing.xxs,
   },
 
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginLeft: spacing.md,
+  allPill: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
   },
 
-  iconButton: {
-    width: ms(28),
-    height: layout.iconButtonSm,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
+  allPillActive: {
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.brandBorder,
+  },
+
+  allPillText: {
+    color: colors.subText,
+    fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
+  },
+
+  allPillTextActive: {
+    color: colors.primary,
   },
 
   listContent: {

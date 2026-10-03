@@ -1,16 +1,16 @@
 import React, { memo, useState } from 'react';
 import {
   ActivityIndicator,
-  Modal,
-  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+
 import Svg, { Path } from 'react-native-svg';
 
 import SpaceFolderIcon from './SpaceFolderIcon';
+import SpaceTileMenu from './SpaceTileMenu';
 import { useGetSpaceStatsQuery } from '../../../store/api/home';
 import { useAppSelector } from '../../../store/hooks';
 import {
@@ -37,12 +37,24 @@ type Props = {
 const countLabel = (count: number, singular: string, plural: string) =>
   `${count} ${count === 1 ? singular : plural}`;
 
-const TrashIcon = () => (
-  <Svg width={ms(15)} height={ms(15)} viewBox="0 0 24 24" fill="none">
+const NoteIcon = () => (
+  <Svg width={ms(12)} height={ms(12)} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"
-      stroke={colors.error}
-      strokeWidth={1.7}
+      d="M7 3.5h7l4.5 4.5v11A1.5 1.5 0 0 1 17 20.5H7A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5ZM9 12h6M9 16h4"
+      stroke={colors.subText}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const TaskIcon = () => (
+  <Svg width={ms(12)} height={ms(12)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm-3.5-9 2.5 2.5 4.5-5"
+      stroke={colors.subText}
+      strokeWidth={2}
       strokeLinecap="round"
       strokeLinejoin="round"
     />
@@ -73,12 +85,16 @@ const SpaceFolderTile = ({
 
   const notesCount = statsData?.data?.notesCount ?? initialNotesCount ?? 0;
   const tasksCount = statsData?.data?.tasksCount ?? initialTasksCount ?? 0;
+  const badgeLabel = isListening ? 'Live' : statusLabel;
 
   return (
     <>
       <TouchableOpacity
-        activeOpacity={0.82}
-        style={[styles.tile, isDeleting && styles.tileDeleting]}
+        activeOpacity={0.88}
+        style={[
+          styles.card,
+          isDeleting && styles.cardDeleting,
+        ]}
         onPress={onPress}
         onLongPress={() => {
           if (onDelete && !isDeleting) {
@@ -90,135 +106,156 @@ const SpaceFolderTile = ({
         accessibilityRole="button"
         accessibilityLabel={title}
       >
-        {isDeleting ? (
-          <View style={styles.iconSlot}>
+        <View
+          style={[
+            styles.preview,
+            isListening && styles.previewLive,
+            Boolean(badgeLabel) && styles.previewWithBadge,
+          ]}
+        >
+          {isDeleting ? (
             <ActivityIndicator size="small" color={colors.primary} />
-          </View>
-        ) : (
-          <SpaceFolderIcon size={ms(80)} listening={isListening} />
-        )}
-        <Text style={styles.title} numberOfLines={2}>
-          {title}
-        </Text>
-        {statusLabel ? (
-          <Text style={styles.status} numberOfLines={1}>
-            {statusLabel}
+          ) : (
+            <SpaceFolderIcon
+              size={ms(48)}
+              color={isListening ? colors.accentCyan : colors.primary}
+            />
+          )}
+          {badgeLabel ? (
+            <View style={[styles.badge, isListening && styles.badgeLive]}>
+              <View style={[styles.badgeDot, isListening && styles.badgeDotLive]} />
+              <Text style={styles.badgeText} numberOfLines={1}>
+                {badgeLabel}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
           </Text>
-        ) : null}
-        <Text style={styles.meta} numberOfLines={1}>
-          {countLabel(notesCount, 'note', 'notes')}
-        </Text>
-        <Text style={styles.meta} numberOfLines={1}>
-          {countLabel(tasksCount, 'task', 'tasks')}
-        </Text>
+          <View
+            style={styles.metaRow}
+            accessible
+            accessibilityLabel={`${countLabel(notesCount, 'note', 'notes')}, ${countLabel(tasksCount, 'task', 'tasks')}`}
+          >
+            <View style={styles.stat}>
+              <NoteIcon />
+              <Text style={styles.statText}>{notesCount}</Text>
+            </View>
+            <View style={styles.stat}>
+              <TaskIcon />
+              <Text style={styles.statText}>{tasksCount}</Text>
+            </View>
+          </View>
+        </View>
       </TouchableOpacity>
 
-      <Modal
+      <SpaceTileMenu
         visible={menuVisible}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-        onRequestClose={() => setMenuVisible(false)}
-      >
-        <Pressable
-          style={styles.menuBackdrop}
-          onPress={() => setMenuVisible(false)}
-        >
-          <Pressable style={styles.menuCard}>
-            <TouchableOpacity
-              activeOpacity={0.8}
-              style={styles.menuItem}
-              onPress={() => {
-                setMenuVisible(false);
-                onDelete?.();
-              }}
-            >
-              <TrashIcon />
-              <Text style={styles.menuItemText}>Delete space</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
+        onClose={() => setMenuVisible(false)}
+        onOpen={onPress}
+        onDelete={onDelete}
+      />
     </>
   );
 };
 
 export default memo(SpaceFolderTile);
-
 const styles = StyleSheet.create({
-  tile: {
+  card: {
     width: '100%',
-    alignItems: 'center',
-    paddingTop: spacing.xs,
-    paddingBottom: spacing.sm,
   },
 
-  tileDeleting: {
-    opacity: 0.7,
+  cardDeleting: {
+    opacity: 0.6,
   },
 
-  iconSlot: {
-    width: ms(80),
-    height: ms(69),
+  preview: {
+    width: '100%',
+    aspectRatio: 1.3,
+    borderRadius: radii.lg,
+    backgroundColor: colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  previewLive: {
+    backgroundColor: colors.inputBg,
+  },
+
+  previewWithBadge: {
+    paddingTop: ms(10),
+  },
+
+  badge: {
+    position: 'absolute',
+    top: spacing.xs,
+    left: spacing.xs,
+    maxWidth: '90%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xxs,
+    borderRadius: radii.pill,
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.brandBorder,
+  },
+
+  badgeLive: {
+    borderColor: colors.accentCyan,
+  },
+
+  badgeDot: {
+    width: ms(5),
+    height: ms(5),
+    borderRadius: ms(2.5),
+    backgroundColor: colors.primary,
+  },
+
+  badgeDotLive: {
+    backgroundColor: colors.successBright,
+  },
+
+  badgeText: {
+    flexShrink: 1,
+    fontSize: ms(9),
+    fontWeight: fontWeight.extrabold,
+    color: colors.textSecondary,
+    letterSpacing: 0.3,
+  },
+
+  footer: {
+    paddingHorizontal: spacing.xxs,
+    paddingTop: spacing.lg,
   },
 
   title: {
-    marginTop: spacing.md,
-    color: colors.text,
+    color: colors.black,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.bold,
-    textAlign: 'center',
-    lineHeight: ms(16),
+    letterSpacing: -0.2,
   },
 
-  status: {
-    marginTop: spacing.xxs,
-    color: colors.primary,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.semibold,
-    textAlign: 'center',
-  },
-
-  meta: {
-    marginTop: spacing.xxs,
-    color: colors.muted,
-    fontSize: fontSize.xs,
-    fontWeight: fontWeight.medium,
-    textAlign: 'center',
-  },
-
-  menuBackdrop: {
-    flex: 1,
-    backgroundColor: colors.backdrop,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing['4xl'],
-  },
-
-  menuCard: {
-    width: '100%',
-    maxWidth: ms(260),
-    borderRadius: radii.xl,
-    backgroundColor: colors.white,
-    borderWidth: 1,
-    borderColor: colors.border,
-    paddingVertical: spacing.sm,
-    overflow: 'hidden',
-  },
-
-  menuItem: {
+  metaRow: {
+    marginTop: spacing.xs,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xl,
-    paddingHorizontal: spacing['2xl'],
-    paddingVertical: spacing.xl,
+    gap: spacing.md,
   },
 
-  menuItemText: {
-    color: colors.error,
-    fontSize: fontSize.base,
+  stat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(3),
+  },
+
+  statText: {
+    color: colors.subText,
+    fontSize: fontSize.xs,
     fontWeight: fontWeight.semibold,
   },
 });

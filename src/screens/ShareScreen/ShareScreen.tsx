@@ -87,7 +87,10 @@ const ShareScreen = () => {
   const contentOpacity = useRef(new Animated.Value(1)).current;
 
   const { data: spacesData, isFetching: isLoadingSpaces } =
-    useGetUserSpacesQuery({ userId, limit: 50 }, { skip: !userId });
+    useGetUserSpacesQuery(
+      { userId, limit: 50, counts: 'none' },
+      { skip: !userId },
+    );
   const spaces = useMemo(
     () => spacesData?.data?.data?.spaces ?? [],
     [spacesData],

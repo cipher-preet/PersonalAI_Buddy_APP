@@ -1,5 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+import type { PersistedAuthSession } from '../../services/authSessionStorage';
+
 export type OnboardingData = {
   profession: string;
   usageGoal: string;
@@ -115,9 +117,36 @@ const authSlice = createSlice({
         state.avatar = action.payload.avatar;
       }
     },
+    restoreSession: (state, action: PayloadAction<PersistedAuthSession>) => {
+      state.isAuthenticated = true;
+      state.userId = action.payload.userId;
+      state.token = action.payload.token;
+      state.isNewUser = action.payload.isNewUser;
+      state.hasCompletedOnboarding = action.payload.hasCompletedOnboarding;
+      state.phone = action.payload.phone;
+      state.email = action.payload.email;
+      state.name = action.payload.name;
+      state.avatar = action.payload.avatar;
+    },
     logout: () => initialState,
   },
 });
+
+export const selectPersistableSession = (
+  state: AuthState,
+): PersistedAuthSession | null =>
+  state.isAuthenticated && state.userId
+    ? {
+        userId: state.userId,
+        token: state.token,
+        isNewUser: state.isNewUser,
+        hasCompletedOnboarding: state.hasCompletedOnboarding,
+        phone: state.phone,
+        email: state.email,
+        name: state.name,
+        avatar: state.avatar,
+      }
+    : null;
 
 export const {
   loginSuccess,
@@ -127,6 +156,7 @@ export const {
   completeOnboarding,
   checkAuthSuccess,
   updateProfileSuccess,
+  restoreSession,
   logout,
 } = authSlice.actions;
 

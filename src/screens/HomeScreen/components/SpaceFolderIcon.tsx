@@ -1,41 +1,31 @@
 import React, { memo } from 'react';
-import { StyleSheet, View } from 'react-native';
 import Svg, { Path, Rect } from 'react-native-svg';
 
-import { ms } from '../../../theme';
+import { colors, ms } from '../../../theme';
 
 type Props = {
   size?: number;
   listening?: boolean;
+  color?: string;
 };
 
-const SpaceFolderIcon = ({ size = ms(80), listening = false }: Props) => {
-  const tab = listening ? '#5EEAD4' : '#B79BFF';
-  const body = listening ? '#2DD4BF' : '#7C5CFA';
-  const face = listening ? '#99F6E4' : '#C9B8FF';
+const SpaceFolderIcon = ({ size = ms(52), listening = false, color }: Props) => {
+  const front = color ?? (listening ? colors.accentCyan : colors.primary);
+  const back = color ?? (listening ? colors.info : colors.primaryDark);
 
   return (
-    <View style={[styles.wrap, { width: size, height: size * 0.86 }]}>
-      <Svg width={size} height={size * 0.86} viewBox="0 0 72 62" fill="none">
-        <Path
-          d="M8 16.5C8 14.6 9.6 13 11.5 13h14.4c.9 0 1.7.4 2.3 1.1l2.6 2.8c.6.7 1.4 1.1 2.3 1.1H60.5C62.4 18 64 19.6 64 21.5V24H8v-7.5Z"
-          fill={tab}
-        />
-        <Rect x="8" y="22" width="56" height="32" rx="7" fill={body} />
-        <Path
-          d="M12.5 27h47c1.4 0 2.5 1.2 2.3 2.6l-3.4 19.2c-.3 1.5-1.6 2.7-3.2 2.7H16.8c-1.6 0-2.9-1.2-3.2-2.7L10.2 29.6C10 28.2 11.1 27 12.5 27Z"
-          fill={face}
-        />
-      </Svg>
-    </View>
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M2.5 7A2.5 2.5 0 0 1 5 4.5h3.9c.6 0 1.1.2 1.5.6l1.5 1.4h7.1A2.5 2.5 0 0 1 21.5 9v8.5A2.5 2.5 0 0 1 19 20H5a2.5 2.5 0 0 1-2.5-2.5V7Z"
+        fill={back}
+      />
+      <Path
+        d="M2.5 10.2c0-1.2 1-2.2 2.2-2.2h14.6c1.2 0 2.2 1 2.2 2.2v7.3A2.5 2.5 0 0 1 19 20H5a2.5 2.5 0 0 1-2.5-2.5v-7.3Z"
+        fill={front}
+      />
+      <Rect x="8.6" y="12.9" width="6.8" height="1.9" rx="0.95" fill={colors.white} />
+    </Svg>
   );
 };
 
 export default memo(SpaceFolderIcon);
-
-const styles = StyleSheet.create({
-  wrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

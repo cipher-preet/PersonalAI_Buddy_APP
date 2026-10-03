@@ -43,6 +43,17 @@ export const baseApi = createApi({
       return headers;
     },
   }),
-  tagTypes: ['Spaces', 'Plans', 'Reminders', 'Calendar', 'Briefing'],
+  tagTypes: [
+    'Spaces',
+    'Plans',
+    'Reminders',
+    'Calendar',
+    'Briefing',
+    'Notes',
+    'Tasks',
+    'NoteCounts',
+    'TaskCounts',
+    'TaskStatus',
+  ],
   endpoints: () => ({}),
 });

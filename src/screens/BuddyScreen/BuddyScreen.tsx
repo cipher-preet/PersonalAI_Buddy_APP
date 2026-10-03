@@ -192,7 +192,7 @@ const BuddyScreen = () => {
     isError: spacesError,
     refetch: refetchSpaces,
   } = useGetUserSpacesQuery(
-    { userId: userId || '', limit: 50 },
+    { userId: userId || '', limit: 50, counts: 'none' },
     { skip: !userId },
   );
 

@@ -231,6 +231,7 @@ export interface StagedNoteCard {
   confidence: number | null;
   createdAt: string | null;
   updatedAt: string | null;
+  conversationId?: string | null;
 }
 
 export interface StagedNoteDetail {
@@ -271,13 +272,37 @@ interface GetNoteWorkspacesResponse {
   };
 }
 
-interface GetStagedNotesBySpaceResponse {
+export interface GetStagedNotesBySpaceResponse {
   success: boolean;
   data: {
     notes: StagedNoteCard[];
     nextCursor: string | null;
     total?: number;
     date?: string;
+  };
+}
+
+export const NO_CONVERSATION_GROUP_ID = 'none';
+
+export interface NoteConversationGroup {
+  id: string;
+  conversationId: string | null;
+  notesCount: number;
+  latestAt: string | null;
+  earliestAt: string | null;
+  startedAt: string | null;
+  stoppedAt: string | null;
+  sourceType: string | null;
+  previewTitles: string[];
+}
+
+export interface GetNoteConversationsBySpaceResponse {
+  success: boolean;
+  data: {
+    groups: NoteConversationGroup[];
+    nextCursor: string | null;
+    totalGroups: number;
+    totalNotes: number;
   };
 }
 
@@ -339,10 +364,13 @@ interface SetStagedTaskStatusResponse {
   };
 }
 
+export type SpaceCountsMode = 'all' | 'notes' | 'tasks' | 'none';
 interface GetUserSpacesArgs {
   userId: string;
   limit?: number;
   cursor?: string;
+  /** Which per-space counts the backend should compute. Defaults to 'all'. */
+  counts?: SpaceCountsMode;
 }
 interface GetActiveSpacesArgs {
   userId: string;
@@ -363,6 +391,14 @@ interface GetStagedNotesBySpaceArgs {
   limit?: number;
   cursor?: string;
   date?: string;
+  /** Conversation id, or `NO_CONVERSATION_GROUP_ID` for notes without one. */
+  conversationId?: string;
+}
+interface GetNoteConversationsBySpaceArgs {
+  userId: string;
+  spaceId: string;
+  limit?: number;
+  cursor?: string;
 }
 interface GetStagedNoteByIdArgs {
   noteId: string;
@@ -422,16 +458,21 @@ export const homeApi = baseApi.injectEndpoints({
     }),
 
     getUserSpaces: builder.query<GetUserSpacesResponse, GetUserSpacesArgs>({
-      query: ({ userId, limit = 10, cursor = '' }) => ({
+      query: ({ userId, limit = 10, cursor = '', counts = 'all' }) => ({
         url: 'home/getuserspaces',
         method: 'GET',
         params: {
           userId,
           limit,
           cursor,
+          ...(counts !== 'all' ? { counts } : {}),
         },
       }),
-      providesTags: ['Spaces'],
+      providesTags: (_result, _error, { counts = 'all' }) => [
+        'Spaces',
+        ...(counts === 'all' || counts === 'notes' ? (['NoteCounts'] as const) : []),
+        ...(counts === 'all' || counts === 'tasks' ? (['TaskCounts'] as const) : []),
+      ],
     }),
 
     getUserActiveSpace: builder.query<
@@ -457,7 +498,7 @@ export const homeApi = baseApi.injectEndpoints({
           spaceId,
         },
       }),
-      providesTags: ['Spaces'],
+      providesTags: ['Spaces', 'NoteCounts', 'TaskCounts', 'TaskStatus'],
     }),
 
     getProfileSummary: builder.query<
@@ -471,7 +512,7 @@ export const homeApi = baseApi.injectEndpoints({
           userId,
         },
       }),
-      providesTags: ['Spaces'],
+      providesTags: ['Spaces', 'NoteCounts', 'TaskCounts', 'TaskStatus'],
     }),
 
     getNoteWorkspaces: builder.query<
@@ -485,14 +526,21 @@ export const homeApi = baseApi.injectEndpoints({
           userId,
         },
       }),
-      providesTags: ['Spaces'],
+      providesTags: ['Spaces', 'NoteCounts'],
     }),
 
     getStagedNotesBySpace: builder.query<
       GetStagedNotesBySpaceResponse,
       GetStagedNotesBySpaceArgs
     >({
-      query: ({ userId, spaceId, limit = 10, cursor = '', date }) => ({
+      query: ({
+        userId,
+        spaceId,
+        limit = 10,
+        cursor = '',
+        date,
+        conversationId,
+      }) => ({
         url: 'home/getStagedNotesBySpace',
         method: 'GET',
         params: {
@@ -501,9 +549,27 @@ export const homeApi = baseApi.injectEndpoints({
           limit,
           cursor,
           ...(date ? { date } : {}),
+          ...(conversationId ? { conversationId } : {}),
         },
       }),
-      providesTags: ['Spaces'],
+      providesTags: ['Notes'],
+    }),
+
+    getNoteConversationsBySpace: builder.query<
+      GetNoteConversationsBySpaceResponse,
+      GetNoteConversationsBySpaceArgs
+    >({
+      query: ({ userId, spaceId, limit = 10, cursor = '' }) => ({
+        url: 'home/getNoteConversationsBySpace',
+        method: 'GET',
+        params: {
+          userId,
+          spaceId,
+          limit,
+          cursor,
+        },
+      }),
+      providesTags: ['Notes'],
     }),
 
     getStagedNoteById: builder.query<
@@ -517,7 +583,7 @@ export const homeApi = baseApi.injectEndpoints({
           noteId,
         },
       }),
-      providesTags: ['Spaces'],
+      providesTags: ['Notes'],
     }),
 
     deleteStagedNote: builder.mutation<
@@ -529,7 +595,7 @@ export const homeApi = baseApi.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Spaces', 'Plans'],
+      invalidatesTags: ['Notes', 'NoteCounts', 'Plans'],
     }),
 
     getStagedTasksBySpace: builder.query<
@@ -547,7 +613,7 @@ export const homeApi = baseApi.injectEndpoints({
           ...(date ? { date } : {}),
         },
       }),
-      providesTags: ['Spaces'],
+      providesTags: ['Tasks'],
     }),
 
     getNoteDateMarkersBySpace: builder.query<
@@ -559,7 +625,7 @@ export const homeApi = baseApi.injectEndpoints({
         method: 'GET',
         params: { userId, spaceId, from, to },
       }),
-      providesTags: ['Spaces'],
+      providesTags: ['Notes'],
     }),
 
     getTaskDateMarkersBySpace: builder.query<
@@ -571,7 +637,7 @@ export const homeApi = baseApi.injectEndpoints({
         method: 'GET',
         params: { userId, spaceId, from, to },
       }),
-      providesTags: ['Spaces'],
+      providesTags: ['Tasks'],
     }),
 
     deleteStagedTask: builder.mutation<
@@ -583,7 +649,7 @@ export const homeApi = baseApi.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Spaces', 'Plans'],
+      invalidatesTags: ['Tasks', 'TaskCounts', 'Plans'],
     }),
 
     createStagedNote: builder.mutation<
@@ -595,7 +661,7 @@ export const homeApi = baseApi.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Spaces', 'Plans'],
+      invalidatesTags: ['Notes', 'NoteCounts', 'Plans'],
     }),
 
     createStagedTask: builder.mutation<
@@ -607,7 +673,7 @@ export const homeApi = baseApi.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Spaces', 'Plans'],
+      invalidatesTags: ['Tasks', 'TaskCounts', 'Plans'],
     }),
 
     setStagedTaskStatus: builder.mutation<
@@ -619,7 +685,7 @@ export const homeApi = baseApi.injectEndpoints({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['Spaces'],
+      invalidatesTags: ['TaskStatus'],
     }),
 
     registerDeviceToken: builder.mutation<
@@ -723,6 +789,7 @@ export const {
   useGetProfileSummaryQuery,
   useGetNoteWorkspacesQuery,
   useGetStagedNotesBySpaceQuery,
+  useGetNoteConversationsBySpaceQuery,
   useLazyGetStagedNoteByIdQuery,
   useGetStagedTasksBySpaceQuery,
   useGetNoteDateMarkersBySpaceQuery,

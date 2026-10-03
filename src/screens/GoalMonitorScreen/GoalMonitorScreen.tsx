@@ -156,7 +156,7 @@ const GoalMonitorScreen = () => {
   );
 
   const { data: spacesData, isFetching } = useGetUserSpacesQuery(
-    { userId, limit: 50 },
+    { userId, limit: 50, counts: 'none' },
     { skip: !userId || isFreePlan },
   );
   const spaces = useMemo(

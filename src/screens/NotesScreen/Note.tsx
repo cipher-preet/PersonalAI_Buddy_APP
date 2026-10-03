@@ -25,12 +25,13 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { MainTabParamList } from '../../navigation/types';
 
 import Header from './component/Header';
-import NotesFilterMenu from './component/NotesFilterMenu';
 import CategoryTabs from './component/CategoryTabs';
 import NoteCard from './component/NoteCard';
 import NoteDetailBottomSheet from './component/NoteDetailBottomSheet';
 import NotesCalendarStrip, { toDateKey } from './component/NotesCalendarStrip';
 import AddNoteBottomSheet from './component/AddNoteBottomSheet';
+import AllNotesList from './component/AllNotesList';
+import ListStateBox from './component/ListStateBox';
 import { LocalNote, NoteItem } from './types/note';
 import type { NoteSortOrder } from './types/sort';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
@@ -145,6 +146,8 @@ const Notes = () => {
   const route = useRoute<RouteProp<MainTabParamList, 'Notes'>>();
   const noteSheetRef = useRef<BottomSheetModal>(null);
   const addNoteSheetRef = useRef<BottomSheetModal>(null);
+  const [allNotesRefreshKey, setAllNotesRefreshKey] = useState(0);
+  const [isDateFilterActive, setIsDateFilterActive] = useState(false);
   const [selectedNote, setSelectedNote] = useState<NoteItem | null>(null);
   const [selectedSpaceId, setSelectedSpaceId] = useState('');
   const [notesCursor, setNotesCursor] = useState('');
@@ -158,8 +161,7 @@ const Notes = () => {
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
-  const [sortOrder, setSortOrder] = useState<NoteSortOrder>('newest');
-  const [filterMenuVisible, setFilterMenuVisible] = useState(false);
+  const sortOrder: NoteSortOrder = 'newest';
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [upgradeResource, setUpgradeResource] =
     useState<PlanLimitResource>('notes');
@@ -217,7 +219,10 @@ const Notes = () => {
       cursor: notesCursor,
       date: selectedDateKey,
     },
-    { skip: !userId || !selectedSpaceId || !selectedDateKey },
+    {
+      skip:
+        !isDateFilterActive || !userId || !selectedSpaceId || !selectedDateKey,
+    },
   );
 
   const { data: noteMarkersData } = useGetNoteDateMarkersBySpaceQuery(
@@ -262,8 +267,10 @@ const Notes = () => {
     spaceLocalNotes,
   ]);
 
-  const dateScopedNotes =
-    loadedNotesDateKey === selectedDateKey ? loadedNotes : [];
+  const dateScopedNotes = useMemo(
+    () => (loadedNotesDateKey === selectedDateKey ? loadedNotes : []),
+    [loadedNotes, loadedNotesDateKey, selectedDateKey],
+  );
 
   const displayedNotes = useMemo(() => {
     const localForDate = spaceLocalNotes.map(toLocalStagedNote);
@@ -326,12 +333,12 @@ const Notes = () => {
     setDayNotesTotal(0);
     setNextNotesCursor(null);
     appliedNotesCursorsRef.current = new Set();
-  }, [selectedSpaceId, selectedDateKey]);
+  }, [selectedSpaceId, selectedDateKey, isDateFilterActive]);
 
   useEffect(() => {
     const response = stagedNotesData?.data;
 
-    if (!response || !isNotesSuccess || isFetchingNotes) {
+    if (!isDateFilterActive || !response || !isNotesSuccess || isFetchingNotes) {
       return;
     }
 
@@ -371,12 +378,26 @@ const Notes = () => {
       return newNotes.length > 0 ? [...prev, ...newNotes] : prev;
     });
   }, [
+    isDateFilterActive,
     isFetchingNotes,
     isNotesSuccess,
     notesCursor,
     selectedDateKey,
     stagedNotesData,
   ]);
+
+  const handleSelectDate = useCallback((date: Date) => {
+    setSelectedDate(date);
+    setIsDateFilterActive(true);
+  }, []);
+
+  const handleClearDate = useCallback(() => {
+    setIsDateFilterActive(false);
+  }, []);
+
+  const refreshAllNotes = useCallback(() => {
+    setAllNotesRefreshKey(key => key + 1);
+  }, []);
 
   const handleOpenNote = useCallback(
     (note: NoteItem) => {
@@ -432,22 +453,30 @@ const Notes = () => {
         throw new Error('Missing space');
       }
 
+      const targetDateKey = isDateFilterActive
+        ? selectedDateKey
+        : toDateKey(new Date());
+
       try {
         const response = await createStagedNote({
           spaceId: selectedSpaceId,
           title,
           description,
-          date: selectedDateKey,
+          date: targetDateKey,
         }).unwrap();
 
         const createdNote = response?.data?.note;
 
+        if (!isDateFilterActive) {
+          refreshAllNotes();
+        }
+
         if (createdNote) {
           const createdDateKey =
             formatDateKey(createdNote.createdAt || createdNote.updatedAt) ||
-            selectedDateKey;
+            targetDateKey;
 
-          if (createdDateKey === selectedDateKey) {
+          if (isDateFilterActive && createdDateKey === selectedDateKey) {
             setLoadedNotes(prev => [
               createdNote,
               ...prev.filter(item => item.id !== createdNote.id),
@@ -456,7 +485,10 @@ const Notes = () => {
             setDayNotesTotal(prev => prev + 1);
           }
 
-          if (userId) {
+          const isInMarkerRange =
+            createdDateKey >= markerRange.from && createdDateKey <= markerRange.to;
+
+          if (userId && isInMarkerRange) {
             dispatch(
               homeApi.util.updateQueryData(
                 'getNoteDateMarkersBySpace',
@@ -511,7 +543,18 @@ const Notes = () => {
         throw error;
       }
     },
-    [createStagedNote, dispatch, markerRange.from, markerRange.to, selectedDateKey, selectedSpaceId, showToast, userId],
+    [
+      createStagedNote,
+      dispatch,
+      isDateFilterActive,
+      markerRange.from,
+      markerRange.to,
+      refreshAllNotes,
+      selectedDateKey,
+      selectedSpaceId,
+      showToast,
+      userId,
+    ],
   );
 
   const handleRetryNoteDetail = useCallback(() => {
@@ -523,7 +566,7 @@ const Notes = () => {
   }, [getStagedNoteById, selectedNoteId]);
 
   const handleDeleteNote = useCallback(
-    async (note: NoteItem) => {
+    async (note: NoteItem): Promise<boolean> => {
       if (isLocalNoteId(note.id)) {
         setLocalNotes(prev => prev.filter(item => item.id !== note.id));
 
@@ -537,7 +580,7 @@ const Notes = () => {
           message: 'Note deleted.',
           type: 'success',
         });
-        return;
+        return true;
       }
 
       try {
@@ -550,6 +593,7 @@ const Notes = () => {
           const next = Math.max(0, prev - 1);
           if (
             next === 0 &&
+            isDateFilterActive &&
             userId &&
             selectedSpaceId &&
             loadedNotesDateKey === selectedDateKey
@@ -604,16 +648,19 @@ const Notes = () => {
             'Note deleted successfully.',
           type: 'success',
         });
+        return true;
       } catch (error: any) {
         showToast({
           message: getApiErrorMessage(error, 'Unable to delete note.'),
           type: 'error',
         });
+        return false;
       }
     },
     [
       deleteStagedNote,
       dispatch,
+      isDateFilterActive,
       loadedNotesDateKey,
       markerRange.from,
       markerRange.to,
@@ -780,6 +827,20 @@ const Notes = () => {
     nextNotesCursor,
   ]);
 
+  const listContentStyle = useMemo(
+    () => [
+      styles.scrollContent,
+      {
+        paddingBottom: tabBarClearance,
+        paddingHorizontal: screenPadding,
+        maxWidth: isTablet ? contentMaxWidth : undefined,
+        width: '100%' as const,
+        alignSelf: 'center' as const,
+      },
+    ],
+    [contentMaxWidth, isTablet, screenPadding, tabBarClearance],
+  );
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
       <View
@@ -787,7 +848,6 @@ const Notes = () => {
       >
         <Header
           searchQuery={searchQuery}
-          sortOrder={sortOrder}
           isSearchActive={isSearchActive}
           onSearchQueryChange={setSearchQuery}
           onSearchOpen={() => setIsSearchActive(true)}
@@ -795,9 +855,18 @@ const Notes = () => {
             setIsSearchActive(false);
             setSearchQuery('');
           }}
-          onFilterPress={() => setFilterMenuVisible(true)}
+          onAddPress={handleOpenAddNote}
         />
       </View>
+
+      <NotesCalendarStrip
+        selectedDate={selectedDate}
+        markedDateKeys={calendarMarkedDateKeys}
+        onSelectDate={handleSelectDate}
+        isDateFilterActive={isDateFilterActive}
+        onClearDate={handleClearDate}
+        onBrowseDate={setSelectedDate}
+      />
 
       <CategoryTabs
         spaces={spaces}
@@ -809,41 +878,50 @@ const Notes = () => {
         onNavigateTasks={() => navigation.navigate('Tasks')}
       />
 
-      <NotesCalendarStrip
-        selectedDate={selectedDate}
-        markedDateKeys={calendarMarkedDateKeys}
-        onSelectDate={setSelectedDate}
-        onAddPress={handleOpenAddNote}
-      />
-
-      <FlatList
-        data={
-          displayedNotes.length === 0 &&
-          (isInitialNotesLoading || isNotesError || isFetchingNotes)
-            ? []
-            : displayedNotes
-        }
-        keyExtractor={item => item.id}
-        renderItem={renderNoteItem}
-        ListEmptyComponent={notesListEmpty}
-        ListFooterComponent={notesListFooter}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingBottom: tabBarClearance,
-            paddingHorizontal: screenPadding,
-            maxWidth: isTablet ? contentMaxWidth : undefined,
-            width: '100%',
-            alignSelf: 'center',
-          },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        scrollEventThrottle={scrollThrottle}
-        style={styles.notesScroll}
-        {...listPerf}
-      />
+      {isDateFilterActive ? (
+        <FlatList
+          data={
+            displayedNotes.length === 0 &&
+            (isInitialNotesLoading || isNotesError || isFetchingNotes)
+              ? []
+              : displayedNotes
+          }
+          keyExtractor={item => item.id}
+          renderItem={renderNoteItem}
+          ListEmptyComponent={notesListEmpty}
+          ListFooterComponent={notesListFooter}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={listContentStyle}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          scrollEventThrottle={scrollThrottle}
+          style={styles.notesScroll}
+          {...listPerf}
+        />
+      ) : selectedSpaceId && userId ? (
+        <AllNotesList
+          userId={userId}
+          spaceId={selectedSpaceId}
+          refreshKey={allNotesRefreshKey}
+          searchQuery={searchQuery}
+          contentContainerStyle={listContentStyle}
+          toNoteItem={toNoteItem}
+          onOpenNote={handleOpenNote}
+          onDeleteNote={handleDeleteNote}
+        />
+      ) : (
+        <View style={listContentStyle}>
+          {isSpacesInitialLoading ? (
+            <ListStateBox variant="loading" message="Loading notes..." />
+          ) : (
+            <ListStateBox
+              variant="empty"
+              title="Select a space"
+              message="Space notes will appear here."
+            />
+          )}
+        </View>
+      )}
 
       <NoteDetailBottomSheet
         ref={noteSheetRef}
@@ -868,16 +946,9 @@ const Notes = () => {
 
       <AddNoteBottomSheet
         ref={addNoteSheetRef}
-        dateLabel={formatFullDate(selectedDate)}
+        dateLabel={formatFullDate(isDateFilterActive ? selectedDate : new Date())}
         isSaving={isCreatingNote}
         onSave={handleSaveNote}
-      />
-
-      <NotesFilterMenu
-        visible={filterMenuVisible}
-        sortOrder={sortOrder}
-        onClose={() => setFilterMenuVisible(false)}
-        onSelect={setSortOrder}
       />
 
       <UpgradePlanPromptModal
@@ -905,7 +976,9 @@ const styles = StyleSheet.create({
   },
 
   headerWrap: {
-    marginBottom: spacing.md,
+    paddingBottom: spacing.xl,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
 
   notesScroll: {

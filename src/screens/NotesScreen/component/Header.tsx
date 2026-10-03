@@ -1,16 +1,17 @@
 import React, { useEffect, useRef } from 'react';
 import {
   Keyboard,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 
-import { FilterIcon, SearchIcon } from '../../../../styles/icons';
-import type { NoteSortOrder } from '../types/sort';
+import { SearchIcon } from '../../../../styles/icons';
 import {
   colors,
   fontSize,
@@ -23,12 +24,11 @@ import {
 
 type Props = {
   searchQuery: string;
-  sortOrder: NoteSortOrder;
   isSearchActive: boolean;
   onSearchQueryChange: (value: string) => void;
   onSearchOpen: () => void;
   onSearchClose: () => void;
-  onFilterPress: () => void;
+  onAddPress: () => void;
 };
 
 const CloseIcon = ({ color = colors.subText }: { color?: string }) => (
@@ -43,17 +43,26 @@ const CloseIcon = ({ color = colors.subText }: { color?: string }) => (
   </Svg>
 );
 
+const PlusIcon = () => (
+  <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 5v14M5 12h14"
+      stroke={colors.white}
+      strokeWidth={2.4}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
 const Header = ({
   searchQuery,
-  sortOrder,
   isSearchActive,
   onSearchQueryChange,
   onSearchOpen,
   onSearchClose,
-  onFilterPress,
+  onAddPress,
 }: Props) => {
   const inputRef = useRef<TextInput>(null);
-  const isFilterActive = sortOrder === 'oldest';
 
   useEffect(() => {
     if (!isSearchActive) {
@@ -127,19 +136,24 @@ const Header = ({
           </TouchableOpacity>
         ) : null}
 
-        <TouchableOpacity
-          style={[styles.iconButton, isFilterActive && styles.iconButtonActive]}
-          activeOpacity={0.78}
-          onPress={onFilterPress}
+        <Pressable
+          onPress={onAddPress}
           accessibilityRole="button"
-          accessibilityLabel="Filter notes"
+          accessibilityLabel="Add note"
+          style={({ pressed }) => [
+            styles.addPressable,
+            pressed && styles.addPressableActive,
+          ]}
         >
-          <FilterIcon
-            width={ms(18)}
-            height={ms(18)}
-            color={isFilterActive ? colors.primaryDark : colors.text}
-          />
-        </TouchableOpacity>
+          <LinearGradient
+            colors={[colors.primary, colors.primaryMid, colors.accentCyan]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.addButton}
+          >
+            <PlusIcon />
+          </LinearGradient>
+        </Pressable>
       </View>
     </View>
   );
@@ -236,8 +250,20 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
 
-  iconButtonActive: {
-    backgroundColor: colors.primarySoft,
-    borderColor: colors.brandBorder,
+  addPressable: {
+    borderRadius: radii.pill,
+  },
+
+  addPressableActive: {
+    opacity: 0.88,
+    transform: [{ scale: 0.96 }],
+  },
+
+  addButton: {
+    width: ms(42),
+    height: ms(42),
+    borderRadius: ms(21),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

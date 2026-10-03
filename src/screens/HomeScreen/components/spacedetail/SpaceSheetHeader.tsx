@@ -52,7 +52,7 @@ const SpaceSheetHeader = ({
             isListening && styles.folderWrapListening,
           ]}
         >
-          <SpaceFolderIcon size={ms(32)} listening={isListening} />
+          <SpaceFolderIcon size={ms(28)} listening={isListening} />
         </View>
         <View style={styles.copy}>
           <Text style={styles.title} numberOfLines={1}>
@@ -113,7 +113,9 @@ const styles = StyleSheet.create({
   },
 
   folderWrapListening: {
-    backgroundColor: colors.successSoft,
+    backgroundColor: colors.inputBg,
+    borderWidth: 1,
+    borderColor: colors.accentCyan,
   },
 
   copy: {

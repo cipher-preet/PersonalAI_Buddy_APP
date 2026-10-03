@@ -78,7 +78,7 @@ const VoiceAssistantSheet = forwardRef(({ onStart }: any, ref: any) => {
     isFetching: isFetchingSpaces,
     refetch: refetchSpaces,
   } = useGetUserSpacesQuery(
-    { userId, limit: 10, cursor },
+    { userId, limit: 10, cursor, counts: 'none' },
     { skip: !userId },
   );
 

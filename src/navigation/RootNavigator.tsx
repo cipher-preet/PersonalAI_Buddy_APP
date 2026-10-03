@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState, StyleSheet, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
@@ -11,6 +11,9 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { useCheckAuthQuery } from '../store/api/auth';
 import { useRegisterDeviceTokenMutation } from '../store/api/home';
 import { checkAuthSuccess, logout } from '../store/slices/authSlice';
+import { baseApi, chatApi } from '../store/api';
+import { hydrateAuthSession, store } from '../store/store';
+import { useToast } from '../store/context/ToastContext';
 import {
   getDevicePlatform,
   getFcmToken,
@@ -54,16 +57,54 @@ const AuthenticatedApp = () => (
   </AppStack.Navigator>
 );
 
+const getErrorStatus = (error: unknown) =>
+  error && typeof error === 'object' && 'status' in error
+    ? (error as { status: unknown }).status
+    : undefined;
+
 const RootNavigator = () => {
   const dispatch = useAppDispatch();
+  const { showToast } = useToast();
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
   const authToken = useAppSelector(state => state.auth.token);
   const hasCompletedOnboarding = useAppSelector(
     state => state.auth.hasCompletedOnboarding,
   );
-  const { data, isFetching, isError } = useCheckAuthQuery();
+  const [isHydrated, setIsHydrated] = useState(false);
+  const { data, error: authError, isError, refetch } = useCheckAuthQuery(undefined, {
+    skip: !isHydrated,
+  });
   const [registerDeviceToken] = useRegisterDeviceTokenMutation();
   const showMainApp = isAuthenticated && hasCompletedOnboarding;
+  const wasAuthenticatedRef = useRef(isAuthenticated);
+
+  // Reading the saved session is a local file read (a few ms), so the app opens
+  // straight into the right screen; the server check below runs in background.
+  useEffect(() => {
+    let mounted = true;
+    hydrateAuthSession()
+      .catch(() => false)
+      .finally(() => {
+        if (mounted) {
+          setIsHydrated(true);
+        }
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleSessionExpired = useCallback(() => {
+    if (!store.getState().auth.isAuthenticated) {
+      return;
+    }
+    dispatch(logout());
+    showToast({
+      message: 'Session expired',
+      description: 'Please sign in again to continue.',
+      type: 'info',
+    });
+  }, [dispatch, showToast]);
 
   useEffect(() => {
     if (data?.authenticated) {
@@ -78,14 +119,43 @@ const RootNavigator = () => {
           avatar: data.avatar,
         }),
       );
+    } else if (data && !data.authenticated) {
+      handleSessionExpired();
     }
-  }, [data, dispatch]);
+  }, [data, dispatch, handleSessionExpired]);
+
+  // Only a definitive rejection signs the user out. Network failures, timeouts
+  // and server errors keep the saved session and re-check on next foreground.
+  useEffect(() => {
+    if (!isError) {
+      return;
+    }
+    const status = getErrorStatus(authError);
+    if (status === 401 || status === 403) {
+      handleSessionExpired();
+    }
+  }, [authError, handleSessionExpired, isError]);
 
   useEffect(() => {
-    if (isError && !isAuthenticated) {
-      dispatch(logout());
+    if (!isError || !isAuthenticated) {
+      return;
     }
-  }, [dispatch, isAuthenticated, isError]);
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        refetch();
+      }
+    });
+    return () => subscription.remove();
+  }, [isAuthenticated, isError, refetch]);
+
+  // Drop cached API data on sign-out so the next account never sees it.
+  useEffect(() => {
+    if (wasAuthenticatedRef.current && !isAuthenticated) {
+      dispatch(baseApi.util.resetApiState());
+      dispatch(chatApi.util.resetApiState());
+    }
+    wasAuthenticatedRef.current = isAuthenticated;
+  }, [dispatch, isAuthenticated]);
 
   useEffect(() => {
     if (!isAuthenticated || !authToken) {
@@ -137,10 +207,8 @@ const RootNavigator = () => {
         }
       }}
     >
-      {isFetching && !isAuthenticated ? (
-        <View style={styles.loader}>
-          <ActivityIndicator color={colors.primary} />
-        </View>
+      {!isHydrated ? (
+        <View style={styles.blank} />
       ) : showMainApp ? (
         <AuthenticatedApp />
       ) : (
@@ -153,10 +221,8 @@ const RootNavigator = () => {
 export default RootNavigator;
 
 const styles = StyleSheet.create({
-  loader: {
+  blank: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: colors.background,
   },
 });

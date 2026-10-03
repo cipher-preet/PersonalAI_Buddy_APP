@@ -25,7 +25,6 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { MainTabParamList } from '../../navigation/types';
 
 import Header from './component/Header';
-import TasksFilterMenu from './component/TasksFilterMenu';
 import CategoryTabs from './component/CategoryTabs';
 import TaskCard from './component/TaskCard';
 import TaskDetailBottomSheet from './component/TaskDetailBottomSheet';
@@ -34,7 +33,6 @@ import NotesCalendarStrip, {
   toDateKey,
 } from '../NotesScreen/component/NotesCalendarStrip';
 import { LocalTask, TaskItem } from './types/task';
-import type { TaskFilter } from './types/filter';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { useToast } from '../../store/context/ToastContext';
 import {
@@ -70,6 +68,7 @@ import {
 } from '../../theme';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
+const ALL_DATES_SCOPE = 'all';
 const TASKS_PAGE_SIZE = 20;
 
 const formatDate = (value: string | null) => {
@@ -148,10 +147,9 @@ const TaskScreen = () => {
     Record<string, boolean>
   >({});
   const [selectedDate, setSelectedDate] = useState(() => new Date());
+  const [isDateFilterActive, setIsDateFilterActive] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchActive, setIsSearchActive] = useState(false);
-  const [taskFilter, setTaskFilter] = useState<TaskFilter>('newest');
-  const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const [showUpgradePrompt, setShowUpgradePrompt] = useState(false);
   const [upgradeResource, setUpgradeResource] =
     useState<PlanLimitResource>('tasks');
@@ -169,7 +167,10 @@ const TaskScreen = () => {
     isFetching: isFetchingSpaces,
     isError: isSpacesError,
     refetch: refetchSpaces,
-  } = useGetUserSpacesQuery({ userId, limit: 50 }, { skip: !userId });
+  } = useGetUserSpacesQuery(
+    { userId, limit: 50, counts: 'tasks' },
+    { skip: !userId },
+  );
   const { data: planStatus } = useGetPlanStatusQuery(
     { userId },
     { skip: !userId },
@@ -193,6 +194,7 @@ const TaskScreen = () => {
   );
 
   const selectedDateKey = useMemo(() => toDateKey(selectedDate), [selectedDate]);
+  const listScopeKey = isDateFilterActive ? selectedDateKey : ALL_DATES_SCOPE;
   const markerRange = useMemo(() => {
     const year = selectedDate.getFullYear();
     const month = selectedDate.getMonth();
@@ -213,9 +215,9 @@ const TaskScreen = () => {
       spaceId: selectedSpaceId,
       limit: TASKS_PAGE_SIZE,
       cursor: tasksCursor,
-      date: selectedDateKey,
+      date: isDateFilterActive ? selectedDateKey : undefined,
     },
-    { skip: !userId || !selectedSpaceId || !selectedDateKey },
+    { skip: !userId || !selectedSpaceId },
   );
 
   const { data: taskMarkersData } = useGetTaskDateMarkersBySpaceQuery(
@@ -230,7 +232,7 @@ const TaskScreen = () => {
 
   const isInitialTasksLoading =
     isFetchingTasks &&
-    (loadedTasksDateKey !== selectedDateKey || loadedTasks.length === 0) &&
+    (loadedTasksDateKey !== listScopeKey || loadedTasks.length === 0) &&
     tasksCursor === '';
   const isLoadingMoreTasks = isFetchingTasks && tasksCursor !== '';
 
@@ -238,9 +240,10 @@ const TaskScreen = () => {
     () =>
       localTasks.filter(
         task =>
-          task.spaceId === selectedSpaceId && task.dateKey === selectedDateKey,
+          task.spaceId === selectedSpaceId &&
+          (!isDateFilterActive || task.dateKey === selectedDateKey),
       ),
-    [localTasks, selectedDateKey, selectedSpaceId],
+    [isDateFilterActive, localTasks, selectedDateKey, selectedSpaceId],
   );
 
   const calendarMarkedDateKeys = useMemo(() => {
@@ -248,11 +251,16 @@ const TaskScreen = () => {
     spaceLocalTasks.forEach(task => {
       keys.add(task.dateKey);
     });
-    if (loadedTasksDateKey === selectedDateKey && loadedTasks.length > 0) {
+    if (
+      isDateFilterActive &&
+      loadedTasksDateKey === selectedDateKey &&
+      loadedTasks.length > 0
+    ) {
       keys.add(selectedDateKey);
     }
     return keys;
   }, [
+    isDateFilterActive,
     loadedTasks.length,
     loadedTasksDateKey,
     selectedDateKey,
@@ -269,8 +277,10 @@ const TaskScreen = () => {
     [taskCompletionOverrides],
   );
 
-  const dateScopedTasks =
-    loadedTasksDateKey === selectedDateKey ? loadedTasks : [];
+  const dateScopedTasks = useMemo(
+    () => (loadedTasksDateKey === listScopeKey ? loadedTasks : []),
+    [listScopeKey, loadedTasks, loadedTasksDateKey],
+  );
 
   const displayedTasks = useMemo(() => {
     const localForDate = spaceLocalTasks.map(toLocalStagedTask);
@@ -287,12 +297,6 @@ const TaskScreen = () => {
       });
     }
 
-    if (taskFilter === 'done') {
-      result = result.filter(task => isTaskDone(task));
-    } else if (taskFilter === 'pending') {
-      result = result.filter(task => !isTaskDone(task));
-    }
-
     result.sort((left, right) => {
       const leftTime = new Date(
         left.updatedAt || left.createdAt || 0,
@@ -301,19 +305,11 @@ const TaskScreen = () => {
         right.updatedAt || right.createdAt || 0,
       ).getTime();
 
-      return taskFilter === 'oldest'
-        ? leftTime - rightTime
-        : rightTime - leftTime;
+      return rightTime - leftTime;
     });
 
     return result;
-  }, [
-    dateScopedTasks,
-    isTaskDone,
-    searchQuery,
-    spaceLocalTasks,
-    taskFilter,
-  ]);
+  }, [dateScopedTasks, searchQuery, spaceLocalTasks]);
 
   useFocusEffect(
     useCallback(() => {
@@ -349,7 +345,7 @@ const TaskScreen = () => {
     setDayTasksTotal(0);
     setNextTasksCursor(null);
     appliedTasksCursorsRef.current = new Set();
-  }, [selectedSpaceId, selectedDateKey]);
+  }, [selectedSpaceId, listScopeKey]);
 
   useEffect(() => {
     const response = stagedTasksData?.data;
@@ -358,7 +354,8 @@ const TaskScreen = () => {
       return;
     }
 
-    if (response.date && response.date !== selectedDateKey) {
+    // Ignore stale responses from the other scope (all vs. a specific day).
+    if ((response.date ?? ALL_DATES_SCOPE) !== listScopeKey) {
       return;
     }
 
@@ -374,7 +371,7 @@ const TaskScreen = () => {
 
     appliedTasksCursorsRef.current.add(cursorKey);
     setNextTasksCursor(response.nextCursor);
-    setLoadedTasksDateKey(selectedDateKey);
+    setLoadedTasksDateKey(listScopeKey);
     if (typeof response.total === 'number') {
       setDayTasksTotal(response.total);
     }
@@ -393,10 +390,19 @@ const TaskScreen = () => {
   }, [
     isFetchingTasks,
     isTasksSuccess,
-    selectedDateKey,
+    listScopeKey,
     stagedTasksData,
     tasksCursor,
   ]);
+
+  const handleSelectDate = useCallback((date: Date) => {
+    setSelectedDate(date);
+    setIsDateFilterActive(true);
+  }, []);
+
+  const handleClearDate = useCallback(() => {
+    setIsDateFilterActive(false);
+  }, []);
 
   const handleOpenTask = useCallback((task: TaskItem) => {
     setSelectedTask(task);
@@ -443,12 +449,16 @@ const TaskScreen = () => {
         throw new Error('Missing space');
       }
 
+      const targetDateKey = isDateFilterActive
+        ? selectedDateKey
+        : toDateKey(new Date());
+
       try {
         const response = await createStagedTask({
           spaceId: selectedSpaceId,
           title,
           description,
-          date: selectedDateKey,
+          date: targetDateKey,
         }).unwrap();
 
         const createdTask = response?.data?.task;
@@ -459,18 +469,21 @@ const TaskScreen = () => {
               createdTask.dueDate ||
                 createdTask.createdAt ||
                 createdTask.updatedAt,
-            ) || selectedDateKey;
+            ) || targetDateKey;
 
-          if (createdDateKey === selectedDateKey) {
+          if (!isDateFilterActive || createdDateKey === selectedDateKey) {
             setLoadedTasks(prev => [
               createdTask,
               ...prev.filter(item => item.id !== createdTask.id),
             ]);
-            setLoadedTasksDateKey(selectedDateKey);
+            setLoadedTasksDateKey(listScopeKey);
             setDayTasksTotal(prev => prev + 1);
           }
 
-          if (userId) {
+          const isInMarkerRange =
+            createdDateKey >= markerRange.from && createdDateKey <= markerRange.to;
+
+          if (userId && isInMarkerRange) {
             dispatch(
               homeApi.util.updateQueryData(
                 'getTaskDateMarkersBySpace',
@@ -528,7 +541,18 @@ const TaskScreen = () => {
         throw error;
       }
     },
-    [createStagedTask, dispatch, markerRange.from, markerRange.to, selectedDateKey, selectedSpaceId, showToast, userId],
+    [
+      createStagedTask,
+      dispatch,
+      isDateFilterActive,
+      listScopeKey,
+      markerRange.from,
+      markerRange.to,
+      selectedDateKey,
+      selectedSpaceId,
+      showToast,
+      userId,
+    ],
   );
 
   const handleToggleTaskComplete = useCallback(
@@ -614,6 +638,7 @@ const TaskScreen = () => {
           const next = Math.max(0, prev - 1);
           if (
             next === 0 &&
+            isDateFilterActive &&
             userId &&
             selectedSpaceId &&
             loadedTasksDateKey === selectedDateKey
@@ -687,6 +712,7 @@ const TaskScreen = () => {
     [
       deleteStagedTask,
       dispatch,
+      isDateFilterActive,
       loadedTasksDateKey,
       markerRange.from,
       markerRange.to,
@@ -785,13 +811,22 @@ const TaskScreen = () => {
       );
     }
 
-    if (searchQuery.trim() || taskFilter === 'done' || taskFilter === 'pending') {
+    if (searchQuery.trim()) {
       return (
         <View style={styles.stateBox}>
           <Text style={styles.emptyTitle}>No matching tasks</Text>
           <Text style={styles.stateText}>
             Try a different search term or clear your filters.
           </Text>
+        </View>
+      );
+    }
+
+    if (!isDateFilterActive) {
+      return (
+        <View style={styles.stateBox}>
+          <Text style={styles.emptyTitle}>No tasks in this space yet</Text>
+          <Text style={styles.stateText}>Tap + to add your first task.</Text>
         </View>
       );
     }
@@ -806,6 +841,7 @@ const TaskScreen = () => {
     );
   }, [
     displayedTasks.length,
+    isDateFilterActive,
     isFetchingTasks,
     isInitialTasksLoading,
     isTasksError,
@@ -813,7 +849,6 @@ const TaskScreen = () => {
     searchQuery,
     selectedDate,
     selectedSpaceId,
-    taskFilter,
   ]);
 
   const tasksListFooter = useMemo(() => {
@@ -828,7 +863,8 @@ const TaskScreen = () => {
       <View style={styles.loadMoreWrap}>
         <Text style={styles.paginationText}>
           Showing {loadedCount}
-          {totalForDay > 0 ? ` of ${totalForDay}` : ''} tasks for this day
+          {totalForDay > 0 ? ` of ${totalForDay}` : ''} tasks
+          {isDateFilterActive ? ' for this day' : ''}
         </Text>
         {nextTasksCursor ? (
           <TouchableOpacity
@@ -853,6 +889,7 @@ const TaskScreen = () => {
     dateScopedTasks.length,
     dayTasksTotal,
     displayedTasks.length,
+    isDateFilterActive,
     isLoadingMoreTasks,
     nextTasksCursor,
   ]);
@@ -864,7 +901,6 @@ const TaskScreen = () => {
       >
         <Header
           searchQuery={searchQuery}
-          taskFilter={taskFilter}
           isSearchActive={isSearchActive}
           onSearchQueryChange={setSearchQuery}
           onSearchOpen={() => setIsSearchActive(true)}
@@ -872,9 +908,18 @@ const TaskScreen = () => {
             setIsSearchActive(false);
             setSearchQuery('');
           }}
-          onFilterPress={() => setFilterMenuVisible(true)}
+          onAddPress={handleOpenAddTask}
         />
       </View>
+
+      <NotesCalendarStrip
+        selectedDate={selectedDate}
+        markedDateKeys={calendarMarkedDateKeys}
+        onSelectDate={handleSelectDate}
+        isDateFilterActive={isDateFilterActive}
+        onClearDate={handleClearDate}
+        onBrowseDate={setSelectedDate}
+      />
 
       <CategoryTabs
         spaces={spaces}
@@ -885,13 +930,6 @@ const TaskScreen = () => {
         onRetry={refetchSpaces}
         onSelectSpace={setSelectedSpaceId}
         onNavigateNotes={() => navigation.navigate('Notes')}
-      />
-
-      <NotesCalendarStrip
-        selectedDate={selectedDate}
-        markedDateKeys={calendarMarkedDateKeys}
-        onSelectDate={setSelectedDate}
-        onAddPress={handleOpenAddTask}
       />
 
       <FlatList
@@ -927,16 +965,9 @@ const TaskScreen = () => {
 
       <AddTaskBottomSheet
         ref={addTaskSheetRef}
-        dateLabel={formatFullDate(selectedDate)}
+        dateLabel={formatFullDate(isDateFilterActive ? selectedDate : new Date())}
         isSaving={isCreatingTask}
         onSave={handleSaveTask}
-      />
-
-      <TasksFilterMenu
-        visible={filterMenuVisible}
-        taskFilter={taskFilter}
-        onClose={() => setFilterMenuVisible(false)}
-        onSelect={setTaskFilter}
       />
 
       <UpgradePlanPromptModal
@@ -964,7 +995,9 @@ const styles = StyleSheet.create({
   },
 
   headerWrap: {
-    marginBottom: spacing.md,
+    paddingBottom: spacing.xl,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
 
   tasksScroll: {

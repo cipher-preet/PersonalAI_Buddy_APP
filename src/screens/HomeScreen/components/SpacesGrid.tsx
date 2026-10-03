@@ -1,6 +1,7 @@
 import React, { memo, useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import SpaceCompactTile from './SpaceCompactTile';
 import SpaceFolderTile from './SpaceFolderTile';
 import type { Space } from '../../../store/api/home';
 import {
@@ -13,10 +14,18 @@ import {
 type Props = {
   spaces: Space[];
   deletingSpaceId?: string;
-  getSubtitle: (space: Space) => string;
+  getSubtitle: (space: Space) => string | undefined;
   onSpacePress: (space: Space) => void;
   onDeleteSpace: (space: Space) => void;
 };
+
+const TILES = {
+  compact: SpaceCompactTile,
+  folder: SpaceFolderTile,
+};
+
+const TILE_VARIANT: keyof typeof TILES = 'folder';
+const Tile = TILES[TILE_VARIANT];
 
 const SpaceCell = memo(
   ({
@@ -27,7 +36,7 @@ const SpaceCell = memo(
     onDelete,
   }: {
     space: Space;
-    statusLabel: string;
+    statusLabel?: string;
     isDeleting: boolean;
     onPress: (space: Space) => void;
     onDelete: (space: Space) => void;
@@ -37,7 +46,7 @@ const SpaceCell = memo(
 
     return (
       <View style={styles.cell}>
-        <SpaceFolderTile
+        <Tile
           spaceId={space._id}
           title={space.spacename}
           statusLabel={statusLabel}
@@ -103,12 +112,12 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginHorizontal: -spacing.xs,
+    marginHorizontal: -spacing.md,
   },
 
   cell: {
     width: '33.333%',
-    paddingHorizontal: spacing.xs,
-    marginBottom: spacing['3xl'],
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing['2xl'],
   },
 });
