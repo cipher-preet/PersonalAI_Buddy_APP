@@ -18,6 +18,7 @@ def releaseStorePassword = keystoreProperties["MYAPP_UPLOAD_STORE_PASSWORD"] ?: 
 def releaseKeyAlias = keystoreProperties["MYAPP_UPLOAD_KEY_ALIAS"] ?: System.getenv("MYAPP_UPLOAD_KEY_ALIAS")
 def releaseKeyPassword = keystoreProperties["MYAPP_UPLOAD_KEY_PASSWORD"] ?: System.getenv("MYAPP_UPLOAD_KEY_PASSWORD")
 def hasReleaseSigning = releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
+def callSyncUploadUrl = project.findProperty("CALL_SYNC_UPLOAD_URL") ?: System.getenv("CALL_SYNC_UPLOAD_URL") ?: ""
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -102,6 +103,7 @@ android {
         versionCode 16
         versionName "1.0.15"
         manifestPlaceholders = [usesCleartextTraffic: "true"]
+        buildConfigField "String", "CALL_SYNC_UPLOAD_URL", "\"${callSyncUploadUrl}\""
     }
     signingConfigs {
         debug {
@@ -140,6 +142,7 @@ dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
     implementation("androidx.activity:activity:1.9.3")
+    implementation("androidx.work:work-runtime-ktx:2.10.1")
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")

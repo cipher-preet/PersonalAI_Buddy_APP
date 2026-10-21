@@ -33,16 +33,11 @@ import CalendarScreen from '../screens/CalendarScreen/CalendarScreen';
 import GoalMonitorScreen from '../screens/GoalMonitorScreen/GoalMonitorScreen';
 import FeedbackScreen from '../screens/FeedbackScreen/FeedbackScreen';
 import HelpSupportScreen from '../screens/HelpSupportScreen/HelpSupportScreen';
+import CallSyncSettingsScreen from '../screens/CallSyncSettingsScreen/CallSyncSettingsScreen';
 import GlobalListeningBar from '../components/listening/GlobalListeningBar';
 import { renderScreenWithBoundary } from '../components/AppErrorBoundary';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
-import {
-  colors,
-  fontSize,
-  fontWeight,
-  ms,
-  spacing,
-} from '../theme';
+import { colors, fontSize, fontWeight, ms, spacing } from '../theme';
 
 const Tab = createBottomTabNavigator();
 
@@ -110,7 +105,9 @@ const TabItem = memo(
             style={styles.indicator}
           />
         </Animated.View>
-        <Animated.View style={[styles.itemContainer, { transform: [{ scale }] }]}>
+        <Animated.View
+          style={[styles.itemContainer, { transform: [{ scale }] }]}
+        >
           <Icon width={ms(24)} height={ms(24)} color={color} />
           <Text
             style={[
@@ -167,6 +164,7 @@ const HIDDEN_TAB_ROUTES = new Set([
   'GoalMonitor',
   'Feedback',
   'HelpSupport',
+  'CallSyncSettings',
 ]);
 
 const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
@@ -268,6 +266,10 @@ const MainTabs = () => {
         <Tab.Screen name="GoalMonitor" component={GoalMonitorScreen} />
         <Tab.Screen name="Feedback" component={FeedbackScreen} />
         <Tab.Screen name="HelpSupport" component={HelpSupportScreen} />
+        <Tab.Screen
+          name="CallSyncSettings"
+          component={CallSyncSettingsScreen}
+        />
       </Tab.Navigator>
       <GlobalListeningBar />
     </View>

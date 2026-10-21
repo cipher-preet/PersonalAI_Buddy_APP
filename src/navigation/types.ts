@@ -12,6 +12,7 @@ export type MainTabParamList = {
   Plans: undefined;
   Feedback: undefined;
   HelpSupport: undefined;
+  CallSyncSettings: undefined;
 };
 
 export type ReminderCallParams = {

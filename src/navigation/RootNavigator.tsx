@@ -27,6 +27,7 @@ import ReminderCallScreen from '../screens/ReminderAlerts/ReminderCallScreen';
 import ReminderAlarmScreen from '../screens/ReminderAlerts/ReminderAlarmScreen';
 import { colors } from '../theme';
 import { renderScreenWithBoundary } from '../components/AppErrorBoundary';
+import { setActiveCallSyncUser } from '../services/callSyncService';
 
 const AppStack = createNativeStackNavigator<AppStackParamList>();
 
@@ -67,16 +68,28 @@ const RootNavigator = () => {
   const { showToast } = useToast();
   const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
   const authToken = useAppSelector(state => state.auth.token);
+  const userId = useAppSelector(state => state.auth.userId);
   const hasCompletedOnboarding = useAppSelector(
     state => state.auth.hasCompletedOnboarding,
   );
   const [isHydrated, setIsHydrated] = useState(false);
-  const { data, error: authError, isError, refetch } = useCheckAuthQuery(undefined, {
+  const {
+    data,
+    error: authError,
+    isError,
+    refetch,
+  } = useCheckAuthQuery(undefined, {
     skip: !isHydrated,
   });
   const [registerDeviceToken] = useRegisterDeviceTokenMutation();
   const showMainApp = isAuthenticated && hasCompletedOnboarding;
   const wasAuthenticatedRef = useRef(isAuthenticated);
+
+  useEffect(() => {
+    void setActiveCallSyncUser(isAuthenticated ? userId : null).catch(
+      () => undefined,
+    );
+  }, [isAuthenticated, userId]);
 
   // Reading the saved session is a local file read (a few ms), so the app opens
   // straight into the right screen; the server check below runs in background.

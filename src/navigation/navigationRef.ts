@@ -12,7 +12,7 @@ export const navigateToAlertScreen = <Name extends keyof AppStackParamList>(
     return false;
   }
 
-  navigationRef.navigate(name as never, params as never);
+  navigationRef.navigate({ name, params } as never);
   return true;
 };
 

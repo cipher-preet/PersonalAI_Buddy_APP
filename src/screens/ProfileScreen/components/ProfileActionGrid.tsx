@@ -94,6 +94,18 @@ const NotesGridIcon = ({ color = colors.text }: IconProps) => (
   </Svg>
 );
 
+const RecordingSyncIcon = ({ color = colors.text }: IconProps) => (
+  <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 15a3 3 0 0 0 3-3V7a3 3 0 0 0-6 0v5a3 3 0 0 0 3 3Zm-6-3a6 6 0 0 0 10.2 4.3M18 13.5V17h-3.5M12 18v3m-3 0h6"
+      stroke={color}
+      strokeWidth={1.6}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
 const TaskGridIcon = ({ color = colors.text }: IconProps) => (
   <Svg width={ms(20)} height={ms(20)} viewBox="0 0 24 24" fill="none">
     <Path
@@ -240,8 +252,8 @@ const ProfileActionGrid = ({
   const planName = isPlanLoading
     ? '...'
     : isPlanError
-      ? 'Unavailable'
-      : planStatus?.plan?.name?.trim() || 'Free';
+    ? 'Unavailable'
+    : planStatus?.plan?.name?.trim() || 'Free';
 
   const usedMs = getRecordingUsedMs(planStatus);
   const limitHours = planStatus?.plan?.limits?.recordingHours;
@@ -251,25 +263,25 @@ const ProfileActionGrid = ({
   const usageProgress =
     hasFiniteLimit && limitMs > 0 ? Math.min(1, usedMs / limitMs) : 0;
   const planInterval = planStatus?.plan?.interval;
-  const isRecurring = planInterval === 'monthly' || planInterval === 'quarterly';
-  const usageLabel =
-    isPlanLoading
-      ? 'Loading usage...'
-      : isPlanError
-        ? 'Usage unavailable'
-        : isUnlimitedLimit(limitHours)
-          ? `Unlimited recording · ${formatHoursShort(usedMs)} used`
-          : typeof limitHours === 'number'
-            ? `${formatRecordingQuota(usedMs, limitHours)} recording used`
-            : 'Recording usage unavailable';
+  const isRecurring =
+    planInterval === 'monthly' || planInterval === 'quarterly';
+  const usageLabel = isPlanLoading
+    ? 'Loading usage...'
+    : isPlanError
+    ? 'Usage unavailable'
+    : isUnlimitedLimit(limitHours)
+    ? `Unlimited recording · ${formatHoursShort(usedMs)} used`
+    : typeof limitHours === 'number'
+    ? `${formatRecordingQuota(usedMs, limitHours)} recording used`
+    : 'Recording usage unavailable';
   const remainingLabel =
     isPlanLoading || isPlanError || remainingMs == null
       ? null
       : remainingMs <= 0
-        ? isRecurring
-          ? 'No recording time left this period'
-          : 'No recording time left'
-        : `${formatHoursShort(remainingMs)} left`;
+      ? isRecurring
+        ? 'No recording time left this period'
+        : 'No recording time left'
+      : `${formatHoursShort(remainingMs)} left`;
 
   const periodEnd = planStatus?.subscription?.currentPeriodEnd;
   const periodEndDate = periodEnd ? new Date(periodEnd) : null;
@@ -291,7 +303,9 @@ const ProfileActionGrid = ({
     if (limit == null) {
       return String(safeUsed);
     }
-    return isUnlimitedLimit(limit) ? `${safeUsed} / ∞` : `${safeUsed} / ${limit}`;
+    return isUnlimitedLimit(limit)
+      ? `${safeUsed} / ∞`
+      : `${safeUsed} / ${limit}`;
   };
   const resourceStats =
     isPlanLoading || isPlanError || !planStatus
@@ -392,8 +406,14 @@ const ProfileActionGrid = ({
       setKeyboardHeight(0);
     };
 
-    const showSubscription = Keyboard.addListener(showEvent, handleKeyboardShow);
-    const hideSubscription = Keyboard.addListener(hideEvent, handleKeyboardHide);
+    const showSubscription = Keyboard.addListener(
+      showEvent,
+      handleKeyboardShow,
+    );
+    const hideSubscription = Keyboard.addListener(
+      hideEvent,
+      handleKeyboardHide,
+    );
 
     return () => {
       showSubscription.remove();
@@ -406,10 +426,13 @@ const ProfileActionGrid = ({
       return;
     }
 
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
-      closeDeleteSheet();
-      return true;
-    });
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        closeDeleteSheet();
+        return true;
+      },
+    );
 
     return () => subscription.remove();
   }, [closeDeleteSheet, isDeleteSheetOpen]);
@@ -453,6 +476,12 @@ const ProfileActionGrid = ({
       onPress: () => navigation.navigate('Notes'),
     },
     {
+      id: 'call-sync',
+      title: 'Call Recording Sync',
+      icon: RecordingSyncIcon,
+      onPress: () => navigation.navigate('CallSyncSettings'),
+    },
+    {
       id: 'tasks',
       title: 'Tasks',
       icon: TaskGridIcon,
@@ -494,8 +523,8 @@ const ProfileActionGrid = ({
     keyboardHeight > 0
       ? keyboardHeight - insets.bottom + KEYBOARD_BUTTON_GAP
       : Platform.OS === 'ios'
-        ? spacing['4xl']
-        : spacing['3xl'];
+      ? spacing['4xl']
+      : spacing['3xl'];
 
   return (
     <View style={styles.wrapper}>

@@ -1,6 +1,7 @@
 package com.aiassistantapp.voice
 
 import com.aiassistantapp.notifications.BuddyNotificationModule
+import com.aiassistantapp.callsync.CallSyncBridgeModule
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
@@ -13,6 +14,7 @@ class BuddyListeningPackage : ReactPackage {
     listOf(
       BuddyListeningModule(reactContext),
       BuddyNotificationModule(reactContext),
+      CallSyncBridgeModule(reactContext),
     )
 
   override fun createViewManagers(

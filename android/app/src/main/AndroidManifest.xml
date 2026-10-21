@@ -12,6 +12,12 @@
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.READ_CALL_LOG" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <!-- Profile photos use the system Photo Picker — do not request gallery access. -->
     <uses-permission
@@ -25,7 +31,7 @@
       tools:node="remove" />
     <uses-permission
       android:name="android.permission.READ_EXTERNAL_STORAGE"
-      tools:node="remove" />
+      android:maxSdkVersion="32" />
     <uses-permission
       android:name="android.permission.WRITE_EXTERNAL_STORAGE"
       android:maxSdkVersion="28"
@@ -58,6 +64,26 @@
       <receiver
         android:name=".notifications.ReminderAlertReceiver"
         android:exported="false" />
+      <receiver
+        android:name=".callsync.CallStateReceiver"
+        android:exported="true"
+        android:permission="android.permission.READ_PHONE_STATE">
+        <intent-filter>
+          <action android:name="android.intent.action.PHONE_STATE" />
+        </intent-filter>
+      </receiver>
+      <receiver
+        android:name=".callsync.CallSyncBootReceiver"
+        android:enabled="true"
+        android:exported="true">
+        <intent-filter>
+          <action android:name="android.intent.action.BOOT_COMPLETED" />
+        </intent-filter>
+      </receiver>
+      <service
+        android:name="androidx.work.impl.foreground.SystemForegroundService"
+        android:foregroundServiceType="dataSync"
+        tools:node="merge" />
       <!-- Install the AndroidX Photo Picker backport on older devices. -->
       <service
         android:name="com.google.android.gms.metadata.ModuleDependencies"
