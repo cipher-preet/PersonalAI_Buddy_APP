@@ -13,7 +13,6 @@ import {
 } from '@react-navigation/bottom-tabs';
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 
-import Home from '../screens/HomeScreen/Home';
 import Notes from '../screens/NotesScreen/Note';
 import TaskScreen from '../screens/TasksScreen/TaskScreen';
 import ProfileScreen from '../screens/ProfileScreen/ProfileScreen';
@@ -27,13 +26,14 @@ import GoalMonitorScreen from '../screens/GoalMonitorScreen/GoalMonitorScreen';
 import FeedbackScreen from '../screens/FeedbackScreen/FeedbackScreen';
 import HelpSupportScreen from '../screens/HelpSupportScreen/HelpSupportScreen';
 import GlobalListeningBar from '../components/listening/GlobalListeningBar';
+import UpgradePlanPromptModal from '../components/UpgradePlanPromptModal';
 import { renderScreenWithBoundary } from '../components/AppErrorBoundary';
+import { useSpaceListening } from '../listening/useSpaceListening';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 import { useAppSelector } from '../store/hooks';
 import type { Space } from '../store/api/home';
 import EqualMark from './EqualMark';
 import SpacesLauncherSheet from './SpacesLauncherSheet';
-import { queueSpaceOpen } from './pendingSpace';
 import {
   colors,
   fontSize,
@@ -102,7 +102,13 @@ const YouAvatar = ({
   );
 };
 
-const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
+const CustomTabBar = ({
+  state,
+  navigation,
+  onToggleListening,
+}: BottomTabBarProps & {
+  onToggleListening: (space: Space) => void;
+}) => {
   const { tabBarHeight, insets } = useResponsiveLayout();
   const avatar = useAppSelector(store => store.auth.avatar)?.trim() ?? '';
   const name = useAppSelector(store => store.auth.name)?.trim() ?? '';
@@ -119,10 +125,16 @@ const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
 
   const queueSheetAction = useCallback(
     (space: Space, action: 'notes' | 'tasks' | 'listen') => {
+      if (action === 'listen') {
+        sheetRef.current?.dismiss();
+        void onToggleListening(space);
+        return;
+      }
+
       pendingActionRef.current = { space, action };
       sheetRef.current?.dismiss();
     },
-    [],
+    [onToggleListening],
   );
 
   const handleSheetClosed = useCallback(() => {
@@ -139,17 +151,7 @@ const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
       return;
     }
 
-    if (pending.action === 'tasks') {
-      navigation.navigate('Tasks', { spaceId: pending.space._id });
-      return;
-    }
-
-    queueSpaceOpen(pending.space);
-    navigation.navigate({
-      name: 'Home',
-      params: { openSpaceId: pending.space._id, startListening: true },
-      merge: true,
-    });
+    navigation.navigate('Tasks', { spaceId: pending.space._id });
   }, [navigation]);
 
   if (HIDDEN_TAB_ROUTES.has(currentRoute.name)) {
@@ -250,9 +252,15 @@ const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
   );
 };
 
-const renderTabBar = (props: BottomTabBarProps) => <CustomTabBar {...props} />;
-
 const MainTabs = () => {
+  const { toggleSpaceListening, upgradePrompt } = useSpaceListening();
+  const renderTabBar = useCallback(
+    (props: BottomTabBarProps) => (
+      <CustomTabBar {...props} onToggleListening={toggleSpaceListening} />
+    ),
+    [toggleSpaceListening],
+  );
+
   return (
     <View style={styles.shell}>
       <Tab.Navigator
@@ -267,7 +275,6 @@ const MainTabs = () => {
           freezeOnBlur: false,
         }}
       >
-        <Tab.Screen name="Home" component={Home} />
         <Tab.Screen name="Notes" component={Notes} />
         <Tab.Screen name="AI" component={StaticChatsScreen} />
         <Tab.Screen name="Tasks" component={TaskScreen} />
@@ -282,6 +289,13 @@ const MainTabs = () => {
         <Tab.Screen name="HelpSupport" component={HelpSupportScreen} />
       </Tab.Navigator>
       <GlobalListeningBar />
+      <UpgradePlanPromptModal
+        visible={upgradePrompt.visible}
+        title={upgradePrompt.title}
+        message={upgradePrompt.message}
+        onClose={upgradePrompt.onClose}
+        onUpgrade={upgradePrompt.onUpgrade}
+      />
     </View>
   );
 };

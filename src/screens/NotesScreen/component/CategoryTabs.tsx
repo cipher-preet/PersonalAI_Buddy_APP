@@ -150,7 +150,7 @@ const CategoryTabs = ({
             <NotesIcon width={ms(16)} height={ms(16)} color={colors.primary} />
           </View>
           <Text style={styles.cardTitle}>No spaces</Text>
-          <Text style={styles.cardMeta}>Create one from Home</Text>
+          <Text style={styles.cardMeta}>Create a space first</Text>
         </View>
       );
     }

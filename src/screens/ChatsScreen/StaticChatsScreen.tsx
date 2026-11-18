@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -6,6 +6,7 @@ import {
   Text,
   TextInput,
   TextStyle,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -64,6 +65,45 @@ const LANGUAGE_GRID = [
   ['E', 'ह', 'த'],
   ['म', 'ம', 'ಕ'],
   ['ગ', 'ব', 'ଓ'],
+];
+
+const CAROUSEL_GAP = 10;
+const CAROUSEL_PEEK = 22;
+
+type Slide = {
+  id: string;
+  title: string;
+  body: string;
+  grid?: boolean;
+};
+
+const SLIDES: Slide[] = [
+  {
+    id: 'calls',
+    title: 'Call Assistant',
+    body: 'Equal picks up unknown calls and takes the message for you.',
+  },
+  {
+    id: 'voice',
+    title: 'A Natural Voice',
+    body: 'Callers hear a clear voice instead of a recorded menu.',
+  },
+  {
+    id: 'languages',
+    title: 'Assistant Languages',
+    body: 'Checkout how your assistant speaks in 9 languages',
+    grid: true,
+  },
+  {
+    id: 'identify',
+    title: 'Know the Caller',
+    body: 'See who called and why before you decide to call back.',
+  },
+  {
+    id: 'control',
+    title: 'You Stay in Charge',
+    body: 'Leave the assistant on, or turn it off from this page.',
+  },
 ];
 
 const track = (size: number) => Number((size * -0.026).toFixed(2));
@@ -196,9 +236,32 @@ const VerifiedMark = () => (
 
 const StaticChatsScreen = () => {
   const { tabBarClearance } = useResponsiveLayout();
+  const { width: screenWidth } = useWindowDimensions();
+  const carouselRef = useRef<ScrollView>(null);
+  const placedCarousel = useRef(false);
   const [assistantOn, setAssistantOn] = useState(true);
   const [searchOpen, setSearchOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [slideIndex, setSlideIndex] = useState(2);
+  const cardWidth = Math.max(240, screenWidth - CAROUSEL_PEEK * 2 - CAROUSEL_GAP);
+  const snapInterval = cardWidth + CAROUSEL_GAP;
+
+  const placeCarousel = () => {
+    if (placedCarousel.current) {
+      return;
+    }
+    placedCarousel.current = true;
+    carouselRef.current?.scrollTo({
+      x: 2 * snapInterval,
+      animated: false,
+    });
+  };
+
+  const goToSlide = (index: number) => {
+    const next = Math.min(SLIDES.length - 1, Math.max(0, index));
+    setSlideIndex(next);
+    carouselRef.current?.scrollTo({ x: next * snapInterval, animated: true });
+  };
 
   const rows = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -215,6 +278,8 @@ const StaticChatsScreen = () => {
       <ScrollView
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        nestedScrollEnabled
+        directionalLockEnabled
         contentContainerStyle={{ paddingBottom: tabBarClearance }}
       >
         <View style={styles.brandRow}>
@@ -247,44 +312,77 @@ const StaticChatsScreen = () => {
 
         <View style={styles.rule} />
 
-        <View style={styles.carousel}>
-          <View style={styles.peek} />
-          <View style={styles.langCard}>
-            <View style={styles.langCopy}>
-              <View style={styles.featurePill}>
-                <StarIcon color="#E0A100" />
-                <Text style={styles.featureText}>NEW FEATURE</Text>
+        <ScrollView
+          ref={carouselRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          decelerationRate="fast"
+          snapToInterval={snapInterval}
+          snapToAlignment="start"
+          disableIntervalMomentum
+          nestedScrollEnabled
+          directionalLockEnabled
+          onContentSizeChange={placeCarousel}
+          contentContainerStyle={[
+            styles.carouselContent,
+            { paddingHorizontal: (screenWidth - cardWidth) / 2 },
+          ]}
+          onMomentumScrollEnd={event => {
+            const index = Math.round(
+              event.nativeEvent.contentOffset.x / snapInterval,
+            );
+            setSlideIndex(Math.min(SLIDES.length - 1, Math.max(0, index)));
+          }}
+        >
+          {SLIDES.map(slide => (
+            <View
+              key={slide.id}
+              style={[styles.langCard, { width: cardWidth }]}
+            >
+              <View style={styles.langCopy}>
+                <View style={styles.featurePill}>
+                  <StarIcon color="#E0A100" />
+                  <Text style={styles.featureText}>NEW FEATURE</Text>
+                </View>
+                <Text style={styles.langTitle}>{slide.title}</Text>
+                <Text style={styles.langBody}>{slide.body}</Text>
+                {slide.grid ? (
+                  <View style={styles.tryButton}>
+                    <StarIcon color={colors.white} />
+                    <Text style={styles.tryText}>Try Languages</Text>
+                  </View>
+                ) : null}
               </View>
-              <Text style={styles.langTitle}>Assistant Languages</Text>
-              <Text style={styles.langBody}>
-                Checkout how your assistant speaks in 9 languages
-              </Text>
-              <View style={styles.tryButton}>
-                <StarIcon color={colors.white} />
-                <Text style={styles.tryText}>Try Languages</Text>
-              </View>
-            </View>
-            <View style={styles.langBoard}>
-              {LANGUAGE_GRID.map(line => (
-                <View key={line.join('')} style={styles.langLine}>
-                  {line.map(glyph => (
-                    <Text key={glyph} style={styles.langGlyph}>
-                      {glyph}
-                    </Text>
+              {slide.grid ? (
+                <View style={styles.langBoard}>
+                  {LANGUAGE_GRID.map(line => (
+                    <View key={line.join('')} style={styles.langLine}>
+                      {line.map(glyph => (
+                        <Text key={glyph} style={styles.langGlyph}>
+                          {glyph}
+                        </Text>
+                      ))}
+                    </View>
                   ))}
                 </View>
-              ))}
+              ) : null}
             </View>
-          </View>
-          <View style={styles.peek} />
-        </View>
+          ))}
+        </ScrollView>
 
         <View style={styles.dots}>
-          <View style={styles.dot} />
-          <View style={styles.dot} />
-          <View style={[styles.dot, styles.dotActive]} />
-          <View style={styles.dot} />
-          <View style={styles.dot} />
+          {SLIDES.map((slide, index) => (
+            <Pressable
+              key={slide.id}
+              onPress={() => goToSlide(index)}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={`Carousel page ${index + 1}`}
+              accessibilityState={{ selected: index === slideIndex }}
+            >
+              <View style={[styles.dot, index === slideIndex && styles.dotActive]} />
+            </Pressable>
+          ))}
         </View>
 
         <View style={styles.section}>
@@ -459,21 +557,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
 
-  carousel: {
+  carouselContent: {
     marginTop: 16,
-    flexDirection: 'row',
+    gap: CAROUSEL_GAP,
     alignItems: 'stretch',
-    gap: 10,
-  },
-
-  peek: {
-    width: 16,
-    borderRadius: 16,
-    backgroundColor: '#D7F3E2',
   },
 
   langCard: {
-    flex: 1,
     minHeight: 168,
     borderRadius: 22,
     backgroundColor: '#DFF6E8',

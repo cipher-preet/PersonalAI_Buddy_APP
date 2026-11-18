@@ -196,7 +196,7 @@ const FeedbackScreen = () => {
       navigation.goBack();
       return;
     }
-    navigation.jumpTo('Home');
+    navigation.jumpTo('AI');
   }, [navigation, resetFlow]);
 
   const handleSelectTopic = (topicId: string) => {
@@ -244,7 +244,7 @@ const FeedbackScreen = () => {
 
   const handleGoHome = useCallback(() => {
     // Jump first so we leave Feedback before local state resets to the topic step.
-    navigation.jumpTo('Home');
+    navigation.jumpTo('AI');
     resetFlow();
   }, [navigation, resetFlow]);
 

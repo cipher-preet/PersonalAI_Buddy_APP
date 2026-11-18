@@ -289,7 +289,7 @@ const BottomInput = forwardRef<TextInput, Props>(
                     <Text style={styles.contextStateText}>No matches</Text>
                     <Text style={styles.contextStateHint}>
                       {spaces.length === 0
-                        ? 'Create a space on Home to use it as chat context.'
+                        ? 'Create a space to use it as chat context.'
                         : 'Try another search term.'}
                     </Text>
                   </View>

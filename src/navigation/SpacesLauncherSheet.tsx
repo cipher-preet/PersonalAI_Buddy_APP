@@ -2,11 +2,15 @@ import React, {
   forwardRef,
   useCallback,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   BackHandler,
+  Easing,
+  Keyboard,
   StyleSheet,
   Text,
   View,
@@ -16,16 +20,16 @@ import {
   BottomSheetBackdrop,
   BottomSheetFlatList,
   BottomSheetModal,
+  BottomSheetTextInput,
   type BottomSheetBackdropProps,
 } from '@gorhom/bottom-sheet';
-import LinearGradient from 'react-native-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import EqualMark from './EqualMark';
-import SpaceFolderIcon from '../screens/HomeScreen/components/SpaceFolderIcon';
+import SpaceFolderIcon from '../components/SpaceFolderIcon';
 import { useAppSelector } from '../store/hooks';
-import { useGetUserSpacesQuery, type Space } from '../store/api/home';
+import { useToast } from '../store/context/ToastContext';
+import { useCreateSpaceMutation, useGetUserSpacesQuery, type Space } from '../store/api/home';
 import {
   colors,
   fonts,
@@ -36,32 +40,13 @@ import {
 } from '../theme';
 
 const SPACE_PAGE_LIMIT = 20;
-const SHEET_GRADIENT = [
-  colors.equalGreenBright,
-  colors.equalGreenMid,
-  colors.equalGreenDark,
-];
-const SHEET_GRADIENT_LOCATIONS = [0, 0.42, 1];
+const MIN_SPACE_NAME_LENGTH = 3;
 
 type Props = {
   onOpenNotes: (space: Space) => void;
   onOpenTasks: (space: Space) => void;
   onStartListening: (space: Space) => void;
   onClosed: () => void;
-};
-
-const greetingForNow = () => {
-  const hour = new Date().getHours();
-
-  if (hour < 12) {
-    return 'Good morning';
-  }
-
-  if (hour < 17) {
-    return 'Good afternoon';
-  }
-
-  return 'Good evening';
 };
 
 const spaceMeta = (space: Space) => {
@@ -117,6 +102,17 @@ const TaskIcon = () => (
       strokeWidth={1.6}
       strokeLinecap="round"
       strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const PlusIcon = ({ color }: { color: string }) => (
+  <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 5.5v13M5.5 12h13"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
     />
   </Svg>
 );
@@ -218,19 +214,24 @@ const SpaceRow = ({
 const SpacesLauncherSheet = forwardRef<BottomSheetModal, Props>(
   ({ onOpenNotes, onOpenTasks, onStartListening, onClosed }, ref) => {
     const insets = useSafeAreaInsets();
+    const { showToast } = useToast();
     const userId = useAppSelector(state => state.auth.userId) ?? '';
-    const name = useAppSelector(state => state.auth.name)?.trim() ?? '';
     const [isSheetOpen, setIsSheetOpen] = useState(false);
     const [hasOpened, setHasOpened] = useState(false);
     const [cursor, setCursor] = useState('');
     const [spaces, setSpaces] = useState<Space[]>([]);
     const [nextCursor, setNextCursor] = useState<string | null>(null);
+    const [composing, setComposing] = useState(false);
+    const [spaceName, setSpaceName] = useState('');
+    const [spaceNameError, setSpaceNameError] = useState('');
+    const [headerWidth, setHeaderWidth] = useState(0);
+    const slide = useRef(new Animated.Value(0)).current;
+    const inputRef = useRef<React.ElementRef<typeof BottomSheetTextInput>>(null);
+    const [createSpace, { isLoading: isCreating }] = useCreateSpaceMutation();
     const { data, isFetching, isError, refetch } = useGetUserSpacesQuery(
       { userId, limit: SPACE_PAGE_LIMIT, cursor },
       { skip: !userId || !hasOpened },
     );
-
-    const greeting = greetingForNow();
 
     useEffect(() => {
       const response = data?.data?.data;
@@ -263,6 +264,89 @@ const SpacesLauncherSheet = forwardRef<BottomSheetModal, Props>(
       }
     }, [ref]);
 
+    const resetComposer = useCallback(() => {
+      setComposing(false);
+      setSpaceName('');
+      setSpaceNameError('');
+      slide.setValue(0);
+    }, [slide]);
+
+    const openComposer = useCallback(() => {
+      setComposing(true);
+      setSpaceNameError('');
+      Animated.timing(slide, {
+        toValue: 1,
+        duration: 280,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) {
+          inputRef.current?.focus();
+        }
+      });
+    }, [slide]);
+
+    const closeComposer = useCallback(() => {
+      Keyboard.dismiss();
+      Animated.timing(slide, {
+        toValue: 0,
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) {
+          setComposing(false);
+          setSpaceName('');
+          setSpaceNameError('');
+        }
+      });
+    }, [slide]);
+
+    const handleCreate = useCallback(async () => {
+      const trimmedName = spaceName.trim();
+
+      if (!trimmedName) {
+        setSpaceNameError('Enter a space name.');
+        return;
+      }
+
+      if (trimmedName.length < MIN_SPACE_NAME_LENGTH) {
+        setSpaceNameError(
+          `Use at least ${MIN_SPACE_NAME_LENGTH} characters.`,
+        );
+        return;
+      }
+
+      setSpaceNameError('');
+
+      try {
+        const response = await createSpace({
+          spacename: trimmedName,
+          userId,
+        }).unwrap();
+
+        if (!response?.success) {
+          showToast({ message: 'Unable to create space', type: 'error' });
+          return;
+        }
+
+        showToast({
+          message: response.data?.message || 'Space created',
+          type: 'success',
+        });
+        Keyboard.dismiss();
+        setCursor('');
+        resetComposer();
+      } catch (error: any) {
+        const message = error?.data?.message || error?.message;
+        setSpaceNameError(
+          typeof message === 'string' && message
+            ? message
+            : 'Create space failed. Try again.',
+        );
+      }
+    }, [createSpace, resetComposer, showToast, spaceName, userId]);
+
     useEffect(() => {
       if (!isSheetOpen) {
         return undefined;
@@ -271,13 +355,18 @@ const SpacesLauncherSheet = forwardRef<BottomSheetModal, Props>(
       const subscription = BackHandler.addEventListener(
         'hardwareBackPress',
         () => {
+          if (composing) {
+            closeComposer();
+            return true;
+          }
+
           handleClose();
           return true;
         },
       );
 
       return () => subscription.remove();
-    }, [handleClose, isSheetOpen]);
+    }, [closeComposer, composing, handleClose, isSheetOpen]);
 
     const renderBackdrop = useCallback(
       (props: BottomSheetBackdropProps) => (
@@ -302,27 +391,85 @@ const SpacesLauncherSheet = forwardRef<BottomSheetModal, Props>(
       }
     }, []);
 
+    const travel = headerWidth || 360;
+    const buttonShift = slide.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, travel],
+    });
+    const inputShift = slide.interpolate({
+      inputRange: [0, 1],
+      outputRange: [-travel, 0],
+    });
+
     const listHeader = (
-      <View style={styles.header}>
-        <View style={styles.markShadow}>
-          <LinearGradient
-            colors={SHEET_GRADIENT}
-            locations={SHEET_GRADIENT_LOCATIONS}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={styles.mark}
+      <View style={styles.headerBlock}>
+        <View
+          style={styles.header}
+          onLayout={event => {
+            const nextWidth = event.nativeEvent.layout.width;
+            setHeaderWidth(current =>
+              current === nextWidth ? current : nextWidth,
+            );
+          }}
+        >
+          <Animated.View
+            pointerEvents={composing ? 'none' : 'auto'}
+            style={[
+              styles.headerLayer,
+              { transform: [{ translateX: buttonShift }] },
+            ]}
           >
-            <EqualMark large />
-          </LinearGradient>
+            <TouchableOpacity
+              style={styles.headerButton}
+              activeOpacity={0.85}
+              onPress={openComposer}
+              accessibilityRole="button"
+              accessibilityLabel="Create space"
+            >
+              <PlusIcon color={colors.equalInk} />
+              <Text style={styles.headerButtonText}>Create space</Text>
+            </TouchableOpacity>
+          </Animated.View>
+          <Animated.View
+            pointerEvents={composing ? 'auto' : 'none'}
+            style={[
+              styles.headerLayer,
+              styles.composer,
+              { transform: [{ translateX: inputShift }] },
+            ]}
+          >
+            <BottomSheetTextInput
+              ref={inputRef}
+              value={spaceName}
+              onChangeText={value => {
+                setSpaceName(value);
+                if (spaceNameError) {
+                  setSpaceNameError('');
+                }
+              }}
+              placeholder="Space name"
+              placeholderTextColor={colors.muted}
+              style={styles.composerInput}
+              returnKeyType="done"
+              onSubmitEditing={handleCreate}
+            />
+            <TouchableOpacity
+              style={[styles.createPill, isCreating && styles.createPillBusy]}
+              activeOpacity={0.85}
+              onPress={handleCreate}
+              disabled={isCreating}
+              accessibilityRole="button"
+              accessibilityLabel="Create space"
+            >
+              <Text style={styles.createPillText}>
+                {isCreating ? 'Creating' : 'Create'}
+              </Text>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
-        {name ? (
-          <Text style={styles.greeting}>
-            {greeting}, <Text style={styles.greetingName}>{name}</Text>
-          </Text>
-        ) : (
-          <Text style={styles.greeting}>{greeting}</Text>
-        )}
-        <Text style={styles.subtitle}>Notes, tasks, or listening</Text>
+        {spaceNameError ? (
+          <Text style={styles.composerError}>{spaceNameError}</Text>
+        ) : null}
       </View>
     );
 
@@ -372,7 +519,7 @@ const SpacesLauncherSheet = forwardRef<BottomSheetModal, Props>(
         <View style={styles.statusBlock}>
           <Text style={styles.statusTitle}>No spaces yet</Text>
           <Text style={styles.statusText}>
-            Create a space on Home and it will show up here.
+            Create a space and it will show up here.
           </Text>
         </View>
       );
@@ -411,6 +558,9 @@ const SpacesLauncherSheet = forwardRef<BottomSheetModal, Props>(
         snapPoints={['76%']}
         enableDynamicSizing={false}
         enablePanDownToClose
+        keyboardBehavior="interactive"
+        keyboardBlurBehavior="restore"
+        android_keyboardInputMode="adjustResize"
         backdropComponent={renderBackdrop}
         backgroundStyle={styles.sheetBackground}
         handleIndicatorStyle={styles.handle}
@@ -418,6 +568,7 @@ const SpacesLauncherSheet = forwardRef<BottomSheetModal, Props>(
         onAnimate={handleAnimate}
         onDismiss={() => {
           setIsSheetOpen(false);
+          resetComposer();
           onClosed();
         }}
       >
@@ -469,47 +620,84 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: spacing['3xl'],
   },
+  headerBlock: {
+    paddingTop: 4,
+    paddingBottom: 16,
+  },
   header: {
+    height: 52,
+    overflow: 'hidden',
+    justifyContent: 'center',
+  },
+  headerLayer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: 52,
+  },
+  headerButton: {
+    alignSelf: 'flex-start',
+    minHeight: 52,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#E6E6E6',
+    backgroundColor: colors.white,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: spacing.md,
-    paddingBottom: spacing['4xl'],
+    justifyContent: 'center',
+    gap: 6,
   },
-  markShadow: {
-    width: ms(74),
-    height: ms(74),
-    borderRadius: ms(37),
-    marginBottom: spacing['3xl'],
-    backgroundColor: colors.equalGreenDark,
-    shadowColor: colors.equalGreenDark,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.24,
-    shadowRadius: 12,
-    elevation: 6,
+  headerButtonText: {
+    fontFamily: fonts.semibold,
+    fontSize: 14,
+    lineHeight: 18,
+    color: colors.equalInk,
   },
-  mark: {
-    width: ms(74),
-    height: ms(74),
-    borderRadius: ms(37),
+  composer: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#E6E6E6',
+    backgroundColor: colors.white,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 16,
+    paddingRight: 6,
+  },
+  composerInput: {
+    flex: 1,
+    minWidth: 0,
+    height: 50,
+    paddingVertical: 0,
+    fontFamily: fonts.regular,
+    fontSize: 15,
+    color: colors.equalInk,
+  },
+  createPill: {
+    minHeight: 36,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  greeting: {
-    color: colors.equalInk,
-    fontSize: fontSize['4xl'],
-    fontWeight: fontWeight.extrabold,
-    letterSpacing: -0.4,
-    textAlign: 'center',
+  createPillBusy: {
+    opacity: 0.7,
   },
-  greetingName: {
-    color: colors.primaryText,
-    fontWeight: fontWeight.extrabold,
+  createPillText: {
+    fontFamily: fonts.semibold,
+    fontSize: 14,
+    lineHeight: 18,
+    color: colors.onPrimary,
   },
-  subtitle: {
-    marginTop: spacing.md,
-    color: colors.equalMuted,
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.medium,
-    textAlign: 'center',
+  composerError: {
+    marginTop: 8,
+    paddingHorizontal: 8,
+    fontFamily: fonts.medium,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.error,
   },
   row: {
     paddingHorizontal: 16,

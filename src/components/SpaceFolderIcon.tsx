@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import Svg, { Path, Rect } from 'react-native-svg';
 
-import { colors, ms } from '../../../theme';
+import { colors, ms } from '../theme';
 
 type Props = {
   size?: number;

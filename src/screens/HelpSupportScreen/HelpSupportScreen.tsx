@@ -322,7 +322,7 @@ const HelpSupportScreen = () => {
   };
 
   const handleGoHome = useCallback(() => {
-    navigation.jumpTo('Home');
+    navigation.jumpTo('AI');
     resetAll();
   }, [navigation, resetAll]);
 

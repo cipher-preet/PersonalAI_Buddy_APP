@@ -462,7 +462,7 @@ const ProfileActionGrid = ({
       id: 'spaces',
       title: 'Spaces',
       icon: SpacesGridIcon,
-      onPress: () => navigation.navigate('Home'),
+      onPress: () => navigation.navigate('AI'),
     },
     {
       id: 'feedback',
