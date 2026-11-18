@@ -3,6 +3,7 @@
  */
 import 'react-native-gesture-handler';
 import { AppRegistry } from 'react-native';
+import './src/theme/applyFont';
 import { installGlobalErrorHandler } from './src/utils/crashHandler';
 
 installGlobalErrorHandler();

@@ -4,6 +4,7 @@ import AudioRecorderPlayer, {
 import axios, { AxiosError } from 'axios';
 
 import { BUDDY_ENDPOINTS } from '../config/apiConfig';
+import { store } from '../store/store';
 import { devWarn } from '../utils/logger';
 import {
   requestMicrophonePermission,
@@ -299,6 +300,9 @@ export const submitReminderVoiceTurn = async ({
     }>(REMINDER_VOICE_URL, formData, {
       timeout: TURN_TIMEOUT_MS,
       signal,
+      headers: store.getState().auth.token
+        ? { Authorization: `Bearer ${store.getState().auth.token}` }
+        : undefined,
     });
 
     if (!response.data?.data) {

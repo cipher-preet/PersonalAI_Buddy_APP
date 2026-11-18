@@ -491,7 +491,7 @@ const PlansScreen = () => {
                 ]}
               >
                 {isBusy ? (
-                  <ActivityIndicator color={colors.white} />
+                  <ActivityIndicator color={colors.onPrimary} />
                 ) : (
                   <Text style={styles.primaryButtonText}>{primaryCtaLabel}</Text>
                 )}
@@ -580,7 +580,7 @@ const PlansScreen = () => {
                 style={[styles.subscribeButton, isBusy && styles.subscribeDisabled]}
               >
                 {isBusy ? (
-                  <ActivityIndicator color={colors.white} />
+                  <ActivityIndicator color={colors.onPrimary} />
                 ) : (
                   <Text style={styles.subscribeButtonText}>{subscribeLabel}</Text>
                 )}
@@ -712,7 +712,7 @@ const styles = StyleSheet.create({
   },
 
   primaryButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
   },

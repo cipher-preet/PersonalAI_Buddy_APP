@@ -1,5 +1,6 @@
 export { colors } from './colors';
 export type { AppColors } from './colors';
+export { fonts } from './fonts';
 export {
   fontSize,
   fontWeight,
@@ -23,6 +24,7 @@ export {
 export { listPerf, chatListPerf, scrollThrottle, motion, listeningWaveCount } from './performance';
 
 import { colors } from './colors';
+import { fonts } from './fonts';
 import { fontSize, fontWeight, typography } from './typography';
 import { spacing, vSpacing, layout, radii, shadows } from './spacing';
 import {
@@ -48,6 +50,7 @@ import {
 /** Single import: `import { theme } from '../theme'` */
 export const theme = {
   colors,
+  fonts,
   fontSize,
   fontWeight,
   typography,

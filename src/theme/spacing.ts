@@ -78,8 +78,8 @@ export const layout = {
   sectionGap: spacing['2xl'],
   /** Gap between list items */
   listGap: spacing.xl,
-  /** Primary CTA / button height */
-  buttonHeight: isSmallDevice ? ms(50) : ms(54),
+  /** Primary CTA / button height — Equal large button is 52 */
+  buttonHeight: ms(52),
   /** Text input field height */
   inputHeight: isSmallDevice ? ms(50) : ms(56),
   /** Compact pill / chip control height */
@@ -95,21 +95,20 @@ export const layout = {
 } as const;
 
 /**
- * Border radius scale (Olli reference).
- * Cards / banners → xl–2xl (~20–24)
- * Buttons / icon wells → sm–md (~12–14)
- * Inputs → lg (~16)
+ * Equal AI radius scale: 4, 8, 16, 20, 28, and pill.
+ * Sheets use 28. Buttons and chips use the pill.
  */
 export const radii = {
-  xs: ms(8),
-  sm: ms(12),
-  md: ms(14),
-  lg: ms(16),
-  xl: ms(20),
-  '2xl': ms(24),
-  '3xl': ms(24),
+  xs: ms(4),
+  sm: ms(8),
+  md: ms(16),
+  lg: ms(20),
+  xl: ms(28),
+  '2xl': ms(28),
+  '3xl': ms(28),
   pill: 999,
-  tabBar: ms(24),
+  tabBar: ms(28),
+  sheet: ms(28),
 } as const;
 
 /**

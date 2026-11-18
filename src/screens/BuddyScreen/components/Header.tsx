@@ -5,6 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 import { HistoryIcon } from '../../../../styles/icons';
 import { CHAT } from '../styles';
 import {
+  colors,
   fontSize,
   fontWeight,
   layout,
@@ -15,11 +16,24 @@ import {
 
 type Props = {
   onHistoryPress?: () => void;
+  onBack?: () => void;
   onNewChatPress?: () => void;
   showTitle?: boolean;
   title?: string | null;
   contextLabel?: string | null;
 };
+
+const BackIcon = ({ color = CHAT.text }: { color?: string }) => (
+  <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M15 6 9 12l6 6"
+      stroke={color}
+      strokeWidth={2.1}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 const PlusIcon = ({ color = CHAT.text }: { color?: string }) => (
   <Svg width={ms(14)} height={ms(14)} viewBox="0 0 24 24" fill="none">
@@ -34,6 +48,7 @@ const PlusIcon = ({ color = CHAT.text }: { color?: string }) => (
 
 const Header = ({
   onHistoryPress,
+  onBack,
   onNewChatPress,
   showTitle = false,
   title,
@@ -44,13 +59,17 @@ const Header = ({
       <TouchableOpacity
         style={styles.titleButton}
         activeOpacity={0.75}
-        onPress={onHistoryPress}
+        onPress={onBack || onHistoryPress}
         accessibilityRole="button"
-        accessibilityLabel="Chat history"
+        accessibilityLabel={onBack ? 'Back to chats' : 'Chat history'}
       >
-        <HistoryIcon width={ms(18)} height={ms(18)} color={CHAT.primary} />
+        {onBack ? (
+          <BackIcon />
+        ) : (
+          <HistoryIcon width={ms(18)} height={ms(18)} color={CHAT.primary} />
+        )}
         <Text style={styles.title} numberOfLines={1}>
-          {showTitle ? title?.trim() || 'Buddy' : 'Buddy'}
+          {showTitle ? title?.trim() || 'New chat' : 'Chats'}
         </Text>
       </TouchableOpacity>
 
@@ -87,9 +106,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: layout.screenPadding,
     paddingVertical: spacing.sm,
-    backgroundColor: CHAT.surface,
-    borderBottomWidth: 1,
-    borderBottomColor: CHAT.border,
+    backgroundColor: colors.background,
     gap: spacing.md,
   },
 
@@ -122,7 +139,7 @@ const styles = StyleSheet.create({
   newButton: {
     minHeight: ms(32),
     paddingHorizontal: spacing.md,
-    borderRadius: radii.sm,
+    borderRadius: radii.pill,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,

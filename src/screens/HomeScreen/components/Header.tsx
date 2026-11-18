@@ -154,9 +154,9 @@ const styles = StyleSheet.create({
   },
 
   upgradeText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
-    letterSpacing: 0.2,
+    letterSpacing: -0.3,
   },
 });

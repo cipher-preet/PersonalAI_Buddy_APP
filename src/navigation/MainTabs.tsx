@@ -1,30 +1,23 @@
-import React, { memo, useEffect, useRef } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
+  Image,
   StyleSheet,
-  View,
-  TouchableOpacity,
-  Animated,
   Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-
+import Svg, { Path } from 'react-native-svg';
 import {
   createBottomTabNavigator,
   BottomTabBarProps,
 } from '@react-navigation/bottom-tabs';
+import { BottomSheetModal } from '@gorhom/bottom-sheet';
 
 import Home from '../screens/HomeScreen/Home';
-import {
-  HomeIcon,
-  NotesIcon,
-  ProfileIcon,
-  TaskIcons,
-  AIChatIcons,
-} from '../../styles/icons';
 import Notes from '../screens/NotesScreen/Note';
 import TaskScreen from '../screens/TasksScreen/TaskScreen';
 import ProfileScreen from '../screens/ProfileScreen/ProfileScreen';
-import BuddyScreen from '../screens/BuddyScreen/BuddyScreen';
+import StaticChatsScreen from '../screens/ChatsScreen/StaticChatsScreen';
 import PlansScreen from '../screens/PlansScreen/PlansScreen';
 import RemindersScreen from '../screens/RemindersScreen/RemindersScreen';
 import BriefingScreen from '../screens/BriefingScreen/BriefingScreen';
@@ -36,6 +29,11 @@ import HelpSupportScreen from '../screens/HelpSupportScreen/HelpSupportScreen';
 import GlobalListeningBar from '../components/listening/GlobalListeningBar';
 import { renderScreenWithBoundary } from '../components/AppErrorBoundary';
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
+import { useAppSelector } from '../store/hooks';
+import type { Space } from '../store/api/home';
+import EqualMark from './EqualMark';
+import SpacesLauncherSheet from './SpacesLauncherSheet';
+import { queueSpaceOpen } from './pendingSpace';
 import {
   colors,
   fontSize,
@@ -46,116 +44,9 @@ import {
 
 const Tab = createBottomTabNavigator();
 
-const ACTIVE_COLOR = colors.primary;
-const INDICATOR_COLORS = [
-  colors.upgradeGradientStart,
-  colors.upgradeGradientMid,
-  colors.upgradeGradientEnd,
-];
-const INACTIVE_COLOR = colors.muted;
-
-type TabItemProps = {
-  isFocused: boolean;
-  Icon: React.ElementType;
-  label: string;
-  onPress: () => void;
-  onLongPress: () => void;
-  accessibilityState: { selected: boolean };
-};
-
-const TabItem = memo(
-  ({
-    isFocused,
-    Icon,
-    label,
-    onPress,
-    onLongPress,
-    accessibilityState,
-  }: TabItemProps) => {
-    const progress = useRef(new Animated.Value(isFocused ? 1 : 0)).current;
-
-    useEffect(() => {
-      Animated.spring(progress, {
-        toValue: isFocused ? 1 : 0,
-        useNativeDriver: true,
-        tension: 280,
-        friction: 18,
-      }).start();
-    }, [isFocused, progress]);
-
-    const scale = progress.interpolate({
-      inputRange: [0, 1],
-      outputRange: [1, 1.04],
-    });
-
-    const color = isFocused ? ACTIVE_COLOR : INACTIVE_COLOR;
-
-    return (
-      <TouchableOpacity
-        accessibilityRole="button"
-        accessibilityState={accessibilityState}
-        onPress={onPress}
-        onLongPress={onLongPress}
-        activeOpacity={0.75}
-        style={styles.tabButton}
-      >
-        <Animated.View
-          style={[styles.indicatorWrap, { opacity: progress }]}
-          pointerEvents="none"
-        >
-          <LinearGradient
-            colors={INDICATOR_COLORS}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.indicator}
-          />
-        </Animated.View>
-        <Animated.View style={[styles.itemContainer, { transform: [{ scale }] }]}>
-          <Icon width={ms(24)} height={ms(24)} color={color} />
-          <Text
-            style={[
-              styles.label,
-              {
-                color,
-                fontWeight: isFocused ? fontWeight.semibold : fontWeight.medium,
-              },
-            ]}
-            numberOfLines={1}
-          >
-            {label}
-          </Text>
-        </Animated.View>
-      </TouchableOpacity>
-    );
-  },
-);
-
-const TAB_CONFIG = [
-  {
-    name: 'Home',
-    Icon: HomeIcon,
-    label: 'Home',
-  },
-  {
-    name: 'Notes',
-    Icon: NotesIcon,
-    label: 'Notes',
-  },
-  {
-    name: 'AI',
-    Icon: AIChatIcons,
-    label: 'Buddy',
-  },
-  {
-    name: 'Tasks',
-    Icon: TaskIcons,
-    label: 'Tasks',
-  },
-  {
-    name: 'Profile',
-    Icon: ProfileIcon,
-    label: 'Account',
-  },
+const VISIBLE_TABS = [
+  { name: 'AI', label: 'Chats' },
+  { name: 'Profile', label: 'You' },
 ] as const;
 
 const HIDDEN_TAB_ROUTES = new Set([
@@ -169,81 +60,203 @@ const HIDDEN_TAB_ROUTES = new Set([
   'HelpSupport',
 ]);
 
+const ChatTabIcon = ({
+  color,
+  filled,
+}: {
+  color: string;
+  filled: boolean;
+}) => (
+  <Svg width={ms(24)} height={ms(24)} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M5.2 4.75h13.6A2.25 2.25 0 0 1 21.05 7v7.05a2.25 2.25 0 0 1-2.25 2.25H9.35L5.35 19.85a.85.85 0 0 1-1.35-.68V7A2.25 2.25 0 0 1 5.2 4.75Z"
+      fill={filled ? color : 'none'}
+      stroke={color}
+      strokeWidth={filled ? 0 : 1.7}
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+const YouAvatar = ({
+  name,
+  uri,
+}: {
+  name: string;
+  uri: string;
+}) => {
+  const [failed, setFailed] = useState(false);
+  const initial = (name.trim().charAt(0) || 'Y').toUpperCase();
+  const showImage = Boolean(uri) && !failed;
+
+  return showImage ? (
+    <Image
+      source={{ uri }}
+      style={styles.avatar}
+      onError={() => setFailed(true)}
+    />
+  ) : (
+    <View style={styles.avatarFallback}>
+      <Text style={styles.avatarInitial}>{initial}</Text>
+    </View>
+  );
+};
+
 const CustomTabBar = ({ state, navigation }: BottomTabBarProps) => {
   const { tabBarHeight, insets } = useResponsiveLayout();
+  const avatar = useAppSelector(store => store.auth.avatar)?.trim() ?? '';
+  const name = useAppSelector(store => store.auth.name)?.trim() ?? '';
+  const sheetRef = useRef<BottomSheetModal>(null);
+  const pendingActionRef = useRef<
+    { space: Space; action: 'notes' | 'tasks' | 'listen' } | null
+  >(null);
   const currentRoute = state.routes[state.index];
+  const bottomInset = Math.max(insets.bottom, spacing.sm);
+
+  const openSpaces = useCallback(() => {
+    sheetRef.current?.present();
+  }, []);
+
+  const queueSheetAction = useCallback(
+    (space: Space, action: 'notes' | 'tasks' | 'listen') => {
+      pendingActionRef.current = { space, action };
+      sheetRef.current?.dismiss();
+    },
+    [],
+  );
+
+  const handleSheetClosed = useCallback(() => {
+    const pending = pendingActionRef.current;
+
+    if (!pending) {
+      return;
+    }
+
+    pendingActionRef.current = null;
+
+    if (pending.action === 'notes') {
+      navigation.navigate('Notes', { spaceId: pending.space._id });
+      return;
+    }
+
+    if (pending.action === 'tasks') {
+      navigation.navigate('Tasks', { spaceId: pending.space._id });
+      return;
+    }
+
+    queueSpaceOpen(pending.space);
+    navigation.navigate({
+      name: 'Home',
+      params: { openSpaceId: pending.space._id, startListening: true },
+      merge: true,
+    });
+  }, [navigation]);
 
   if (HIDDEN_TAB_ROUTES.has(currentRoute.name)) {
     return null;
   }
 
   return (
-    <View
-      pointerEvents="box-none"
-      style={[
-        styles.tabBar,
-        {
-          paddingBottom: Math.max(insets.bottom, spacing.sm),
-          minHeight: tabBarHeight + Math.max(insets.bottom, spacing.sm),
-        },
-      ]}
-    >
-      <View style={styles.tabRow}>
-        {state.routes.map((route, index) => {
-          const config = TAB_CONFIG.find(tab => tab.name === route.name);
+    <>
+      <View
+        pointerEvents="box-none"
+        style={[
+          styles.dock,
+          {
+            paddingBottom: bottomInset,
+            minHeight: tabBarHeight + bottomInset,
+          },
+        ]}
+      >
+        <View style={styles.cluster}>
+          <View style={styles.pill}>
+            {VISIBLE_TABS.map(tab => {
+              const index = state.routes.findIndex(
+                route => route.name === tab.name,
+              );
+              const route = state.routes[index];
 
-          if (!config) {
-            return null;
-          }
+              if (!route) {
+                return null;
+              }
 
-          const isFocused = state.index === index;
+              const isFocused = state.index === index;
+              const color = isFocused ? colors.primaryText : colors.equalInactive;
 
-          const onPress = () => {
-            const event = navigation.emit({
-              type: 'tabPress',
-              target: route.key,
-              canPreventDefault: true,
-            });
+              const onPress = () => {
+                const event = navigation.emit({
+                  type: 'tabPress',
+                  target: route.key,
+                  canPreventDefault: true,
+                });
 
-            if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate({
-                name: route.name,
-                params: route.params,
-                merge: true,
-              });
-            }
-          };
+                if (!isFocused && !event.defaultPrevented) {
+                  navigation.navigate(route.name);
+                }
+              };
 
-          const onLongPress = () => {
-            navigation.emit({
-              type: 'tabLongPress',
-              target: route.key,
-            });
-          };
+              return (
+                <TouchableOpacity
+                  key={route.key}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isFocused }}
+                  accessibilityLabel={tab.label}
+                  onPress={onPress}
+                  activeOpacity={0.75}
+                  style={[styles.tabButton, isFocused && styles.tabButtonActive]}
+                >
+                  {tab.name === 'AI' ? (
+                    <View style={styles.chatIconWrap}>
+                      <ChatTabIcon color={color} filled={isFocused} />
+                      <View style={styles.chatBadge}>
+                        <Text style={styles.chatBadgeText}>2</Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <YouAvatar name={name} uri={avatar} />
+                  )}
+                  <Text style={[styles.label, { color }]} numberOfLines={1}>
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
 
-          return (
-            <TabItem
-              key={route.key}
-              isFocused={isFocused}
-              Icon={config.Icon}
-              label={config.label}
-              onPress={onPress}
-              onLongPress={onLongPress}
-              accessibilityState={{ selected: isFocused }}
-            />
-          );
-        })}
+          <View style={styles.greenShadow}>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Open spaces"
+              activeOpacity={0.88}
+              onPress={openSpaces}
+              style={styles.greenButton}
+            >
+              <View style={styles.greenFill}>
+                <EqualMark />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
-    </View>
+
+      <SpacesLauncherSheet
+        ref={sheetRef}
+        onOpenNotes={space => queueSheetAction(space, 'notes')}
+        onOpenTasks={space => queueSheetAction(space, 'tasks')}
+        onStartListening={space => queueSheetAction(space, 'listen')}
+        onClosed={handleSheetClosed}
+      />
+    </>
   );
 };
 
 const renderTabBar = (props: BottomTabBarProps) => <CustomTabBar {...props} />;
+
 const MainTabs = () => {
   return (
     <View style={styles.shell}>
       <Tab.Navigator
-        initialRouteName="Home"
+        initialRouteName="AI"
         tabBar={renderTabBar}
         screenLayout={renderScreenWithBoundary}
         backBehavior="history"
@@ -251,13 +264,12 @@ const MainTabs = () => {
         screenOptions={{
           headerShown: false,
           lazy: true,
-          // react-native-screens can leave a frozen tab stuck on screen after switching.
           freezeOnBlur: false,
         }}
       >
         <Tab.Screen name="Home" component={Home} />
         <Tab.Screen name="Notes" component={Notes} />
-        <Tab.Screen name="AI" component={BuddyScreen} />
+        <Tab.Screen name="AI" component={StaticChatsScreen} />
         <Tab.Screen name="Tasks" component={TaskScreen} />
         <Tab.Screen name="Profile" component={ProfileScreen} />
         <Tab.Screen name="Plans" component={PlansScreen} />
@@ -280,55 +292,135 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
 
-  tabBar: {
+  dock: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.white,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
+    justifyContent: 'flex-end',
+    backgroundColor: 'transparent',
   },
 
-  tabRow: {
-    flex: 1,
+  cluster: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing['2xl'],
     paddingTop: spacing.md,
-    minHeight: ms(64),
+    gap: spacing.lg,
+  },
+
+  pill: {
+    flex: 1,
+    height: ms(64),
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    borderRadius: ms(32),
+    backgroundColor: colors.white,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.equalLine,
+    shadowColor: '#101828',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
   },
 
   tabButton: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingBottom: spacing.xs,
+    gap: spacing.xxs,
+    minHeight: ms(52),
+    borderRadius: ms(26),
   },
 
-  indicatorWrap: {
+  tabButtonActive: {
+    backgroundColor: colors.primaryLight,
+  },
+
+  chatIconWrap: {
+    width: ms(24),
+    height: ms(24),
+  },
+
+  chatBadge: {
     position: 'absolute',
-    top: -spacing.md,
-    alignSelf: 'center',
-  },
-
-  indicator: {
-    width: ms(28),
-    height: ms(3),
-    borderRadius: ms(2),
-  },
-
-  itemContainer: {
+    top: -ms(5),
+    right: -ms(8),
+    minWidth: ms(16),
+    height: ms(16),
+    paddingHorizontal: ms(3),
+    borderRadius: ms(8),
+    backgroundColor: '#E53935',
+    borderWidth: 1.5,
+    borderColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
+  },
+
+  chatBadgeText: {
+    color: colors.white,
+    fontSize: ms(9),
+    fontWeight: fontWeight.bold,
+    includeFontPadding: false,
   },
 
   label: {
     fontSize: fontSize.xs,
+    fontWeight: fontWeight.semibold,
     letterSpacing: 0.1,
     textAlign: 'center',
     includeFontPadding: false,
+  },
+
+  avatar: {
+    width: ms(28),
+    height: ms(28),
+    borderRadius: ms(14),
+    backgroundColor: colors.equalGreenSoft,
+  },
+
+  avatarFallback: {
+    width: ms(28),
+    height: ms(28),
+    borderRadius: ms(14),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.equalGreenSoft,
+  },
+
+  avatarInitial: {
+    color: colors.primaryText,
+    fontSize: fontSize.sm,
+    fontWeight: fontWeight.bold,
+    includeFontPadding: false,
+  },
+
+  greenShadow: {
+    width: ms(64),
+    height: ms(64),
+    borderRadius: ms(32),
+    backgroundColor: colors.primary,
+    shadowColor: colors.equalGreenDark,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.28,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+
+  greenButton: {
+    width: ms(64),
+    height: ms(64),
+    borderRadius: ms(32),
+    overflow: 'hidden',
+  },
+
+  greenFill: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
   },
 });
 

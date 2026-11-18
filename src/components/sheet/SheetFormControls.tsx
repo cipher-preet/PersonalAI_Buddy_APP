@@ -21,13 +21,13 @@ import {
   spacing,
 } from '../../theme';
 
-/** Reference accent (poll settings purple) */
-const ACCENT = '#6E62E5';
-const BORDER = '#E8E8EC';
-const BORDER_ACTIVE = ACCENT;
-const TRACK_OFF = '#E5E7EB';
-const LABEL = '#6B7280';
-const PLACEHOLDER = '#A1A1AA';
+/** Equal field accent */
+const ACCENT = colors.primary;
+const BORDER = colors.border;
+const BORDER_ACTIVE = colors.primary;
+const TRACK_OFF = colors.borderLight;
+const LABEL = colors.subText;
+const PLACEHOLDER = colors.muted;
 
 const SWITCH_WIDTH = ms(51);
 const SWITCH_HEIGHT = ms(31);
@@ -458,12 +458,12 @@ const styles = StyleSheet.create({
     fontWeight: fontWeight.semibold,
   },
   segmentTextActive: {
-    color: ACCENT,
+    color: colors.primaryText,
     fontWeight: fontWeight.bold,
   },
   primaryButton: {
-    minHeight: ms(48),
-    borderRadius: radii.lg,
+    minHeight: ms(52),
+    borderRadius: radii.pill,
     backgroundColor: ACCENT,
     alignItems: 'center',
     justifyContent: 'center',
@@ -473,7 +473,7 @@ const styles = StyleSheet.create({
     opacity: 0.45,
   },
   primaryButtonText: {
-    color: '#FFFFFF',
+    color: colors.onPrimary,
     fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
   },

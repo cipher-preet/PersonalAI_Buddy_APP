@@ -94,7 +94,7 @@ export default BuddyLanding;
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: CHAT.surface,
+    backgroundColor: colors.background,
   },
 
   content: {

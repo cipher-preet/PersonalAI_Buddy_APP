@@ -858,7 +858,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lightGray,
   },
   primaryButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
   },

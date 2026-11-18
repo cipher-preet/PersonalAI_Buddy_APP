@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
   },
 
   inviteButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.base,
     fontWeight: fontWeight.semibold,
   },

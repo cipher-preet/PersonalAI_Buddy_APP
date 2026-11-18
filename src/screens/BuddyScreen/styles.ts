@@ -10,18 +10,18 @@ import {
 
 /** Desktop Buddy chat tokens (BuddyDesktopApp) — tuned for mobile density. */
 export const CHAT = {
-  surface: '#FFFFFF',
-  surfaceMuted: '#F6F8FC',
+  surface: colors.white,
+  surfaceMuted: colors.primaryLight,
   primary: colors.primary,
   primaryHover: colors.primaryDark,
   primarySoft: colors.primaryLight,
-  text: '#101828',
-  textMuted: '#64748B',
-  textSoft: '#94A3B8',
-  border: '#E2E8F0',
-  borderStrong: '#E2E8F0',
-  black: '#0F172A',
-  typingDot: '#98A2B3',
+  text: colors.text,
+  textMuted: colors.subText,
+  textSoft: colors.subText,
+  border: colors.border,
+  borderStrong: colors.border,
+  black: colors.text,
+  typingDot: colors.subText,
 } as const;
 
 /** @deprecated Prefer importing `colors` / `CHAT` directly. */
@@ -48,12 +48,12 @@ export const COLORS = {
 export const styles = StyleSheet.create({
   gradient: {
     flex: 1,
-    backgroundColor: CHAT.surface,
+    backgroundColor: colors.background,
   },
 
   container: {
     flex: 1,
-    backgroundColor: CHAT.surface,
+    backgroundColor: colors.background,
   },
 
   chatArea: {

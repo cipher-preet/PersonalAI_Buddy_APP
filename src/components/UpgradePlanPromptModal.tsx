@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   },
 
   upgradeText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.md,
     fontWeight: fontWeight.extrabold,
   },

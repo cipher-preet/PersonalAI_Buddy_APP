@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { RouteProp } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 
 import Header from './components/Header';
@@ -31,6 +32,10 @@ import { useAppSelector } from '../../store/hooks';
 
 import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import type { MainTabParamList } from '../../navigation/types';
+import {
+  clearQueuedSpace,
+  readQueuedSpace,
+} from '../../navigation/pendingSpace';
 import CreateSpaceBottomSheet from './components/addspcesheet/CreateSpaceBottomSheet';
 import UpgradePlanPromptModal from '../../components/UpgradePlanPromptModal';
 import {
@@ -158,6 +163,7 @@ type TabParamList = MainTabParamList;
 
 const Home = () => {
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
+  const route = useRoute<RouteProp<TabParamList, 'Home'>>();
   const { tabBarClearance, screenPadding, contentMaxWidth, isTablet } =
     useResponsiveLayout();
   const bottomSheetRef = useRef<BottomSheetModal>(null);
@@ -165,6 +171,8 @@ const Home = () => {
   const spaceDetailRef = useRef<BottomSheetModal>(null);
 
   const recordingContextRef = useRef<RecordingContext | null>(null);
+  const pendingSpacePresentRef = useRef(false);
+  const pendingListenRef = useRef(false);
   const uploadQueueRef = useRef<Promise<void>>(Promise.resolve());
   const pendingVoiceUploadsRef = useRef(0);
   const processingCleanupTimersRef = useRef<
@@ -188,6 +196,7 @@ const Home = () => {
   const [cursor, setCursor] = useState('');
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [selectedSpace, setSelectedSpace] = useState<Space | null>(null);
+  const [spaceOpenToken, setSpaceOpenToken] = useState(0);
   const [isSpaceListeningBusy, setIsSpaceListeningBusy] = useState(false);
   const userId = useAppSelector(state => state.auth.userId) ?? '';
   const authToken = useAppSelector(state => state.auth.token);
@@ -254,6 +263,50 @@ const Home = () => {
       return newItems.length > 0 ? [...prev, ...newItems] : prev;
     });
   }, [spacesData, cursor]);
+
+  useEffect(() => {
+    const openSpaceId = route.params?.openSpaceId;
+    const startListening = route.params?.startListening;
+
+    if (!openSpaceId) {
+      return undefined;
+    }
+
+    const queued = readQueuedSpace();
+    const space =
+      queued && queued._id === openSpaceId
+        ? queued
+        : spaces.find(item => item._id === openSpaceId);
+
+    if (!space) {
+      return undefined;
+    }
+
+    if (startListening) {
+      pendingListenRef.current = true;
+    } else {
+      pendingSpacePresentRef.current = true;
+    }
+    setSelectedSpace(space);
+    setSpaceOpenToken(token => token + 1);
+    clearQueuedSpace();
+    navigation.setParams({ openSpaceId: undefined, startListening: undefined });
+
+    return undefined;
+  }, [navigation, route.params?.openSpaceId, spaces]);
+
+  useEffect(() => {
+    if (!pendingSpacePresentRef.current || !selectedSpace) {
+      return undefined;
+    }
+
+    pendingSpacePresentRef.current = false;
+    const timer = setTimeout(() => {
+      spaceDetailRef.current?.present();
+    }, 280);
+
+    return () => clearTimeout(timer);
+  }, [selectedSpace, spaceOpenToken]);
 
   useEffect(() => {
     if (!userId) {
@@ -850,6 +903,15 @@ const Home = () => {
     showToast,
     startListning,
   ]);
+
+  useEffect(() => {
+    if (!pendingListenRef.current || !selectedSpace) {
+      return;
+    }
+
+    pendingListenRef.current = false;
+    void handleSpaceDetailListening();
+  }, [handleSpaceDetailListening, selectedSpace, spaceOpenToken]);
 
   const keyExtractor = useCallback((item: Space) => item._id, []);
 

@@ -422,7 +422,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.xl,
     fontWeight: fontWeight.bold,
   },

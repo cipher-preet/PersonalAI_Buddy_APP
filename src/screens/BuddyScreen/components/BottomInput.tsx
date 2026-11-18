@@ -18,6 +18,7 @@ import { UpArrowIcon } from '../../../../styles/icons';
 import type { Space } from '../../../store/api/home';
 import { CHAT } from '../styles';
 import {
+  colors,
   fontSize,
   fontWeight,
   layout,
@@ -201,7 +202,7 @@ const BottomInput = forwardRef<TextInput, Props>(
               <UpArrowIcon
                 width={ms(15)}
                 height={ms(15)}
-                color={canSend ? CHAT.surface : CHAT.textMuted}
+                color={canSend ? colors.onPrimary : CHAT.textMuted}
               />
             </TouchableOpacity>
           </View>
@@ -364,7 +365,7 @@ const styles = StyleSheet.create({
     borderRadius: ms(8),
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(19, 85, 255, 0.12)',
+    backgroundColor: colors.primaryLight,
   },
 
   contextButton: {
@@ -392,7 +393,7 @@ const styles = StyleSheet.create({
   },
 
   contextButtonText: {
-    color: '#53627A',
+    color: CHAT.textMuted,
     fontSize: fontSize.xs,
     fontWeight: fontWeight.bold,
   },

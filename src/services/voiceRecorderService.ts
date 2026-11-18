@@ -16,6 +16,7 @@ import AudioRecorderPlayer, {
 import axios, { AxiosError } from 'axios';
 
 import { BUDDY_ENDPOINTS } from '../config/apiConfig';
+import { store } from '../store/store';
 
 type RNFSType = typeof import('react-native-fs');
 
@@ -44,6 +45,11 @@ const LISTENING_END_URL = `${SPEECH_API_URL}/listening/end`;
 const VOICE_UPLOAD_TIMEOUT_MS = 60000;
 const VOICE_UPLOAD_RETRY_DELAY_MS = 30000;
 const VOICE_UPLOAD_MAX_ATTEMPTS = 3;
+
+const authHeaders = (): Record<string, string> => {
+  const token = store.getState().auth.token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 const RETRYABLE_UPLOAD_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 const androidNotificationPermission =
   'android.permission.POST_NOTIFICATIONS' as Permission;
@@ -492,6 +498,7 @@ export const startListeningSession = async ({
     },
     {
       timeout: VOICE_UPLOAD_TIMEOUT_MS,
+      headers: authHeaders(),
     },
   );
 
@@ -515,6 +522,7 @@ export const endListeningSession = async ({
     },
     {
       timeout: VOICE_UPLOAD_TIMEOUT_MS,
+      headers: authHeaders(),
     },
   );
 
@@ -597,6 +605,7 @@ export const uploadVoiceMessage = async ({
         await createFormData(),
         {
           timeout: VOICE_UPLOAD_TIMEOUT_MS,
+          headers: authHeaders(),
         },
       );
       break;

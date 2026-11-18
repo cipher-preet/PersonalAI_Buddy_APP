@@ -1,5 +1,5 @@
 export type MainTabParamList = {
-  Home: undefined;
+  Home: { openSpaceId?: string; startListening?: boolean } | undefined;
   Notes: { spaceId?: string } | undefined;
   Tasks: { spaceId?: string } | undefined;
   Reminders: undefined;

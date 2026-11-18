@@ -227,7 +227,7 @@ const LoginScreen = ({ navigation }: Props) => {
         ]}
       >
         {isSendingOtp || isCheckingPhone ? (
-          <ActivityIndicator color={colors.white} />
+          <ActivityIndicator color={colors.onPrimary} />
         ) : (
           <Text style={styles.primaryButtonText}>Continue</Text>
         )}
@@ -347,8 +347,8 @@ const styles = StyleSheet.create({
 
   primaryButton: {
     height: layout.buttonHeight,
-    borderRadius: radii.lg,
-    backgroundColor: colors.primaryDark,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing['3xl'],
@@ -363,7 +363,7 @@ const styles = StyleSheet.create({
   },
 
   primaryButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
   },

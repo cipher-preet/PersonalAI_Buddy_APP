@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primaryButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
   },

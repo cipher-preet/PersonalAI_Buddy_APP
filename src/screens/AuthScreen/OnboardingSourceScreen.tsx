@@ -179,8 +179,8 @@ const styles = StyleSheet.create({
 
   primaryButton: {
     height: layout.buttonHeight,
-    borderRadius: radii.lg,
-    backgroundColor: colors.primaryDark,
+    borderRadius: radii.pill,
+    backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.xl,
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   },
 
   primaryButtonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.lg,
     fontWeight: fontWeight.bold,
   },

@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: colors.white,
+    color: colors.onPrimary,
     fontSize: fontSize.base,
     fontWeight: fontWeight.bold,
   },

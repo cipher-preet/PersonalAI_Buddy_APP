@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  BackHandler,
   FlatList,
   Keyboard,
   Platform,
@@ -7,7 +8,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { RouteProp } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -15,7 +17,7 @@ import Header from './components/Header';
 import UserMessage from './components/UserMessage';
 import AIMessage from './components/AIMessage';
 import BottomInput from './components/BottomInput';
-import ChatHistoryDrawer from './components/ChatHistoryDrawer';
+import ChatsList from './components/ChatsList';
 import TypingIndicator from './components/TypingIndicator';
 import ScrollToBottomButton from './components/ScrollToBottomButton';
 import BuddyLanding from './components/BuddyLanding';
@@ -147,6 +149,8 @@ const mergeSessions = (
 
 const BuddyScreen = () => {
   const { tabBarClearance } = useResponsiveLayout();
+  const navigation =
+    useNavigation<BottomTabNavigationProp<MainTabParamList, 'AI'>>();
   const route = useRoute<RouteProp<MainTabParamList, 'AI'>>();
   const listRef = useRef<FlatList<ChatMessage>>(null);
   const inputRef = useRef<TextInput>(null);
@@ -162,7 +166,9 @@ const BuddyScreen = () => {
     spaceId ? [spaceId] : [],
   );
   const [keyboardHeight, setKeyboardHeight] = useState(0);
-  const [historyVisible, setHistoryVisible] = useState(false);
+  const [screenMode, setScreenMode] = useState<'list' | 'thread'>(
+    spaceId ? 'thread' : 'list',
+  );
   const [sessionsCursor, setSessionsCursor] = useState<string | null>(null);
   const [hasMoreSessions, setHasMoreSessions] = useState(false);
   const [sessionsError, setSessionsError] = useState<string | null>(null);
@@ -179,6 +185,7 @@ const BuddyScreen = () => {
     }
 
     lastOpenedSpaceIdRef.current = spaceId;
+    setScreenMode('thread');
     setActiveSessionId(null);
     setInput('');
     setSelectedSpaceIds([spaceId]);
@@ -242,11 +249,12 @@ const BuddyScreen = () => {
   const [loadChatSession] = useLazyGetChatSessionByIdQuery();
   const [askBuddy, { isLoading: sendingMessage }] = useAskBuddyMutation();
 
-  const messages = useMemo(
-    () =>
-      sessions.find(session => session.id === activeSessionId)?.messages ?? [],
+  const activeSession = useMemo(
+    () => sessions.find(session => session.id === activeSessionId) ?? null,
     [sessions, activeSessionId],
   );
+
+  const messages = activeSession?.messages ?? [];
 
   const scrollToEnd = useCallback((force = false) => {
     if (!force && !isNearBottomRef.current) {
@@ -542,23 +550,40 @@ const BuddyScreen = () => {
     scrollToEnd(true);
   };
 
-  const handleOpenHistory = () => {
+  const handleBackToList = useCallback(() => {
     Keyboard.dismiss();
-    setHistoryVisible(true);
-  };
+    setScreenMode('list');
+  }, []);
 
-  const handleCloseHistory = () => {
-    setHistoryVisible(false);
-  };
+  useEffect(() => {
+    if (screenMode !== 'thread') {
+      return undefined;
+    }
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => {
+        handleBackToList();
+        return true;
+      },
+    );
+    return () => subscription.remove();
+  }, [handleBackToList, screenMode]);
 
-  const handleSelectSession = async (sessionId: string) => {
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('tabPress', () => {
+      setScreenMode('list');
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  const handleSelectSession = async (sessionId: string, prompt?: string) => {
     if (!userId) {
       setSessionsError('Please log in again to continue.');
       return;
     }
+    setScreenMode('thread');
     setActiveSessionId(sessionId);
-    setHistoryVisible(false);
-    setInput('');
+    setInput(prompt ?? '');
     setActiveChatLoading(true);
     try {
       const response = await loadChatSession({ userId, sessionId }).unwrap();
@@ -578,6 +603,7 @@ const BuddyScreen = () => {
       scrollToEnd(true);
     } catch (error) {
       setSessionsError(getErrorMessage(error));
+      setScreenMode('list');
     } finally {
       setActiveChatLoading(false);
     }
@@ -585,7 +611,7 @@ const BuddyScreen = () => {
 
   const handleNewChat = () => {
     Keyboard.dismiss();
-    setHistoryVisible(false);
+    setScreenMode('thread');
     setActiveSessionId(null);
     setInput('');
     setActiveChatLoading(false);
@@ -662,13 +688,31 @@ const BuddyScreen = () => {
     ? keyboardHeight + KEYBOARD_INPUT_GAP
     : tabBarClearance;
 
+  const showList = screenMode === 'list';
+
   return (
     <View style={styles.gradient}>
       <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+        {showList ? (
+          <ChatsList
+            sessions={sessions}
+            loading={sessionsLoadingInitial}
+            loadingMore={loadingMoreSessions}
+            error={sessionsError}
+            hasMore={hasMoreSessions}
+            bottomInset={tabBarClearance}
+            onOpenSession={handleSelectSession}
+            onNewChat={handleNewChat}
+            onRetry={refetchSessions}
+            onLoadMore={handleLoadMoreSessions}
+          />
+        ) : (
+          <>
         <Header
-          onHistoryPress={handleOpenHistory}
+          onBack={handleBackToList}
           onNewChatPress={handleNewChat}
-          showTitle={!showLanding}
+          showTitle
+          title={activeSession?.title || 'New chat'}
           contextLabel={selectedSpaces[0]?.name || spaceName}
         />
 
@@ -741,23 +785,9 @@ const BuddyScreen = () => {
             />
           </View>
         </View>
+          </>
+        )}
       </SafeAreaView>
-
-      <ChatHistoryDrawer
-        visible={historyVisible}
-        sessions={sessions}
-        activeSessionId={activeSessionId || ''}
-        loading={sessionsLoadingInitial}
-        loadingMore={loadingMoreSessions}
-        creating={creatingChat}
-        error={sessionsError}
-        hasMore={hasMoreSessions}
-        onClose={handleCloseHistory}
-        onSelectSession={handleSelectSession}
-        onNewChat={handleNewChat}
-        onRetry={refetchSessions}
-        onLoadMore={handleLoadMoreSessions}
-      />
     </View>
   );
 };
