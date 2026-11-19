@@ -280,7 +280,7 @@ const StaticChatsScreen = () => {
         keyboardShouldPersistTaps="handled"
         nestedScrollEnabled
         directionalLockEnabled
-        contentContainerStyle={{ paddingBottom: tabBarClearance }}
+        contentContainerStyle={{ paddingBottom: tabBarClearance + 96 }}
       >
         <View style={styles.brandRow}>
           <EqualMark large color={colors.primary} />

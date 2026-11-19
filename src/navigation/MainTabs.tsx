@@ -16,7 +16,7 @@ import { BottomSheetModal } from '@gorhom/bottom-sheet';
 import Notes from '../screens/NotesScreen/Note';
 import TaskScreen from '../screens/TasksScreen/TaskScreen';
 import ProfileScreen from '../screens/ProfileScreen/ProfileScreen';
-import StaticChatsScreen from '../screens/ChatsScreen/StaticChatsScreen';
+import ChatsPhoneScreen from '../screens/PhoneScreens/ChatsPhoneScreen';
 import PlansScreen from '../screens/PlansScreen/PlansScreen';
 import RemindersScreen from '../screens/RemindersScreen/RemindersScreen';
 import BriefingScreen from '../screens/BriefingScreen/BriefingScreen';
@@ -276,7 +276,7 @@ const MainTabs = () => {
         }}
       >
         <Tab.Screen name="Notes" component={Notes} />
-        <Tab.Screen name="AI" component={StaticChatsScreen} />
+        <Tab.Screen name="AI" component={ChatsPhoneScreen} />
         <Tab.Screen name="Tasks" component={TaskScreen} />
         <Tab.Screen name="Profile" component={ProfileScreen} />
         <Tab.Screen name="Plans" component={PlansScreen} />
