@@ -48,10 +48,10 @@ const SPACE_THEMES = [
     icon: '#1D4ED8',
   },
   {
-    bg: '#D1FAE5',
-    border: '#6EE7B7',
-    iconBg: '#A7F3D0',
-    icon: '#047857',
+    bg: '#FEF3C7',
+    border: '#FCD34D',
+    iconBg: '#FDE68A',
+    icon: '#92400E',
   },
   {
     bg: '#FFEDD5',

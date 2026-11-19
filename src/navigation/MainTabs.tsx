@@ -1,5 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import {
+  Easing,
   Image,
   StyleSheet,
   Text,
@@ -38,6 +39,7 @@ import {
   colors,
   fontSize,
   fontWeight,
+  motion,
   ms,
   spacing,
 } from '../theme';
@@ -268,11 +270,19 @@ const MainTabs = () => {
         tabBar={renderTabBar}
         screenLayout={renderScreenWithBoundary}
         backBehavior="history"
-        detachInactiveScreens
+        detachInactiveScreens={false}
         screenOptions={{
           headerShown: false,
           lazy: true,
           freezeOnBlur: false,
+          animation: 'fade',
+          transitionSpec: {
+            animation: 'timing',
+            config: {
+              duration: motion.fadeMs,
+              easing: Easing.linear,
+            },
+          },
         }}
       >
         <Tab.Screen name="Notes" component={Notes} />

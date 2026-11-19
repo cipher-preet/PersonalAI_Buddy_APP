@@ -38,7 +38,11 @@ const AuthStack = () => {
       screenLayout={renderScreenWithBoundary}
       screenOptions={{
         headerShown: false,
-        animation: 'slide_from_right',
+        animation: 'fade',
+        animationDuration: 180,
+        gestureEnabled: true,
+        fullScreenGestureEnabled: true,
+        freezeOnBlur: false,
       }}
     >
       <Stack.Screen name="Login" component={LoginScreen} />

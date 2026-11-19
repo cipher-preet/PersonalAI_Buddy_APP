@@ -311,7 +311,7 @@ const ProfileScreen = () => {
           <Text style={styles.sectionLabel}>TELL EQUAL</Text>
           <View style={styles.card}>
             <LinearGradient
-              colors={['#F4FBF7', '#D7F5E3']}
+              colors={['#F6F3FF', '#E4D8FF']}
               start={{ x: 0, y: 0.5 }}
               end={{ x: 1, y: 0.5 }}
               style={styles.assistantBanner}
@@ -566,11 +566,11 @@ const ChevronIcon = () => (
 
 const RobotIcon = () => (
   <Svg width={32} height={32} viewBox="0 0 32 32" fill="none">
-    <Path d="M16 4.2v2.4" stroke="#149A45" strokeWidth={1.6} strokeLinecap="round" />
-    <Circle cx="16" cy="3.6" r="1.2" fill="#149A45" />
+    <Path d="M16 4.2v2.4" stroke="#7C3AED" strokeWidth={1.6} strokeLinecap="round" />
+    <Circle cx="16" cy="3.6" r="1.2" fill="#7C3AED" />
     <Path
       d="M8.2 12.2h15.6a3 3 0 0 1 3 3v7.2a3 3 0 0 1-3 3H8.2a3 3 0 0 1-3-3v-7.2a3 3 0 0 1 3-3Z"
-      fill="#149A45"
+      fill="#7C3AED"
     />
     <Circle cx="12.4" cy="17.2" r="1.5" fill="#FFFFFF" />
     <Circle cx="19.6" cy="17.2" r="1.5" fill="#FFFFFF" />
@@ -588,7 +588,7 @@ export default ProfileScreen;
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#F4FBF7',
+    backgroundColor: '#F6F3FF',
   },
 
   container: {
@@ -612,14 +612,14 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#D7F5E3',
+    backgroundColor: '#E4D8FF',
   },
 
   avatarFallback: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: '#149A45',
+    backgroundColor: '#7C3AED',
     alignItems: 'center',
     justifyContent: 'center',
   },

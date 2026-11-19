@@ -4,6 +4,7 @@ import {
   Easing,
   Pressable,
   ScrollView,
+  StatusBar,
   StyleSheet,
   Text,
   TextInput,
@@ -115,7 +116,9 @@ const DialerScreen = forwardRef<DialerHandle, Props>(function DialerScreen(
   { bottomPadding, initialNumber = '', onBack },
   ref,
 ) {
-  const [number, setNumber] = useState(initialNumber);
+  const [number, setNumber] = useState(
+    typeof initialNumber === 'string' ? initialNumber : '',
+  );
   const [searching, setSearching] = useState(false);
   const [query, setQuery] = useState('');
   const [padHeight, setPadHeight] = useState(PAD_TRAVEL);
@@ -194,6 +197,7 @@ const DialerScreen = forwardRef<DialerHandle, Props>(function DialerScreen(
 
   return (
     <Animated.View style={[styles.screen, { opacity: screenOpacity }]}>
+    <StatusBar barStyle="dark-content" backgroundColor={colors.white} translucent={false} />
     <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Pressable
@@ -396,7 +400,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 8,
     borderRadius: 16,
-    backgroundColor: '#E7F8EE',
+    backgroundColor: '#F4EEFF',
     paddingHorizontal: 14,
     paddingVertical: 12,
     flexDirection: 'row',
@@ -498,12 +502,12 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 64,
     borderRadius: 16,
-    backgroundColor: '#E7F8EE',
+    backgroundColor: '#F4EEFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   keyPressed: {
-    backgroundColor: '#C3FDDC',
+    backgroundColor: '#DDD0FF',
   },
   digit: {
     fontFamily: fonts.semibold,

@@ -25,6 +25,7 @@ import {
 } from '../services/reminderAlertService';
 import ReminderCallScreen from '../screens/ReminderAlerts/ReminderCallScreen';
 import ReminderAlarmScreen from '../screens/ReminderAlerts/ReminderAlarmScreen';
+import ChatThreadScreen from '../screens/ChatsScreen/ChatThreadScreen';
 import { colors } from '../theme';
 import { renderScreenWithBoundary } from '../components/AppErrorBoundary';
 
@@ -32,17 +33,49 @@ const AppStack = createNativeStackNavigator<AppStackParamList>();
 
 const AuthenticatedApp = () => (
   <AppStack.Navigator
-    screenOptions={{ headerShown: false }}
+    screenOptions={{
+      headerShown: false,
+      animation: 'fade',
+      animationDuration: 180,
+      gestureEnabled: true,
+      fullScreenGestureEnabled: true,
+      freezeOnBlur: false,
+    }}
     screenLayout={renderScreenWithBoundary}
   >
-    <AppStack.Screen name="Main" component={MainTabs} />
+    <AppStack.Screen
+      name="Main"
+      component={MainTabs}
+      options={{
+        statusBarStyle: 'dark',
+        statusBarTranslucent: false,
+        statusBarBackgroundColor: '#F7F7F7',
+      }}
+    />
+    <AppStack.Screen
+      name="ChatThread"
+      component={ChatThreadScreen}
+      options={{
+        animation: 'fade',
+        animationDuration: 180,
+        gestureEnabled: true,
+        fullScreenGestureEnabled: true,
+        freezeOnBlur: false,
+        statusBarStyle: 'dark',
+        statusBarTranslucent: true,
+        statusBarBackgroundColor: '#FFFFFF',
+        contentStyle: { backgroundColor: '#FFFFFF' },
+      }}
+    />
     <AppStack.Screen
       name="ReminderCall"
       component={ReminderCallScreen}
       options={{
         presentation: 'fullScreenModal',
         animation: 'fade',
+        animationDuration: 180,
         gestureEnabled: false,
+        fullScreenGestureEnabled: false,
       }}
     />
     <AppStack.Screen
@@ -51,7 +84,9 @@ const AuthenticatedApp = () => (
       options={{
         presentation: 'fullScreenModal',
         animation: 'fade',
+        animationDuration: 180,
         gestureEnabled: false,
+        fullScreenGestureEnabled: false,
       }}
     />
   </AppStack.Navigator>

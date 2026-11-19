@@ -1,5 +1,6 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { memo, useMemo, useRef, useState } from 'react';
 import {
+  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -9,12 +10,17 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 import EqualMark from '../../navigation/EqualMark';
+import type { AppStackParamList } from '../../navigation/types';
 import { colors, fonts } from '../../theme';
+
+const APP_ICON = require('../../assets/images/app-icon.png');
 
 type ChipKind = 'callback' | 'always' | 'mute';
 
@@ -180,7 +186,7 @@ const AssistantGlyph = () => (
 );
 
 const RotaryPhone = () => (
-  <Svg width={36} height={36} viewBox="0 0 48 48" fill="none">
+  <Svg width={40} height={36} viewBox="8 8 32 30" fill="none">
     <Path
       d="M12 15.2c.2-3.4 4.6-6 12-6s11.8 2.6 12 6c.1 1.5-1 2.6-2.4 2.6h-2.8c-.9 0-1.5-.7-1.5-1.4 0-1.6-2.4-2.6-5.3-2.6s-5.3 1-5.3 2.6c0 .7-.6 1.4-1.5 1.4h-2.8c-1.4 0-2.5-1.1-2.4-2.6Z"
       fill="#E53935"
@@ -235,6 +241,7 @@ const VerifiedMark = () => (
 );
 
 const StaticChatsScreen = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const { tabBarClearance } = useResponsiveLayout();
   const { width: screenWidth } = useWindowDimensions();
   const carouselRef = useRef<ScrollView>(null);
@@ -282,9 +289,11 @@ const StaticChatsScreen = () => {
         directionalLockEnabled
         contentContainerStyle={{ paddingBottom: tabBarClearance + 96 }}
       >
-        <View style={styles.brandRow}>
-          <EqualMark large color={colors.primary} />
-          <Text style={styles.wordmark}>equal ai</Text>
+        <View style={styles.brandRow} accessibilityRole="header" accessibilityLabel="KukuNotes">
+          <Image source={APP_ICON} style={styles.brandIcon} accessibilityLabel="KukuNotes logo" />
+          <Text style={styles.wordmark}>
+            Kuku<Text style={styles.wordmarkAccent}>Notes</Text>
+          </Text>
         </View>
 
         <View style={styles.statusCard}>
@@ -413,10 +422,22 @@ const StaticChatsScreen = () => {
         ) : null}
 
         {rows.map(row => (
-          <View key={row.id} style={styles.row}>
+          <Pressable
+            key={row.id}
+            accessibilityRole="button"
+            accessibilityLabel={row.name}
+            onPress={() =>
+              navigation.navigate('ChatThread', {
+                id: row.id,
+                name: row.name,
+                kind: row.kind,
+              })
+            }
+            style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
+          >
             {row.kind === 'assistant' ? (
               <View style={styles.assistantAvatar}>
-                <EqualMark color={colors.white} />
+                <EqualMark color={colors.white} size={30} />
               </View>
             ) : (
               <View style={styles.unknownAvatar}>
@@ -452,7 +473,7 @@ const StaticChatsScreen = () => {
                 </View>
               ) : null}
             </View>
-          </View>
+          </Pressable>
         ))}
       </ScrollView>
     </SafeAreaView>
@@ -487,7 +508,7 @@ const Chip = ({ kind }: { kind: ChipKind }) => {
   );
 };
 
-export default StaticChatsScreen;
+export default memo(StaticChatsScreen);
 
 const styles = StyleSheet.create({
   screen: {
@@ -504,13 +525,21 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
   },
 
-  wordmark: type(fonts.bold, 26, 32, colors.primary),
+  brandIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+  },
+  wordmark: type(fonts.bold, 26, 32, colors.equalInk),
+  wordmarkAccent: {
+    color: colors.primary,
+  },
 
   statusCard: {
     marginHorizontal: 16,
     minHeight: 78,
     borderRadius: 18,
-    backgroundColor: '#E7F6EC',
+    backgroundColor: '#F6F3FF',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
@@ -566,7 +595,7 @@ const styles = StyleSheet.create({
   langCard: {
     minHeight: 168,
     borderRadius: 22,
-    backgroundColor: '#DFF6E8',
+    backgroundColor: '#EDE4FF',
     flexDirection: 'row',
     alignItems: 'center',
     paddingLeft: 16,
@@ -594,7 +623,7 @@ const styles = StyleSheet.create({
 
   featureText: type(fonts.semibold, 10, 13, '#7A7A7A', 0.6),
 
-  langTitle: type(fonts.bold, 20, 25, '#149A45'),
+  langTitle: type(fonts.bold, 20, 25, '#5B21B6'),
 
   langBody: type(fonts.regular, 13, 18, '#7A7A7A'),
 
@@ -632,7 +661,7 @@ const styles = StyleSheet.create({
     fontFamily: 'sans-serif',
     fontSize: 15,
     lineHeight: 20,
-    color: '#149A45',
+    color: '#5B21B6',
     fontWeight: '600',
   },
 
@@ -692,6 +721,10 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
 
+  rowPressed: {
+    opacity: 0.72,
+  },
+
   assistantAvatar: {
     width: 52,
     height: 52,
@@ -741,7 +774,7 @@ const styles = StyleSheet.create({
 
   time: type(fonts.medium, 13, 18, '#9A9A9A'),
 
-  timeRecent: type(fonts.semibold, 13, 18, '#149A45'),
+  timeRecent: type(fonts.semibold, 13, 18, '#5B21B6'),
 
   previewLine: {
     marginTop: 1,
@@ -787,7 +820,7 @@ const styles = StyleSheet.create({
   },
 
   chipTint: {
-    backgroundColor: '#E7F8EE',
+    backgroundColor: '#F4EEFF',
     borderColor: 'transparent',
   },
 

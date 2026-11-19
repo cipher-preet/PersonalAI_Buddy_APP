@@ -760,7 +760,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   chipTint: {
-    backgroundColor: '#E7F8EE',
+    backgroundColor: '#F4EEFF',
     borderColor: 'transparent',
   },
   chipText: {

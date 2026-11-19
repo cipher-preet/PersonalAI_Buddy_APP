@@ -55,10 +55,10 @@ const SPACE_CARD_TONES = [
     button: [colors.primaryPurpleDark, colors.primaryPurple, colors.primaryMid],
   },
   {
-    colors: ['#ECFDF5', '#E0F2FE', '#FFFFFF'],
-    accent: colors.success,
-    border: '#A7F3D0',
-    button: ['#047857', colors.success, '#14B8A6'],
+    colors: ['#F4EEFF', '#E4D8FF', '#FFFFFF'],
+    accent: colors.primary,
+    border: '#DDD6FE',
+    button: [colors.primaryDark, colors.primary, colors.primaryMid],
   },
 ] as const;
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
@@ -155,4 +155,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PhoneShortcutBar;
+export default memo(PhoneShortcutBar);

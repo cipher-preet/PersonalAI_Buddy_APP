@@ -22,7 +22,7 @@ import { configureGoogleSignIn } from './src/services/googleSignInService';
 import { setupReminderNotifications } from './src/services/reminderNotificationService';
 
 enableScreens(true);
-enableFreeze(true);
+enableFreeze(false);
 
 const APP_BACKGROUND = colors.background;
 const rootStyles = StyleSheet.create({

@@ -1,7 +1,7 @@
 /**
- * Equal AI light-app palette.
- * Fills use brand green #00B140. Small text and icons use #0A7A34 so they
- * clear 4.5:1 on white. Labels on a green fill use #111111 (6.6:1).
+ * KukuNotes logo palette.
+ * The mark is navy, violet, and blue. Fills use #7C3AED so white labels
+ * clear 4.5:1. Small violet text uses #5B21B6.
  */
 export const colors = {
   // Surfaces
@@ -14,70 +14,68 @@ export const colors = {
   cardBg: '#FFFFFF',
   sheet: '#F7F7F7',
   searchField: '#F0F0F0',
-  overlay: 'rgba(0, 177, 64, 0.10)',
+  overlay: 'rgba(124, 58, 237, 0.10)',
   backdrop: 'rgba(0, 0, 0, 0.45)',
 
-  // Brand aliases kept so older call sites resolve to Equal green
-  brandNavy: '#111111',
-  brandBlue: '#00B140',
-  brandViolet: '#00B140',
-  brandPink: '#BAFF29',
-  brandYellow: '#CDF146',
+  // Logo colors
+  brandNavy: '#0F1D62',
+  brandBlue: '#1D6DFD',
+  brandViolet: '#AD57FE',
+  brandPink: '#F386C5',
+  brandYellow: '#FEE5A0',
 
   // Brand
-  primary: '#00B140',
-  primaryDark: '#072A16',
-  primaryText: '#0A7A34',
-  onPrimary: '#111111',
-  primaryPurple: '#00B140',
-  primaryPurpleDark: '#072A16',
-  primaryLight: '#E8F8EE',
-  primarySoft: '#F3FBF5',
-  primaryMid: '#00B140',
-  accent: '#0A7A34',
-  accentCyan: '#00B140',
-  accentIndigo: '#0A7A34',
-  brandBorder: '#D7F5E1',
+  primary: '#7C3AED',
+  primaryDark: '#0F1D62',
+  primaryText: '#5B21B6',
+  onPrimary: '#FFFFFF',
+  primaryPurple: '#7C3AED',
+  primaryPurpleDark: '#0F1D62',
+  primaryLight: '#F4EEFF',
+  primarySoft: '#F8F5FF',
+  primaryMid: '#AD57FE',
+  accent: '#5B21B6',
+  accentCyan: '#1D6DFD',
+  accentIndigo: '#5B21B6',
+  brandBorder: '#E4D8FF',
   tabActive: '#111111',
   tabInactive: '#5C5C5C',
-  tabPill: '#E8F8EE',
+  tabPill: '#F4EEFF',
 
-  // Equal tokens
-  equalGreen: '#00B140',
-  equalGreenBright: '#BAFF29',
-  equalGreenMid: '#00B140',
-  equalGreenDark: '#072A16',
-  equalGreenSoft: '#E8F8EE',
+  // Older names now point at the logo violet
+  equalGreen: '#7C3AED',
+  equalGreenBright: '#AD57FE',
+  equalGreenMid: '#7C3AED',
+  equalGreenDark: '#0F1D62',
+  equalGreenSoft: '#F4EEFF',
   equalInk: '#111111',
   equalMuted: '#5C5C5C',
   equalInactive: '#5C5C5C',
   equalLine: '#E6E6E6',
-  mint: '#C3FDDC',
+  mint: '#DDD0FF',
   cream: '#FFF2D4',
-  lime: '#BAFF29',
+  lime: '#AD57FE',
 
-  // Gradients collapse to the one green
-  upgradeGradientStart: '#00B140',
-  upgradeGradientMid: '#00B140',
-  upgradeGradientEnd: '#00B140',
+  upgradeGradientStart: '#0F1D62',
+  upgradeGradientMid: '#7C3AED',
+  upgradeGradientEnd: '#AD57FE',
 
-  // Plans — one dark green surface, not a purple stack
-  planProStart: '#072A16',
-  planProMid: '#0B3D1E',
-  planProEnd: '#00B140',
+  planProStart: '#0F1D62',
+  planProMid: '#4C1D95',
+  planProEnd: '#7C3AED',
   planBusinessStart: '#111111',
   planBusinessMid: '#1E1E1E',
   planBusinessEnd: '#242424',
-  planGold: '#CDF146',
-  planGoldSoft: 'rgba(186, 255, 41, 0.16)',
-  planGoldBorder: 'rgba(186, 255, 41, 0.28)',
-  planGoldBorderStrong: 'rgba(186, 255, 41, 0.40)',
+  planGold: '#AD57FE',
+  planGoldSoft: 'rgba(173, 87, 254, 0.16)',
+  planGoldBorder: 'rgba(173, 87, 254, 0.28)',
+  planGoldBorderStrong: 'rgba(173, 87, 254, 0.40)',
   planInk: '#111111',
   planMutedOnDark: 'rgba(255, 255, 255, 0.72)',
   planChipOnDark: 'rgba(255, 255, 255, 0.08)',
-  planSaveOnDark: '#BAFF29',
-  planSaveOnDarkSoft: '#E6FF94',
-  planSavePillActive: 'rgba(186, 255, 41, 0.18)',
+  planSaveOnDark: '#E4D4FF',
+  planSaveOnDarkSoft: '#F4EEFF',
+  planSavePillActive: 'rgba(173, 87, 254, 0.18)',
   planChipOnLight: 'rgba(255, 255, 255, 0.16)',
 
   // Text
@@ -90,7 +88,7 @@ export const colors = {
   // Borders & dividers
   border: '#E6E6E6',
   borderLight: '#F0F0F0',
-  borderFocus: '#00B140',
+  borderFocus: '#7C3AED',
   googleBorder: '#E6E6E6',
 
   // Status
@@ -98,30 +96,30 @@ export const colors = {
   errorDark: '#8E0000',
   errorSoft: '#FFF1F1',
   errorSoftBorder: '#F5C2C2',
-  success: '#0A7A34',
-  successBright: '#00B140',
-  info: '#111111',
-  infoBright: '#242424',
-  online: '#00B140',
+  success: '#5B21B6',
+  successBright: '#7C3AED',
+  info: '#1D6DFD',
+  infoBright: '#1E4ED8',
+  online: '#7C3AED',
   warningSoft: '#FFF2D4',
   warningText: '#6A4B00',
-  successSoft: '#E8F8EE',
-  successText: '#072A16',
+  successSoft: '#F4EEFF',
+  successText: '#3B1578',
 
   // Shadows
   shadow: '#000000',
-  shadowDeep: '#072A16',
+  shadowDeep: '#0F1D62',
   shadowInk: '#111111',
 
   // Feature aliases
   gray: '#5C5C5C',
   lightGray: '#F0F0F0',
-  purpleLight: '#E8F8EE',
-  lightPurple: '#E8F8EE',
+  purpleLight: '#F4EEFF',
+  lightPurple: '#F4EEFF',
   icon: '#111111',
 
   // Chat
-  userBubble: '#E8F8EE',
+  userBubble: '#F4EEFF',
   aiBubble: '#FFFFFF',
   chipBg: '#FFFFFF',
   chatSeparator: '#E6E6E6',

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 12,
     borderRadius: 16,
-    backgroundColor: '#E7F8EE',
+    backgroundColor: '#F4EEFF',
     paddingHorizontal: 14,
     paddingVertical: 14,
     flexDirection: 'row',
@@ -305,4 +305,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ContactsScreen;
+export default memo(ContactsScreen);

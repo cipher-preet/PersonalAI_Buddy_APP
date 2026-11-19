@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     height: 18,
     paddingHorizontal: 5,
     borderRadius: 9,
-    backgroundColor: '#E7F8EE',
+    backgroundColor: '#F4EEFF',
     borderWidth: 1.5,
     borderColor: colors.white,
     alignItems: 'center',
@@ -388,4 +388,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CallHistoryScreen;
+export default memo(CallHistoryScreen);

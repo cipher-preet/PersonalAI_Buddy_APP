@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#DC2626',
   },
   answerButton: {
-    backgroundColor: '#059669',
+    backgroundColor: '#1D6DFD',
   },
   roundLabel: {
     color: colors.white,

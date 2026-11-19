@@ -6,11 +6,41 @@ import { colors, ms } from '../theme';
 type Props = {
   large?: boolean;
   color?: string;
+  size?: number;
 };
 
 const DOTS = [0, 1, 2, 3];
 
-const EqualMark = ({ large = false, color = colors.white }: Props) => {
+const EqualMark = ({ large = false, color = colors.white, size }: Props) => {
+  if (size) {
+    const dot = Math.min(Math.round(size * 0.4), Math.floor((size - 2) / 2));
+    const radius = Math.max(1, Math.round(dot * 0.3));
+    return (
+      <View
+        style={{
+          width: size,
+          height: size,
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignContent: 'space-between',
+          justifyContent: 'space-between',
+        }}
+      >
+        {DOTS.map(index => (
+          <View
+            key={index}
+            style={{
+              width: dot,
+              height: dot,
+              borderRadius: radius,
+              backgroundColor: color,
+            }}
+          />
+        ))}
+      </View>
+    );
+  }
+
   const styles = large ? largeStyles : smallStyles;
 
   return (

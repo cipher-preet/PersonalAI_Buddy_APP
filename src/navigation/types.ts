@@ -27,8 +27,15 @@ export type ReminderAlarmParams = {
   message: string;
 };
 
+export type ChatThreadParams = {
+  id: string;
+  name: string;
+  kind: 'assistant' | 'unknown';
+};
+
 export type AppStackParamList = {
   Main: undefined;
+  ChatThread: ChatThreadParams;
   ReminderCall: ReminderCallParams;
   ReminderAlarm: ReminderAlarmParams;
 };

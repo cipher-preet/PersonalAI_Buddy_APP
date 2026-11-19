@@ -1,6 +1,6 @@
 export const AVATAR_TONE = {
-  mint: { bg: '#C3FDDC', fg: '#072A16' },
-  soft: { bg: '#E7F8EE', fg: '#0A7A34' },
+  mint: { bg: '#DDD0FF', fg: '#3B1578' },
+  soft: { bg: '#F4EEFF', fg: '#5B21B6' },
   cream: { bg: '#FFF2D4', fg: '#111111' },
   cloud: { bg: '#F0F0F0', fg: '#111111' },
 } as const;
@@ -108,4 +108,4 @@ export const CALLS: CallRecord[] = [
   },
 ];
 
-export const digitsOf = (value: string) => value.replace(/\D/g, '');
+export const digitsOf = (value: string) => String(value ?? '').replace(/\D/g, '');
